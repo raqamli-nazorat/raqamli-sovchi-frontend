@@ -1,34 +1,166 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Shield, User, Lock, Eye, EyeOff, AlertTriangle, Scale } from "lucide-react";
 import { axiosAPI } from "../lib/axiosAPI";
 import { HugeIcon } from "../components/ui/HugeIcon";
-import { AiBrain01FreeIcons, Shield01Icon, SquareLock01Icon, User03Icon, UserCheck01Icon, UserIcon } from "@hugeicons/core-free-icons";
+import { AiBrain01FreeIcons, Call02Icon, Shield01Icon, SquareLock01Icon, User03Icon, UserCheck01Icon, UserIcon } from "@hugeicons/core-free-icons";
 
 const LoginPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [blockedTimeLeft, setBlockedTimeLeft] = useState<number>(0);
+
+  const formatTimeLeft = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
+  };
+
+  console.log(location.state);
+  
+
+  // useEffect(() => {
+  //   if (accessToken) {
+  //     navigate("/", { replace: true });
+  //   }
+  // }, [accessToken, navigate]);
+
+  // Extract error from navigation state or URL query parameters (e.g. from Layout redirect)
+  useEffect(() => {
+    if (location.state?.error) {
+      setError(location.state.error);
+      navigate(location.pathname, { replace: true, state: {} });
+      return;
+    }
+    const params = new URLSearchParams(location.search);
+    const errorParam = params.get("error");
+    if (errorParam) {
+      setError(errorParam);
+      navigate(location.pathname, { replace: true });
+    }
+  }, [location.state, location.search, navigate, location.pathname]);
+
+  // Check block status on mount
+  useEffect(() => {
+    const blockedUntilStr = localStorage.getItem("login_blocked_until");
+    if (blockedUntilStr) {
+      const blockedUntil = parseInt(blockedUntilStr, 10);
+      const now = Date.now();
+      if (blockedUntil > now) {
+        const secondsLeft = Math.ceil((blockedUntil - now) / 1000);
+        setBlockedTimeLeft(secondsLeft);
+        setError(`Ko'p noto'g'ri urinishlar sababli hisobingiz 15 daqiqaga bloklandi. Qolgan vaqt: ${formatTimeLeft(secondsLeft)}`);
+      }
+    }
+  }, []);
+
+  // Countdown timer when blocked
+  useEffect(() => {
+    if (blockedTimeLeft <= 0) return;
+    const timer = setInterval(() => {
+      const blockedUntilStr = localStorage.getItem("login_blocked_until");
+      if (blockedUntilStr) {
+        const blockedUntil = parseInt(blockedUntilStr, 10);
+        const now = Date.now();
+        const diff = Math.ceil((blockedUntil - now) / 1000);
+        if (diff <= 0) {
+          localStorage.removeItem("login_blocked_until");
+          localStorage.setItem("login_attempts", "0");
+          setBlockedTimeLeft(0);
+          setError(null);
+        } else {
+          setBlockedTimeLeft(diff);
+          setError(`Ko'p noto'g'ri urinishlar sababli hisobingiz 15 daqiqaga bloklandi. Qolgan vaqt: ${formatTimeLeft(diff)}`);
+        }
+      } else {
+        setBlockedTimeLeft(0);
+        setError(null);
+      }
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [blockedTimeLeft]);
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let inputVal = e.target.value;
+
+    // Allow user to clear
+    if (!inputVal) {
+      setUsername("");
+      return;
+    }
+
+    const isDeleting = inputVal.length < username.length;
+    let cleaned = inputVal.replace(/\D/g, "");
+
+    // If backspacing and the last char of previous value was a space, delete the character before the space as well
+    if (isDeleting && username.endsWith(" ") && username.length - inputVal.length === 1) {
+      cleaned = cleaned.slice(0, -1);
+    }
+
+    if (cleaned === "") {
+      setUsername("");
+      return;
+    }
+
+    // Ensure it starts with 998
+    if (!cleaned.startsWith("998")) {
+      if ("998".startsWith(cleaned)) {
+        // user is typing the prefix itself
+      } else {
+        cleaned = "998" + cleaned;
+      }
+    }
+
+    cleaned = cleaned.slice(0, 12);
+
+    let formatted = "+";
+    if (cleaned.length > 0) {
+      formatted += cleaned.substring(0, 3);
+    }
+    if (cleaned.length > 3) {
+      formatted += " " + cleaned.substring(3, 5);
+    }
+    if (cleaned.length > 5) {
+      formatted += " " + cleaned.substring(5, 8);
+    }
+    if (cleaned.length > 8) {
+      formatted += " " + cleaned.substring(8, 10);
+    }
+    if (cleaned.length > 10) {
+      formatted += " " + cleaned.substring(10, 12);
+    }
+
+    setUsername(formatted);
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (blockedTimeLeft > 0) return;
     setLoading(true);
     setError(null);
     try {
-      const res = await axiosAPI.post("/auth/login", { username, password });
+      const cleanedUsername = username.replace(/\s+/g, "");
+      const res = await axiosAPI.post("accounts/auth/token/", { phone_number: cleanedUsername, password });
+      console.log(res);
+
       if (res.data) {
-        const token = res.data.access || res.data.access_token || res.data.data?.access_token;
-        const refresh = res.data.refresh || res.data.refresh_token || res.data.data?.refresh_token;
+        const token = res.data.data?.access;
+        const refresh = res.data.data?.refresh;
         if (token) {
-          localStorage.setItem("access_token", token);
           localStorage.setItem("access", token);
           if (refresh) {
-            localStorage.setItem("refresh_token", refresh);
             localStorage.setItem("refresh", refresh);
           }
+
+          // Clear login attempt state on success
+          localStorage.removeItem("login_attempts");
+          localStorage.removeItem("login_blocked_until");
+
           navigate("/");
           return;
         }
@@ -36,8 +168,40 @@ const LoginPage = () => {
       throw new Error("No token received");
     } catch (err: any) {
       console.error("Login failed:", err);
-      const msg = err.response?.data?.detail || err.response?.data?.message || "Login yoki parol noto'g'ri. Yana 2 ta urinish qoldi. Undan keyin hisob 15 daqiqaga bloklanadi.";
-      setError(msg);
+      const status = err.response?.status;
+
+      if (status === 401) {
+        const currentAttempts = parseInt(localStorage.getItem("login_attempts") || "0", 10) + 1;
+        localStorage.setItem("login_attempts", currentAttempts.toString());
+
+        if (currentAttempts >= 3) {
+          const blockedUntil = Date.now() + 15 * 60 * 1000;
+          localStorage.setItem("login_blocked_until", blockedUntil.toString());
+          setBlockedTimeLeft(15 * 60);
+          setError(`Ko'p noto'g'ri urinishlar sababli hisobingiz 15 daqiqaga bloklandi. Qolgan vaqt: 15:00`);
+        } else {
+          setError(`Login yoki parol noto'g'ri. Yana ${3 - currentAttempts} ta urinish qoldi. Undan keyin hisob 15 daqiqaga bloklanadi.`);
+        }
+      } else if (status === 429) {
+        setError("Juda ko'p so'rov yuborildi. Iltimos birozdan keyin qayta urinib ko'ring.");
+      } else {
+        const apiError = err.response?.data?.error;
+        let errorMsg = "";
+        if (apiError) {
+          if (apiError.details) {
+            if (typeof apiError.details === "object") {
+              errorMsg = Object.values(apiError.details).flat().join(", ");
+            } else {
+              errorMsg = String(apiError.details);
+            }
+          } else {
+            errorMsg = apiError.errorMsg || "Tizim xatoligi yuz berdi.";
+          }
+        } else {
+          errorMsg = err.response?.data?.detail || err.response?.data?.message || err.message || "Tizim xatoligi yuz berdi.";
+        }
+        setError(errorMsg);
+      }
     } finally {
       setLoading(false);
     }
@@ -121,14 +285,14 @@ const LoginPage = () => {
           <div className="space-y-4">
             {/* Login input */}
             <div className="space-y-1.5">
-              <label className="text-[12px] font-semibold text-[#404040] dark:text-[#A3A3A3]">Login</label>
+              <label className="text-[12px] font-semibold text-[#404040] dark:text-[#A3A3A3]">Telifon raqam</label>
               <div className="relative">
-                <HugeIcon icon={User03Icon} className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#737373] dark:text-[#A3A3A3]" strokeWidth={3} />
+                <HugeIcon icon={Call02Icon} className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#737373] dark:text-[#A3A3A3]" strokeWidth={3} />
                 <input
                   type="text"
                   value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  placeholder="a.muxtorov"
+                  onChange={handlePhoneChange}
+                  placeholder="+998"
                   className="w-full h-11 pl-10 pr-4 bg-transparent border border-[#E5E5E5] dark:border-[#262626] rounded-lg focus:outline-none focus:border-[#FF5900] text-[13px] text-[#0A0A0A] dark:text-white placeholder-[#A3A3A3] dark:placeholder-[#525252] transition-colors"
                   required
                 />
@@ -173,11 +337,21 @@ const LoginPage = () => {
                   <>
                     <h5 className="font-bold">Login yoki parol noto'g'ri</h5>
                     <p className="mt-0.5 text-[11px] leading-relaxed">
-                      Yana 2 ta urinish qoldi. Undan keyin hisob 15 daqiqaga bloklanadi.
+                      {error.replace("Login yoki parol noto'g'ri. ", "")}
+                    </p>
+                  </>
+                ) : error.includes("bloklandi") ? (
+                  <>
+                    <h5 className="font-bold">Hisob bloklandi</h5>
+                    <p className="mt-0.5 text-[11px] leading-relaxed">
+                      {error}
                     </p>
                   </>
                 ) : (
-                  <p className="leading-relaxed">{error}</p>
+                  <>
+                    <h5 className="font-bold">Xatolik</h5>
+                    <p className="mt-0.5 text-[11px] leading-relaxed">{error}</p>
+                  </>
                 )}
               </div>
             </div>
@@ -186,8 +360,8 @@ const LoginPage = () => {
           {/* Kirish Button */}
           <button
             type="submit"
-            disabled={loading}
-            className="w-full h-11 bg-[#FF5900] hover:bg-[#E04F00] active:scale-[0.99] disabled:bg-[#FFA270] text-white font-semibold text-[13px] rounded-lg transition-all flex items-center justify-center cursor-pointer shadow-sm"
+            disabled={loading || blockedTimeLeft > 0}
+            className="w-full h-11 bg-[#FF5900] hover:bg-[#E04F00] active:scale-[0.99] disabled:bg-[#FFA270] text-white font-semibold text-[13px] rounded-lg transition-all flex items-center justify-center cursor-pointer disabled:cursor-default shadow-sm"
           >
             {loading ? (
               <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>

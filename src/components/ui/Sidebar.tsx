@@ -19,7 +19,7 @@ const MENU_GROUPS = [
     label: "UMUMIY",
     items: [
       { label: "Boshqaruv paneli", path: "/", icon: DashboardSquare01FreeIcons, badge: null, end: true },
-      { label: "Foydalanuvchilar", path: "/customers", icon: UserGroupIcon, badge: 12480, end: false },
+      { label: "Foydalanuvchilar", path: "/users", icon: UserGroupIcon, badge: 12480, end: false },
     ],
   },
   {
@@ -62,6 +62,53 @@ const Sidebar = ({ collapsed, onToggle }: SidebarProps) => {
         ${collapsed ? "w-[72px]" : "w-[240px]"}
       `}
     >
+      <style>{`
+        /* Default color for all paths of active icons is blue */
+        .active-icon path {
+          stroke: #0084FF !important;
+        }
+
+        /* 1. Dashboard active icon styling: all paths orange */
+        .active-- path {
+          stroke: #FF5900 !important;
+        }
+
+        /* 2. UserGroupIcon (/users): all paths orange */
+        .active--users path {
+          stroke: #FF5900 !important;
+        }
+
+        /* 3. UserCheck01Icon (/profile-moderation): checkmark (path 3) is orange */
+        .active--profile-moderation path:nth-child(1) {
+          stroke: #FF5900 !important;
+        }
+
+        /* 4. AiBrain01Icon (/ai-chat): left half (path 1) is orange */
+        .active--ai-chat path:nth-child(1) {
+          stroke: #FF5900 !important;
+        }
+
+        /* 5. Flag02Icon (/appeals): flagpole (path 1) is orange */
+        .active--appeals path:nth-child(1) {
+          stroke: #FF5900 !important;
+        }
+
+        /* 6. Task01Icon (/references-faq): clamp (path 1) is orange */
+        .active--references-faq path:nth-child(1) {
+          stroke: #FF5900 !important;
+        }
+
+        /* 7. StethoscopeIcon (/psychologists): chestpiece & dot (paths 4 and 5) are orange */
+        .active--psychologists path:nth-child(1) {
+          stroke: #FF5900 !important;
+        }
+
+        /* 8. Settings01Icon (/settings): inner circle (path 2) is orange */
+        .active--settings path:nth-child(1) {
+          stroke: #FF5900 !important;
+        }
+      `}</style>
+
       {/* ── Logo ── */}
       <div className="flex items-center gap-3 px-4 py-3.25">
         <img src="/Mark.svg" alt="Mark" className="object-contain h-8 w-8" />
@@ -113,13 +160,13 @@ const Sidebar = ({ collapsed, onToggle }: SidebarProps) => {
                         icon={item.icon}
                         size={18}
                         strokeWidth={2.3}
-                        className={`shrink-0 ${active ? "text-[#FF5900] dark:text-[#FF5900]" : "text-[#525252] dark:text-[#525252]"}`}
+                        className={`shrink-0 ${active ? "active-icon active-" + item.path.replace(/[^a-zA-Z0-9]/g, "-") : "text-[#525252] dark:text-[#525252]"}`}
                       />
                       {!collapsed && (
                         <>
                           <span className="flex-1 truncate">{item.label}</span>
                           {item.badge !== null && (
-                            <span className={`rounded-xl py-0.5 px-1.5 text-[11px] bg-[#f5f5f5] font-semibold ${active ? "bg-[#FF5900] dark:bg-[#FF5900] text-white" : "text-[#737373] dark:text-[#a3a3a3]"} tabular-nums`}>
+                            <span className={`rounded-xl py-0.5 px-1.5 text-[11px] bg-[#f5f5f5] font-semibold ${active ? "bg-[#FF5900]! dark:bg-[#FF5900]! text-white" : "text-[#737373] dark:text-[#a3a3a3]"} tabular-nums`}>
                               {formatBadge(item.badge as number)}
                             </span>
                           )}

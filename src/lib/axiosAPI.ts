@@ -9,7 +9,7 @@ export const axiosAPI = axios.create({
 
 // ── Har so'rovga access tokenni qo'shish ──
 axiosAPI.interceptors.request.use((config) => {
-     const token = localStorage.getItem("access_token")
+     const token = localStorage.getItem("access")
      if (token && token !== "undefined" && token !== "null") {
           config.headers.Authorization = `Bearer ${token}`
      }
@@ -23,11 +23,11 @@ axiosAPI.interceptors.response.use(
      (error) => {
           const status = error?.response?.status
           const url = error?.config?.url || ""
-          const isAuthRequest = url.includes("auth/login")
+          const isAuthRequest = url.includes("auth/token/")
 
           if (status === 401 && !isAuthRequest) {
-               localStorage.removeItem("access_token")
-               localStorage.removeItem("refresh_token")
+               localStorage.removeItem("access")
+               localStorage.removeItem("refresh")
                if (window.location.pathname !== "/login") {
                     window.location.href = "/login"
                }

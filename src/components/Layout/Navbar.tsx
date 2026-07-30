@@ -5,12 +5,13 @@ import { Search01FreeIcons, Notification02Icon } from "@hugeicons/core-free-icon
 
 const PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {
   "/": { title: "Boshqaruv paneli", subtitle: "Umumiy holat va navbatdagi vazifalar" },
-  "/customers": { title: "Foydalanuvchilar", subtitle: "Barcha ro'yxatdan o'tgan foydalanuvchilar" },
-  "/appeals": { title: "Shikoyatlar", subtitle: "Foydalanuvchi shikoyatlari" },
-  "/ai-chat": { title: "AI moderator", subtitle: "Sun'iy intellekt yordamida moderatsiya" },
-  "/settings": { title: "Sozlamalar", subtitle: "Tizim sozlamalari" },
+  "/users": { title: "Foydalanuvchilar", subtitle: "Kelin, kuyov va vakillar reyestri" },
+  "/appeals": { title: "Shikoyatlar", subtitle: "Foydalanuvchi murojaatlari" },
+  "/ai-chat": { title: "AI moderator", subtitle: "Suhbatlardagi qoidabuzarlik signallari" },
+  "/settings": { title: "Sozlamalar", subtitle: "Platforma qoidalari va rollar" },
   "/references/faq": { title: "Anketa savollari", subtitle: "Savollar va javoblar" },
-  "/profile-moderation": { title: "Profil moderatsiyasi", subtitle: "Foydalanuvchi profillari tekshiruvi" },
+  "/psychologists": { title: "Psixologlar", subtitle: "Mutaxassislar va suhbatlar" },
+  "/profile-moderation": { title: "Profil moderatsiyasi", subtitle: "Selfi tasdiqlash va rasm tekshiruvi" },
 };
 
 const getPageInfo = (pathname: string) => {
