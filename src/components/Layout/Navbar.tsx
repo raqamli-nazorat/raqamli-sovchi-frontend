@@ -1,5 +1,4 @@
-import { useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useSearchParams } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Search01FreeIcons, Notification02Icon } from "@hugeicons/core-free-icons";
@@ -33,14 +32,21 @@ interface NavbarProps {
 
 const Navbar = ({ collapsed: _collapsed, onToggle: _onToggle }: NavbarProps) => {
   const location = useLocation();
+
+  // Redux orqali joriy shikoyatni topish (Asadbek varianti)
   const appealId = location.pathname.startsWith("/appeals/")
     ? location.pathname.split("/")[2]
     : undefined;
+  
   const appeal: Appeal | undefined = useSelector((state: any) =>
-    appealId ? state.appeals.items.find((a: Appeal) => a.id === appealId) : undefined
+    appealId ? state.appeals?.items?.find((a: Appeal) => a.id === appealId) : undefined
   );
+
   const { title, subtitle } = getPageInfo(location.pathname, appeal);
-  const [searchValue, setSearchValue] = useState("");
+
+  // URL query params orqali search boshqaruvi (main varianti)
+  const [searchParams, setSearchParams] = useSearchParams();
+  const searchValue = searchParams.get("search") || "";
   const notificationCount = 26;
 
   return (
@@ -68,21 +74,31 @@ const Navbar = ({ collapsed: _collapsed, onToggle: _onToggle }: NavbarProps) => 
           <input
             type="text"
             value={searchValue}
-            onChange={(e) => setSearchValue(e.target.value)}
+            onChange={(e) => {
+              const val = e.target.value;
+              setSearchParams((prev) => {
+                if (val) {
+                  prev.set("search", val);
+                } else {
+                  prev.delete("search");
+                }
+                return prev;
+              });
+            }}
             placeholder="Foydalanuvchi, ID, telefon..."
             className="h-9 pl-9 pr-4 rounded-lg border border-[#e5e5e5] dark:border-[#262626] text-[13px] text-[#737373] dark:text-[#a3a3a3] placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#FF5900]/20 focus:border-[#FF5900] transition-all w-[220px]"
           />
         </div>
 
         {/* Notification button */}
-        <button className="relative flex items-center cursor-pointer gap-2 h-9 px-3 rounded-lg border border-[#e5e5e5] dark:border-[#262626] text-[#404040] transition-all">
+        <button className="relative flex items-center cursor-pointer gap-2 h-9 px-3 rounded-lg border border-[#e5e5e5] dark:border-[#262626] text-[#404040] dark:text-[#a3a3a3] transition-all">
           <HugeiconsIcon
             icon={Notification02Icon}
             size={16}
             strokeWidth={2.5}
           />
           <span className="text-[12px] font-medium">Bildirishnomalar</span>
-            <span className="flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-[#FF5900] text-white text-[10px] font-bold">
+          <span className="flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-[#FF5900] text-white text-[10px] font-bold">
             {notificationCount}
           </span>
         </button>

@@ -15,6 +15,7 @@ import {
   StethoscopeIcon,
   UserGroupIcon,
 } from "@hugeicons/core-free-icons";
+import { useSelector } from "react-redux";
 
 const MENU_GROUPS = [
   {
@@ -61,6 +62,8 @@ const Sidebar = ({ collapsed, onToggle }: SidebarProps) => {
     if (item.path === "/appeals") return appealsNewCount > 0 ? appealsNewCount : null;
     return item.badge;
   };
+
+  const currentUser = useSelector((state: any) => state.references.currentUser)
 
   return (
     <aside
@@ -205,15 +208,15 @@ const Sidebar = ({ collapsed, onToggle }: SidebarProps) => {
           className={`flex items-center gap-2.5 rounded-xl px-2 py-2 hover:bg-gray-50 dark:hover:bg-gray-800/60 cursor-pointer transition-colors ${collapsed ? "justify-center" : ""}`}
         >
           <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center shrink-0">
-            <span className="text-[11px] font-bold text-blue-600 dark:text-blue-400">AM</span>
+            <span className="text-[11px] font-bold text-blue-600 dark:text-blue-400">{currentUser?.profile_info?.first_name?.slice(0, 1).toUpperCase() + currentUser?.profile_info?.last_name?.slice(0, 1).toUpperCase()}</span>
           </div>
           {!collapsed && (
             <>
               <div className="flex-1 min-w-0">
                 <p className="text-[12px] font-semibold text-gray-800 dark:text-gray-200 truncate leading-tight">
-                  A. Muxtorov
+                  {currentUser?.profile_info?.first_name + " " + currentUser?.profile_info?.last_name}
                 </p>
-                <p className="text-[10px] text-gray-400 truncate">Super admin</p>
+                <p className="text-[10px] text-gray-400 truncate">{currentUser?.role_info?.name || currentUser?.role}</p>
               </div>
               <button className="p-1 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
                 <HugeiconsIcon icon={MoreHorizontalFreeIcons} size={14} strokeWidth={2} />
