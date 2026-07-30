@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Shield, User, Lock, Eye, EyeOff, AlertTriangle, Scale } from "lucide-react";
+import { Eye, EyeOff, AlertTriangle } from "lucide-react";
 import { axiosAPI } from "../lib/axiosAPI";
 import { HugeIcon } from "../components/ui/HugeIcon";
-import { AiBrain01FreeIcons, Call02Icon, Shield01Icon, SquareLock01Icon, User03Icon, UserCheck01Icon, UserIcon } from "@hugeicons/core-free-icons";
+import { AiBrain01FreeIcons, Call02Icon, Shield01Icon, SquareLock01Icon, UserCheck01Icon } from "@hugeicons/core-free-icons";
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -20,9 +20,6 @@ const LoginPage = () => {
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
-
-  console.log(location.state);
-  
 
   // useEffect(() => {
   //   if (accessToken) {
