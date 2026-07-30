@@ -21,6 +21,8 @@ const LoginPage = () => {
     return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
+  // const accessToken = localStorage.getItem("access");
+
   // useEffect(() => {
   //   if (accessToken) {
   //     navigate("/", { replace: true });
@@ -148,12 +150,16 @@ const LoginPage = () => {
       if (res.data) {
         const token = res.data.data?.access;
         const refresh = res.data.data?.refresh;
+        const user = res.data.data?.user;
         if (token) {
           localStorage.setItem("access", token);
           if (refresh) {
             localStorage.setItem("refresh", refresh);
           }
-
+          if (user) {
+            localStorage.setItem("user", JSON.stringify(user));
+          }
+          
           // Clear login attempt state on success
           localStorage.removeItem("login_attempts");
           localStorage.removeItem("login_blocked_until");

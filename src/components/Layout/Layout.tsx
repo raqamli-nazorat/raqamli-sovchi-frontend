@@ -14,6 +14,7 @@ const Layout = () => {
   const isRedirectingWithError = useRef(false);
 
   const accessToken = localStorage.getItem("access");
+  const user = localStorage.getItem("user");
   
   useEffect(() => {
     if (!accessToken && !isRedirectingWithError.current) {
@@ -40,7 +41,7 @@ const Layout = () => {
   const getCurrentUser = async () => {
     setLoading(true);
     try {
-      const res = await axiosAPI.get(`accounts/profiles/me/`);
+      const res = await axiosAPI.get(`accounts/users/me/`);
       if (res.data && res.data.success === false) {
         throw { response: res };
       }
