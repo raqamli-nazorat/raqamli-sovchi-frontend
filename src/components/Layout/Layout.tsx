@@ -14,7 +14,7 @@ const Layout = () => {
   const isRedirectingWithError = useRef(false);
 
   const accessToken = localStorage.getItem("access");
-  const user = localStorage.getItem("user");
+  // const user = localStorage.getItem("user");
   
   useEffect(() => {
     if (!accessToken && !isRedirectingWithError.current) {
