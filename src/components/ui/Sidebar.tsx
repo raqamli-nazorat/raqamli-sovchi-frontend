@@ -1,5 +1,7 @@
 import { NavLink, useLocation } from "react-router-dom";
+import { useSelector } from "react-redux";
 import { HugeiconsIcon } from "@hugeicons/react";
+import type { Appeal } from "../../store/slices/appealsSlice";
 import {
   DashboardSquare01FreeIcons,
   AiBrain01FreeIcons,
@@ -52,6 +54,14 @@ interface SidebarProps {
 
 const Sidebar = ({ collapsed, onToggle }: SidebarProps) => {
   const location = useLocation();
+  const appealsNewCount = useSelector(
+    (state: any) => state.appeals.items.filter((a: Appeal) => a.status === "new").length
+  );
+
+  const badgeFor = (item: { path: string; badge: number | null }) => {
+    if (item.path === "/appeals") return appealsNewCount > 0 ? appealsNewCount : null;
+    return item.badge;
+  };
 
   const currentUser = useSelector((state: any) => state.references.currentUser)
 
@@ -142,6 +152,7 @@ const Sidebar = ({ collapsed, onToggle }: SidebarProps) => {
                   : location.pathname.startsWith(item.path) && item.path !== "/";
                 const exactRoot = item.path === "/" && location.pathname === "/";
                 const active = isActive || exactRoot;
+                const badge = badgeFor(item);
 
                 return (
                   <li key={item.path}>
@@ -168,17 +179,17 @@ const Sidebar = ({ collapsed, onToggle }: SidebarProps) => {
                       {!collapsed && (
                         <>
                           <span className="flex-1 truncate">{item.label}</span>
-                          {item.badge !== null && (
+                          {badge !== null && (
                             <span className={`rounded-xl py-0.5 px-1.5 text-[11px] bg-[#f5f5f5] font-semibold ${active ? "bg-[#FF5900]! dark:bg-[#FF5900]! text-white" : "text-[#737373] dark:text-[#a3a3a3]"} tabular-nums`}>
-                              {formatBadge(item.badge as number)}
+                              {formatBadge(badge as number)}
                             </span>
                           )}
                         </>
                       )}
                       {/* Collapsed badge dot */}
-                      {collapsed && item.badge !== null && (
+                      {collapsed && badge !== null && (
                         <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-[#FF5900] rounded-full text-[9px] text-white flex items-center justify-center font-bold">
-                          {(item.badge as number) > 9 ? "9+" : item.badge}
+                          {(badge as number) > 9 ? "9+" : badge}
                         </span>
                       )}
                     </NavLink>
