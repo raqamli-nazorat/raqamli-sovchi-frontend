@@ -1,5 +1,4 @@
-import { useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useSearchParams } from "react-router-dom";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Search01FreeIcons, Notification02Icon } from "@hugeicons/core-free-icons";
 
@@ -26,7 +25,8 @@ interface NavbarProps {
 const Navbar = ({ collapsed: _collapsed, onToggle: _onToggle }: NavbarProps) => {
   const location = useLocation();
   const { title, subtitle } = getPageInfo(location.pathname);
-  const [searchValue, setSearchValue] = useState("");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const searchValue = searchParams.get("search") || "";
   const notificationCount = 26;
 
   return (
@@ -54,7 +54,17 @@ const Navbar = ({ collapsed: _collapsed, onToggle: _onToggle }: NavbarProps) => 
           <input
             type="text"
             value={searchValue}
-            onChange={(e) => setSearchValue(e.target.value)}
+            onChange={(e) => {
+              const val = e.target.value;
+              setSearchParams((prev) => {
+                if (val) {
+                  prev.set("search", val);
+                } else {
+                  prev.delete("search");
+                }
+                return prev;
+              });
+            }}
             placeholder="Foydalanuvchi, ID, telefon..."
             className="h-9 pl-9 pr-4 rounded-lg border border-[#e5e5e5] dark:border-[#262626] text-[13px] text-[#737373] dark:text-[#a3a3a3] placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#FF5900]/20 focus:border-[#FF5900] transition-all w-[220px]"
           />
