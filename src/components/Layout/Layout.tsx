@@ -40,7 +40,7 @@ const Layout = () => {
   const getCurrentUser = async () => {
     setLoading(true);
     try {
-      const res = await axiosAPI.get(`accounts/profiles/me/`);
+      const res = await axiosAPI.get(`accounts/users/me/`);
       if (res.data && res.data.success === false) {
         throw { response: res };
       }

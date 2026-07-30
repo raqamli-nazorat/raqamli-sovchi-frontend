@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { useLocation } from "react-router-dom";
+import { useSelector } from "react-redux";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Search01FreeIcons, Notification02Icon } from "@hugeicons/core-free-icons";
+import type { Appeal } from "../../store/slices/appealsSlice";
 
 const PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {
   "/": { title: "Boshqaruv paneli", subtitle: "Umumiy holat va navbatdagi vazifalar" },
@@ -14,7 +16,13 @@ const PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {
   "/profile-moderation": { title: "Profil moderatsiyasi", subtitle: "Selfi tasdiqlash va rasm tekshiruvi" },
 };
 
-const getPageInfo = (pathname: string) => {
+const getPageInfo = (pathname: string, appeal?: Appeal) => {
+  if (pathname.startsWith("/appeals/")) {
+    return {
+      title: "Shikoyat tafsiloti",
+      subtitle: appeal ? `${appeal.id} · ${appeal.tag} · ${appeal.time}` : "Shikoyat bo'yicha batafsil",
+    };
+  }
   return PAGE_TITLES[pathname] ?? { title: "Sahifa", subtitle: "" };
 };
 
@@ -25,7 +33,13 @@ interface NavbarProps {
 
 const Navbar = ({ collapsed: _collapsed, onToggle: _onToggle }: NavbarProps) => {
   const location = useLocation();
-  const { title, subtitle } = getPageInfo(location.pathname);
+  const appealId = location.pathname.startsWith("/appeals/")
+    ? location.pathname.split("/")[2]
+    : undefined;
+  const appeal: Appeal | undefined = useSelector((state: any) =>
+    appealId ? state.appeals.items.find((a: Appeal) => a.id === appealId) : undefined
+  );
+  const { title, subtitle } = getPageInfo(location.pathname, appeal);
   const [searchValue, setSearchValue] = useState("");
   const notificationCount = 26;
 
