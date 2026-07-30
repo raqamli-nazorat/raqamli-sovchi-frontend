@@ -1,122 +1,86 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import { createBrowserRouter, RouterProvider } from "react-router-dom";
 
-function App() {
-  const [count, setCount] = useState(0)
+import { LoginPage, HomePage } from "./pages";
+import Layout from "./components/Layout/Layout";
 
-  return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+// ---- ProtectedRoute — keyinroq qo'shiladi ----
+//
+// import { Navigate } from "react-router-dom";
+// import { useSelector } from "react-redux";
+//
+// const usePermissions = () => {
+//   const userPermissions = useSelector((state: any) => state.references.userPermissions);
+//   const permSet = new Set((userPermissions ?? []).map((p: any) => p.codename));
+//   const has = (codename: string) => permSet.has(codename);
+//   const loaded = Array.isArray(userPermissions);
+//   return { has, loaded };
+// };
+//
+// const ProtectedRoute = ({
+//   children,
+//   checkFn,
+// }: {
+//   children: React.ReactNode;
+//   checkFn?: (has: (c: string) => boolean) => boolean;
+// }) => {
+//   const { has, loaded } = usePermissions();
+//   if (!loaded) return null;
+//   const allowed = checkFn ? checkFn(has) : false;
+//   return allowed ? <>{children}</> : <Navigate to="/" replace />;
+// };
+//
+// ---- RootPage — permission asosida yo'naltiradi ----
+//
+// const RootPage = () => {
+//   const { has, loaded } = usePermissions();
+//   if (!loaded) return null;
+//   return has("view_dashboard_stats") ? <HomePage /> : <AIChatPage />;
+// };
 
-      <div className="ticks"></div>
+const router = createBrowserRouter([
+  {
+    path: "/",
+    element: <Layout />,
+    children: [
+      {
+        index: true,
+        element: <HomePage />,
+      },
+      // Quyidagi routelar keyinroq ProtectedRoute bilan qo'shiladi:
+      //
+      // { path: "/reports",         element: <ProtectedRoute checkFn={(has) => has("view_reports")}><Reports /></ProtectedRoute> },
+      // { path: "/appeals",         element: <ProtectedRoute checkFn={(has) => has("view_application")}><Appeals /></ProtectedRoute> },
+      // { path: "/appeals-history", element: <ProtectedRoute checkFn={(has) => has("view_application")}><AppealsHistory /></ProtectedRoute> },
+      // { path: "/customers",       element: <ProtectedRoute checkFn={(has) => has("view_consumer")}><Customers /></ProtectedRoute> },
+      // { path: "/references/regions",              element: <ProtectedRoute checkFn={(has) => has("view_region")}><RegionsPage /></ProtectedRoute> },
+      // { path: "/references/positions",            element: <ProtectedRoute checkFn={(has) => has("view_position")}><PositionsPage /></ProtectedRoute> },
+      // { path: "/references/districts",            element: <ProtectedRoute checkFn={(has) => has("view_district")}><DisrtictsPage /></ProtectedRoute> },
+      // { path: "/references/departments",          element: <ProtectedRoute checkFn={(has) => has("view_department")}><DepartmentsPage /></ProtectedRoute> },
+      // { path: "/references/responsible-employees",element: <ProtectedRoute checkFn={(has) => has("view_user")}><ResponsibleEmployee /></ProtectedRoute> },
+      // { path: "/references/category",             element: <ProtectedRoute checkFn={(has) => has("view_faqcategory")}><Category /></ProtectedRoute> },
+      // { path: "/references/faq",                  element: <ProtectedRoute checkFn={(has) => has("view_faq")}><Questions /></ProtectedRoute> },
+      // { path: "/references/roles",                element: <ProtectedRoute checkFn={(has) => has("view_role")}><RolesPage /></ProtectedRoute> },
+      // { path: "/model-stt",        element: <ModelSTT /> },
+      // { path: "/model-tts",        element: <ModelTTS /> },
+      // { path: "/ai-chatbot-training", element: <AIChatbotTraining /> },
+      // { path: "/quality-control", element: <QualityControl /> },
+      // { path: "/ai-complaints",   element: <ProtectedRoute checkFn={(has) => has("view_chaterrorlog")}><AiComplaints /></ProtectedRoute> },
+      // { path: "/profile",         element: <ProfilePage /> },
+      // { path: "/profile/edit",    element: <ProfileEdit /> },
+      // { path: "/settings",        element: <SettingsPage /> },
+      // { path: "/help",            element: <HelpPage /> },
+      // { path: "/ai-chat",         element: <AIChatPage /> },
+      // { path: "/ai-chat/:id",     element: <AIChatPage /> },
+    ],
+  },
+  {
+    path: "/login",
+    element: <LoginPage />,
+  },
+]);
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+const App = () => {
+  return <RouterProvider router={router} />;
+};
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
-}
-
-export default App
+export default App;

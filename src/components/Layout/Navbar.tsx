@@ -1,0 +1,79 @@
+import { useState } from "react";
+import { useLocation } from "react-router-dom";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { Search01FreeIcons, Notification02Icon } from "@hugeicons/core-free-icons";
+
+const PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {
+  "/": { title: "Boshqaruv paneli", subtitle: "Umumiy holat va navbatdagi vazifalar" },
+  "/customers": { title: "Foydalanuvchilar", subtitle: "Barcha ro'yxatdan o'tgan foydalanuvchilar" },
+  "/appeals": { title: "Shikoyatlar", subtitle: "Foydalanuvchi shikoyatlari" },
+  "/ai-chat": { title: "AI moderator", subtitle: "Sun'iy intellekt yordamida moderatsiya" },
+  "/settings": { title: "Sozlamalar", subtitle: "Tizim sozlamalari" },
+  "/references/faq": { title: "Anketa savollari", subtitle: "Savollar va javoblar" },
+  "/profile-moderation": { title: "Profil moderatsiyasi", subtitle: "Foydalanuvchi profillari tekshiruvi" },
+};
+
+const getPageInfo = (pathname: string) => {
+  return PAGE_TITLES[pathname] ?? { title: "Sahifa", subtitle: "" };
+};
+
+interface NavbarProps {
+  collapsed: boolean;
+  onToggle: () => void;
+}
+
+const Navbar = ({ collapsed: _collapsed, onToggle: _onToggle }: NavbarProps) => {
+  const location = useLocation();
+  const { title, subtitle } = getPageInfo(location.pathname);
+  const [searchValue, setSearchValue] = useState("");
+  const notificationCount = 26;
+
+  return (
+    <header className="h-15 shrink-0 flex items-center justify-between bg-white dark:bg-[#141414] border-b border-[#e5e5e5] dark:border-[#262626] px-6 gap-4">
+      {/* Left – Page title */}
+      <div className="flex flex-col justify-center min-w-0">
+        <h1 className="text-[16px] font-semibold text-[#0A0A0A] dark:text-[#fafafa] leading-tight truncate">
+          {title}
+        </h1>
+        {subtitle && (
+          <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3] leading-tight truncate">{subtitle}</p>
+        )}
+      </div>
+
+      {/* Right – Search + Notification */}
+      <div className="flex items-center gap-3 shrink-0">
+        {/* Search */}
+        <div className="relative">
+          <HugeiconsIcon
+            icon={Search01FreeIcons}
+            size={14}
+            strokeWidth={3}
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-[#737373] pointer-events-none"
+          />
+          <input
+            type="text"
+            value={searchValue}
+            onChange={(e) => setSearchValue(e.target.value)}
+            placeholder="Foydalanuvchi, ID, telefon..."
+            className="h-9 pl-9 pr-4 rounded-lg border border-[#e5e5e5] dark:border-[#262626] text-[13px] text-[#737373] dark:text-[#a3a3a3] placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#FF5900]/20 focus:border-[#FF5900] transition-all w-[220px]"
+          />
+        </div>
+
+        {/* Notification button */}
+        <button className="relative flex items-center cursor-pointer gap-2 h-9 px-3 rounded-lg border border-[#e5e5e5] dark:border-[#262626] text-[#404040] transition-all">
+          <HugeiconsIcon
+            icon={Notification02Icon}
+            size={16}
+            strokeWidth={2.5}
+          />
+          <span className="text-[12px] font-medium">Bildirishnomalar</span>
+            <span className="flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-[#FF5900] text-white text-[10px] font-bold">
+            {notificationCount}
+          </span>
+        </button>
+      </div>
+    </header>
+  );
+};
+
+export default Navbar;
