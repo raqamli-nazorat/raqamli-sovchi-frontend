@@ -1,9 +1,9 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useHeader } from '../../components/Layout/Layout';
 import { axiosAPI } from '../../lib/axiosAPI';
 import Select from '../../components/ui/Select';
-import { ChevronLeft, Plus, Image, Check, Eye, EyeOff, X, AlertCircle, ChevronDown, UserMinus, FileText } from 'lucide-react';
+import { ChevronLeft, Plus, Image, Check, Eye, EyeOff, X, AlertCircle, UserMinus, FileText } from 'lucide-react';
 import dayjs from 'dayjs';
 
 type UserResult = {
@@ -142,11 +142,6 @@ const MOCK_HISTORY = [
         date: "12.03.2026",
     },
 ];
-
-const GENDER_LABELS: Record<string, string> = {
-    male: "Erkak",
-    female: "Ayol",
-};
 
 const HEALTH_STATUS_LABELS: Record<string, string> = {
     healthy: "Sog'lom",
