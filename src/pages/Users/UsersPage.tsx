@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { axiosAPI } from "../../lib/axiosAPI";
 import { ChevronRight, Search, X } from "lucide-react";
 
@@ -21,6 +21,8 @@ interface UserResult {
 const FILTERS = ["Hammasi", "Kuyov", "Kelin", "Vakil"];
 
 const UsersPage = () => {
+    const navigate = useNavigate();
+
   const [users, setUsers] = useState<UserResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -342,6 +344,7 @@ const UsersPage = () => {
                 <div
                   key={user.id}
                   className="flex flex-col md:flex-row md:items-center px-6 py-4.5 hover:bg-gray-50/50 dark:hover:bg-zinc-900/30 transition-colors gap-3 md:gap-0 cursor-pointer"
+                  onClick={() => navigate(`/users/details/${user.id}`)}
                 >
                   {/* Foydalanuvchi */}
                   <div className="flex-1 min-w-[240px] flex items-center gap-3">

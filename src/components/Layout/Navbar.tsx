@@ -1,6 +1,8 @@
 import { useLocation, useSearchParams } from "react-router-dom";
+import { useSelector } from "react-redux";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Search01FreeIcons, Notification02Icon } from "@hugeicons/core-free-icons";
+import type { Appeal } from "../../store/slices/appealsSlice";
 
 const PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {
   "/": { title: "Boshqaruv paneli", subtitle: "Umumiy holat va navbatdagi vazifalar" },
@@ -13,18 +15,42 @@ const PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {
   "/profile-moderation": { title: "Profil moderatsiyasi", subtitle: "Selfi tasdiqlash va rasm tekshiruvi" },
 };
 
-const getPageInfo = (pathname: string) => {
+const getPageInfo = (pathname: string, appeal?: Appeal) => {
+  if (pathname.startsWith("/appeals/")) {
+    return {
+      title: "Shikoyat tafsiloti",
+      subtitle: appeal ? `${appeal.id} · ${appeal.tag} · ${appeal.time}` : "Shikoyat bo'yicha batafsil",
+    };
+  }
   return PAGE_TITLES[pathname] ?? { title: "Sahifa", subtitle: "" };
 };
 
 interface NavbarProps {
   collapsed: boolean;
   onToggle: () => void;
+  title?: string;
+  subtitle?: string;
 }
 
-const Navbar = ({ collapsed: _collapsed, onToggle: _onToggle }: NavbarProps) => {
+const Navbar = ({ collapsed: _collapsed, onToggle: _onToggle, title: customTitle, subtitle: customSubtitle }: NavbarProps) => {
   const location = useLocation();
-  const { title, subtitle } = getPageInfo(location.pathname);
+
+  // Redux orqali joriy shikoyatni topish (Asadbek varianti)
+  const appealId = location.pathname.startsWith("/appeals/")
+    ? location.pathname.split("/")[2]
+    : undefined;
+  
+  const appeal: Appeal | undefined = useSelector((state: any) =>
+    appealId ? state.appeals?.items?.find((a: Appeal) => a.id === appealId) : undefined
+  );
+
+
+  // URL query params orqali search boshqaruvi (main varianti)
+  const { title: routeTitle, subtitle: routeSubtitle } = getPageInfo(location.pathname, appeal);
+  
+  const displayTitle = customTitle ?? routeTitle;
+  const displaySubtitle = customSubtitle ?? routeSubtitle;
+
   const [searchParams, setSearchParams] = useSearchParams();
   const searchValue = searchParams.get("search") || "";
   const notificationCount = 26;
@@ -34,10 +60,10 @@ const Navbar = ({ collapsed: _collapsed, onToggle: _onToggle }: NavbarProps) => 
       {/* Left – Page title */}
       <div className="flex flex-col justify-center min-w-0">
         <h1 className="text-[16px] font-semibold text-[#0A0A0A] dark:text-[#fafafa] leading-tight truncate">
-          {title}
+          {displayTitle}
         </h1>
-        {subtitle && (
-          <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3] leading-tight truncate">{subtitle}</p>
+        {displaySubtitle && (
+          <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3] leading-tight truncate">{displaySubtitle}</p>
         )}
       </div>
 
@@ -71,14 +97,14 @@ const Navbar = ({ collapsed: _collapsed, onToggle: _onToggle }: NavbarProps) => 
         </div>
 
         {/* Notification button */}
-        <button className="relative flex items-center cursor-pointer gap-2 h-9 px-3 rounded-lg border border-[#e5e5e5] dark:border-[#262626] text-[#404040] transition-all">
+        <button className="relative flex items-center cursor-pointer gap-2 h-9 px-3 rounded-lg border border-[#e5e5e5] dark:border-[#262626] text-[#404040] dark:text-[#a3a3a3] transition-all">
           <HugeiconsIcon
             icon={Notification02Icon}
             size={16}
             strokeWidth={2.5}
           />
           <span className="text-[12px] font-medium">Bildirishnomalar</span>
-            <span className="flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-[#FF5900] text-white text-[10px] font-bold">
+          <span className="flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-[#FF5900] text-white text-[10px] font-bold">
             {notificationCount}
           </span>
         </button>

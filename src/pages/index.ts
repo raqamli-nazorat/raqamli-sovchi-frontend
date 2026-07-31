@@ -1,3 +1,8 @@
 export { default as LoginPage } from "./LoginPage";
 export { default as HomePage } from "./HomePage";
 export { default as UsersPage } from "./Users/UsersPage";
+export { default as ProfileModerationPage } from "./Moderation/ProfileModerationPage";
+export { default as AiModeratorPage } from "./AiModerator/AiModeratorPage";
+export { default as AppealsPage } from "./Appeals/AppealsPage";
+export { default as AppealDetailPage } from "./Appeals/AppealDetailPage";
+export { default as UsersDetailPage } from "./Users/UsersDetail";
