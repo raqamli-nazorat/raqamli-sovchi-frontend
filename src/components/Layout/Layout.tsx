@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Outlet, useNavigate } from "react-router-dom";
+import { Outlet, useNavigate, useLocation, useOutletContext } from "react-router-dom";
 import Sidebar from "../ui/Sidebar";
 import Navbar from "./Navbar";
 import { axiosAPI } from "../../lib/axiosAPI";
@@ -9,9 +9,18 @@ import { setCurrentUser } from "../../store/slices/referencesSlice";
 const Layout = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const location = useLocation();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [loading, setLoading] = useState(true);
   const isRedirectingWithError = useRef(false);
+
+  const [customTitle, setCustomTitle] = useState<string>();
+  const [customSubtitle, setCustomSubtitle] = useState<string>();
+
+  useEffect(() => {
+    setCustomTitle(undefined);
+    setCustomSubtitle(undefined);
+  }, [location.pathname]);
 
   const accessToken = localStorage.getItem("access");
   // const user = localStorage.getItem("user");
@@ -103,13 +112,27 @@ const Layout = () => {
     <div className="flex h-screen overflow-hidden bg-[#F5F5F5] dark:bg-[#0a0a0a]">
       <Sidebar collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed((v) => !v)} />
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
-        <Navbar collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed((v) => !v)} />
+        <Navbar 
+          collapsed={sidebarCollapsed} 
+          onToggle={() => setSidebarCollapsed((v) => !v)} 
+          title={customTitle}
+          subtitle={customSubtitle}
+        />
         <main className="flex-1 overflow-y-auto bg-[#F5F5F5] dark:bg-[#0a0a0a]">
-          <Outlet />
+          <Outlet context={{ setHeaderTitle: setCustomTitle, setHeaderSubtitle: setCustomSubtitle }} />
         </main>
       </div>
     </div>
   );
+};
+
+export type HeaderContextType = {
+  setHeaderTitle: (title: string | undefined) => void;
+  setHeaderSubtitle: (subtitle: string | undefined) => void;
+};
+
+export const useHeader = () => {
+  return useOutletContext<HeaderContextType>();
 };
 
 export default Layout;

@@ -1,6 +1,6 @@
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 
-import { LoginPage, HomePage, UsersPage } from "./pages";
+import { LoginPage, HomePage, UsersPage, UsersDetailPage } from "./pages";
 import Layout from "./components/Layout/Layout";
 
 // ---- ProtectedRoute — keyinroq qo'shiladi ----
@@ -71,7 +71,14 @@ const router = createBrowserRouter([
       // { path: "/help",            element: <HelpPage /> },
       // { path: "/ai-chat",         element: <AIChatPage /> },
       // { path: "/ai-chat/:id",     element: <AIChatPage /> },
-      { path: "/users", element: <UsersPage /> },
+      {
+        path: "/users",
+        element: <UsersPage />,
+      },
+      {
+        path: "/users/details/:id",
+        element: <UsersDetailPage />,
+      },
       { path: "/profile-moderation", element: <UsersPage /> },
       { path: "/ai-chat", element: <UsersPage /> },
       { path: "/appeals", element: <UsersPage /> },
