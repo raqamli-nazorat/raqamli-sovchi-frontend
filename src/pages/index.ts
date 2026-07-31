@@ -5,3 +5,4 @@ export { default as ProfileModerationPage } from "./Moderation/ProfileModeration
 export { default as AiModeratorPage } from "./AiModerator/AiModeratorPage";
 export { default as AppealsPage } from "./Appeals/AppealsPage";
 export { default as AppealDetailPage } from "./Appeals/AppealDetailPage";
+export { default as UsersDetailPage } from "./Users/UsersDetail";

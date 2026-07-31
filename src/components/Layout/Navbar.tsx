@@ -28,9 +28,11 @@ const getPageInfo = (pathname: string, appeal?: Appeal) => {
 interface NavbarProps {
   collapsed: boolean;
   onToggle: () => void;
+  title?: string;
+  subtitle?: string;
 }
 
-const Navbar = ({ collapsed: _collapsed, onToggle: _onToggle }: NavbarProps) => {
+const Navbar = ({ collapsed: _collapsed, onToggle: _onToggle, title: customTitle, subtitle: customSubtitle }: NavbarProps) => {
   const location = useLocation();
 
   // Redux orqali joriy shikoyatni topish (Asadbek varianti)
@@ -42,9 +44,13 @@ const Navbar = ({ collapsed: _collapsed, onToggle: _onToggle }: NavbarProps) => 
     appealId ? state.appeals?.items?.find((a: Appeal) => a.id === appealId) : undefined
   );
 
-  const { title, subtitle } = getPageInfo(location.pathname, appeal);
 
   // URL query params orqali search boshqaruvi (main varianti)
+  const { title: routeTitle, subtitle: routeSubtitle } = getPageInfo(location.pathname, appeal);
+  
+  const displayTitle = customTitle ?? routeTitle;
+  const displaySubtitle = customSubtitle ?? routeSubtitle;
+
   const [searchParams, setSearchParams] = useSearchParams();
   const searchValue = searchParams.get("search") || "";
   const notificationCount = 26;
@@ -54,10 +60,10 @@ const Navbar = ({ collapsed: _collapsed, onToggle: _onToggle }: NavbarProps) => 
       {/* Left – Page title */}
       <div className="flex flex-col justify-center min-w-0">
         <h1 className="text-[16px] font-semibold text-[#0A0A0A] dark:text-[#fafafa] leading-tight truncate">
-          {title}
+          {displayTitle}
         </h1>
-        {subtitle && (
-          <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3] leading-tight truncate">{subtitle}</p>
+        {displaySubtitle && (
+          <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3] leading-tight truncate">{displaySubtitle}</p>
         )}
       </div>
 

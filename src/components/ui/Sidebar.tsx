@@ -15,7 +15,6 @@ import {
   StethoscopeIcon,
   UserGroupIcon,
 } from "@hugeicons/core-free-icons";
-import { useSelector } from "react-redux";
 
 const MENU_GROUPS = [
   {
