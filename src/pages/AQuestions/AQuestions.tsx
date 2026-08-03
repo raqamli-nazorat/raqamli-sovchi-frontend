@@ -91,7 +91,7 @@ const AQuestions = () => {
     }
     setError(null);
     try {
-      const secList = await REF_APIS.sections.list();
+      const secList = (await REF_APIS.sections.list()) as Section[];
       setSections(secList);
 
       if (secList.length > 0 && isInitial) {
@@ -119,10 +119,10 @@ const AQuestions = () => {
       let hasMore = true;
 
       while (hasMore && page <= 50) {
-        const qList = await REF_APIS.questions.list({
+        const qList = (await REF_APIS.questions.list({
           section: activeSectionId,
           page: page,
-        });
+        })) as Question[];
 
         if (Array.isArray(qList)) {
           allQuestions = [...allQuestions, ...qList];
