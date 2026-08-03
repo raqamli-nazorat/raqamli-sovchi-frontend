@@ -8,7 +8,9 @@ import {
   AiModeratorPage,
   AppealsPage,
   AppealDetailPage,
-  UsersDetailPage
+  UsersDetailPage,
+  ReferenceListPage,
+  ReferenceDetailPage
 } from "./pages";
 import Layout from "./components/Layout/Layout";
 
@@ -81,20 +83,13 @@ const router = createBrowserRouter([
       // { path: "/ai-chat",         element: <AIChatPage /> },
       // { path: "/ai-chat/:id",     element: <AIChatPage /> },
       { path: "/users", element: <UsersPage /> },
+      { path: "/users/details/:id", element: <UsersDetailPage /> },
       { path: "/profile-moderation", element: <ProfileModerationPage /> },
       { path: "/ai-chat", element: <AiModeratorPage /> },
       { path: "/appeals", element: <AppealsPage /> },
       { path: "/appeals/:id", element: <AppealDetailPage /> },
-      {
-        path: "/users",
-        element: <UsersPage />,
-      },
-      {
-        path: "/users/details/:id",
-        element: <UsersDetailPage />,
-      },
-      { path: "/appeals", element: <UsersPage /> },
-      { path: "/references/faq", element: <UsersPage /> },
+      { path: "/references/:entity", element: <ReferenceListPage /> },
+      { path: "/references/:entity/:id", element: <ReferenceDetailPage /> },
       { path: "/psychologists", element: <UsersPage /> },
       { path: "/settings", element: <UsersPage /> },
     ],
