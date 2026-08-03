@@ -36,7 +36,7 @@ const CANDIDATE_TYPE_LABELS: Record<string, string> = {
 };
 
 const AVATAR_PALETTES = [
-  "bg-[#FFF1E8] dark:bg-[#3a2417] text-[#FF5900]",
+  "bg-[#FFF1E8] dark:bg-[#3a2417] text-[#0474F3]",
   "bg-[#EAF3FF] dark:bg-[#16283d] text-[#0084FF]",
   "bg-[#E9F9EF] dark:bg-[#15301f] text-[#16A34A]",
   "bg-[#F1EDFF] dark:bg-[#251d3d] text-[#7C5CFC]",
@@ -91,14 +91,12 @@ const Toggle = ({ checked, onChange }: { checked: boolean; onChange: () => void 
     role="switch"
     aria-checked={checked}
     onClick={onChange}
-    className={`relative w-10 h-6 rounded-full transition-colors shrink-0 cursor-pointer ${
-      checked ? "bg-[#FF5900]" : "bg-[#D4D4D4] dark:bg-[#404040]"
-    }`}
+    className={`relative w-10 h-6 rounded-full transition-colors shrink-0 cursor-pointer ${checked ? "bg-[#0474F3]" : "bg-[#D4D4D4] dark:bg-[#404040]"
+      }`}
   >
     <span
-      className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-all ${
-        checked ? "left-[18px]" : "left-0.5"
-      }`}
+      className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-all ${checked ? "left-[18px]" : "left-0.5"
+        }`}
     />
   </button>
 );
@@ -127,9 +125,9 @@ const ProfileModerationPage = () => {
       const apiError = err.response?.data?.error;
       setError(
         apiError?.errorMsg ||
-          err.response?.data?.detail ||
-          err.message ||
-          "Profillarni yuklashda xatolik yuz berdi."
+        err.response?.data?.detail ||
+        err.message ||
+        "Profillarni yuklashda xatolik yuz berdi."
       );
     } finally {
       setLoading(false);
@@ -174,7 +172,7 @@ const ProfileModerationPage = () => {
 
         {loading && (
           <div className="bg-white dark:bg-[#141414] border border-[#E5E5E5] dark:border-[#262626] rounded-2xl p-16 flex flex-col items-center gap-3">
-            <span className="w-6 h-6 border-2 border-[#FF5900] border-t-transparent rounded-full animate-spin" />
+            <span className="w-6 h-6 border-2 border-[#0474F3] border-t-transparent rounded-full animate-spin" />
             <p className="text-[13px] text-[#737373] dark:text-[#A3A3A3]">Profillar yuklanmoqda…</p>
           </div>
         )}
@@ -185,7 +183,7 @@ const ProfileModerationPage = () => {
             <p className="text-[13px] text-[#737373] dark:text-[#A3A3A3] mt-1">{error}</p>
             <button
               onClick={fetchProfiles}
-              className="mt-4 h-10 px-4 inline-flex items-center gap-2 bg-[#FF5900] hover:bg-[#E04F00] text-white text-[13px] font-semibold rounded-lg transition-colors cursor-pointer"
+              className="mt-4 h-10 px-4 inline-flex items-center gap-2 bg-[#0474F3] hover:bg-[#042480] text-white text-[13px] font-semibold rounded-lg transition-colors cursor-pointer"
             >
               <RefreshCw className="w-4 h-4" strokeWidth={2.2} /> Qayta urinish
             </button>
@@ -270,7 +268,7 @@ const ProfileModerationPage = () => {
                       <>
                         <button
                           onClick={() => decide(profile.id, "approved")}
-                          className="h-10 px-5 bg-[#FF5900] hover:bg-[#E04F00] active:scale-[0.99] text-white text-[13px] font-semibold rounded-lg transition-all cursor-pointer"
+                          className="h-10 px-5 bg-[#0474F3] hover:bg-[#042480] active:scale-[0.99] text-white text-[13px] font-semibold rounded-lg transition-all cursor-pointer"
                         >
                           Tasdiqlash
                         </button>
@@ -291,7 +289,7 @@ const ProfileModerationPage = () => {
 
                     {decision === "approved" && (
                       <>
-                        <button className="h-10 px-5 bg-[#FF5900] text-white text-[13px] font-semibold rounded-lg cursor-default">
+                        <button className="h-10 px-5 bg-[#0474F3] text-white text-[13px] font-semibold rounded-lg cursor-default">
                           Tasdiqlash
                         </button>
                         <span className="flex items-center gap-1.5 text-[13px] font-semibold text-[#15803D]">

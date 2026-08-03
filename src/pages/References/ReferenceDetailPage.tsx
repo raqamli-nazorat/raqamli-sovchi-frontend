@@ -31,9 +31,13 @@ const ReferenceDetailPage = () => {
     setError(null);
     try {
       const relatedSlugs = config.relatedSlugs || [];
+
       const [detail, ...related] = await Promise.all([
         api.get(id),
-        ...relatedSlugs.map((slug) => REF_APIS[slug].list()),
+        ...relatedSlugs.map((slug) => {
+          const params = config.getRelatedParams ? config.getRelatedParams(slug, id) : undefined;
+          return REF_APIS[slug].list(params);
+        }),
       ]);
       const nextCtx: RefCtx = {};
       relatedSlugs.forEach((slug, idx) => {
@@ -47,7 +51,7 @@ const ReferenceDetailPage = () => {
     } finally {
       setLoading(false);
     }
-  }, [entity, id]);
+  }, [entity, config, api, id]);
 
   useEffect(() => {
     load();
@@ -61,7 +65,7 @@ const ReferenceDetailPage = () => {
         config.headerSubtitleOf ? config.headerSubtitleOf(item, ctx) : config.titleOf(item)
       );
     }
-  }, [entity, item, ctx, setHeaderTitle, setHeaderSubtitle]);
+  }, [entity, config, item, ctx, setHeaderTitle, setHeaderSubtitle]);
 
   if (!config || !api) {
     return (
@@ -81,7 +85,22 @@ const ReferenceDetailPage = () => {
     setSaveError(null);
     try {
       const payload = config.toPayload ? config.toPayload(values) : { ...values };
-      await api.update(item.id, payload);
+      
+      if (config.slug === "questions") {
+        const { options, ...questionPayload } = payload;
+        await api.update(item.id, questionPayload);
+        if (options) {
+          const optionsPayload = {
+            question_id: item.id,
+            options: options,
+          };
+          const { axiosAPI } = await import("../../lib/axiosAPI");
+          await axiosAPI.patch("accounts/options/bulk/", optionsPayload);
+        }
+      } else {
+        await api.update(item.id, payload);
+      }
+
       setShowEditModal(false);
       await load();
     } catch (err: any) {
@@ -109,7 +128,7 @@ const ReferenceDetailPage = () => {
   if (loading) {
     return (
       <div className="h-[calc(100vh-60px)] flex flex-col items-center justify-center gap-4">
-        <div className="w-8 h-8 border-4 border-[#FF5900] border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-4 border-[#0474F3] border-t-transparent rounded-full animate-spin" />
         <p className="text-sm text-gray-500 dark:text-zinc-400 font-medium">Ma'lumot yuklanmoqda...</p>
       </div>
     );
@@ -125,7 +144,7 @@ const ReferenceDetailPage = () => {
           </p>
           <button
             onClick={backToList}
-            className="mt-4 h-10 px-4 bg-[#FF5900] hover:bg-[#E04F00] text-white text-[13px] font-semibold rounded-lg transition-colors cursor-pointer"
+            className="mt-4 h-10 px-4 bg-[#0474F3] hover:bg-[#042480] text-white text-[13px] font-semibold rounded-lg transition-colors cursor-pointer"
           >
             {config.plural} ro'yxatiga qaytish
           </button>
@@ -138,7 +157,7 @@ const ReferenceDetailPage = () => {
   const childRows = config.childList ? config.childList.rows(item, ctx) : [];
 
   return (
-    <div className="p-6 space-y-4">
+    <div className="p-4 space-y-4">
       {/* ── Orqaga ── */}
       <button
         onClick={backToList}
@@ -150,7 +169,7 @@ const ReferenceDetailPage = () => {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
         {/* ── Chap: asosiy ma'lumot ── */}
         <div className="lg:col-span-8 space-y-4">
-          <div className="bg-white dark:bg-[#141414] rounded-2xl border border-[#e5e5e5] dark:border-[#262626] p-6">
+          <div className="bg-white dark:bg-[#141414] rounded-2xl border border-[#e5e5e5] dark:border-[#262626] p-5">
             <h2 className="text-[20px] font-bold text-[#0A0A0A] dark:text-[#fafafa] leading-snug">
               {config.titleOf(item)}
             </h2>
@@ -169,7 +188,7 @@ const ReferenceDetailPage = () => {
           </div>
 
           {config.childList && (
-            <div className="bg-white dark:bg-[#141414] rounded-2xl border border-[#e5e5e5] dark:border-[#262626] p-6">
+            <div className="bg-white dark:bg-[#141414] rounded-2xl border border-[#e5e5e5] dark:border-[#262626] p-5">
               <h3 className="text-[15px] font-bold text-[#0A0A0A] dark:text-[#fafafa]">
                 {config.childList.title(item, ctx)}
               </h3>
@@ -178,7 +197,7 @@ const ReferenceDetailPage = () => {
                   Hozircha yozuvlar yo'q.
                 </p>
               ) : (
-                <div className="mt-2 divide-y divide-[#F5F5F5] dark:divide-[#262626]">
+                <div className="mt-2 divide-y divide-[#F5F5F5] dark:divide-[#262626] max-h-[390px] overflow-y-auto">
                   {childRows.map((row, idx) => (
                     <div key={idx} className="flex items-center justify-between gap-4 py-3">
                       <span className="text-[13.5px] font-medium text-[#0A0A0A] dark:text-[#fafafa] truncate">
@@ -204,7 +223,7 @@ const ReferenceDetailPage = () => {
                 setSaveError(null);
                 setShowEditModal(true);
               }}
-              className="w-full py-2.5 px-4 bg-[#FF5900] hover:bg-[#E04F00] active:bg-[#C24400] text-white font-semibold rounded-xl text-[13px] transition-all cursor-pointer"
+              className="w-full py-2.5 px-4 bg-[#0474F3] hover:bg-[#023399] active:bg-[#0474F3] text-white text-start font-semibold rounded-xl text-[13px] transition-all cursor-pointer"
             >
               Tahrirlash
             </button>
@@ -214,7 +233,7 @@ const ReferenceDetailPage = () => {
                 setShowDeleteModal(true);
               }}
               disabled={!!cantDelete}
-              className="w-full py-2.5 px-4 bg-white dark:bg-transparent border border-[#FECACA] dark:border-[#7F1D1D] text-[#D32F2F] hover:bg-[#FFF5F5] dark:hover:bg-red-950/20 disabled:opacity-50 disabled:cursor-not-allowed font-semibold rounded-xl text-[13px] transition-all cursor-pointer"
+              className="w-full py-2.5 px-4 bg-white dark:bg-transparent border border-[#FECACA] text-start dark:border-[#7F1D1D] text-[#D32F2F] hover:bg-[#FFF5F5] dark:hover:bg-red-950/20 disabled:opacity-50 disabled:cursor-not-allowed font-semibold rounded-xl text-[13px] transition-all cursor-pointer"
             >
               O'chirish
             </button>
@@ -294,7 +313,7 @@ const ReferenceDetailPage = () => {
               <button
                 onClick={handleDelete}
                 disabled={deleting}
-                className="px-5 py-2.5 bg-[#D63C00] hover:bg-[#C13600] active:bg-[#AD3000] disabled:opacity-70 text-white rounded-xl text-[13px] font-semibold transition-colors cursor-pointer flex items-center gap-2"
+                className="px-5 py-2.5 bg-[#DC2626] hover:bg-[#B91C1C] active:bg-[#7F1D1D] disabled:opacity-70 text-white rounded-xl text-[13px] font-semibold transition-colors cursor-pointer flex items-center gap-2"
               >
                 {deleting && (
                   <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />

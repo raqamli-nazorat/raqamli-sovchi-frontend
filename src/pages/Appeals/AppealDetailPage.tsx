@@ -96,7 +96,7 @@ const AppealDetailPage = () => {
           <p className="text-[14px] font-semibold text-[#0A0A0A] dark:text-white">Shikoyat topilmadi</p>
           <button
             onClick={() => navigate("/appeals")}
-            className="mt-4 h-10 px-4 bg-[#FF5900] hover:bg-[#E04F00] text-white text-[13px] font-semibold rounded-lg transition-colors cursor-pointer"
+            className="mt-4 h-10 px-4 bg-[#0474F3] hover:bg-[#042480] text-white text-[13px] font-semibold rounded-lg transition-colors cursor-pointer"
           >
             Shikoyatlar ro'yxatiga qaytish
           </button>
@@ -225,7 +225,7 @@ const AppealDetailPage = () => {
             <div className="space-y-3">
               <button
                 onClick={() => setDecision("blocked")}
-                className={`w-full h-11 px-4 flex items-center justify-center gap-2 border text-[13px] font-semibold rounded-lg transition-colors cursor-pointer ${
+                className={`w-full h-11 px-4 flex items-center justify-start gap-2 border text-[13px] font-semibold rounded-lg transition-colors cursor-pointer ${
                   decision === "blocked"
                     ? "border-[#FCA5A5] bg-[#FEF2F2] dark:bg-[#3a1414] text-[#B91C1C]"
                     : "border-[#E5E5E5] dark:border-[#262626] text-[#D32F2F] hover:border-[#FCA5A5]"
@@ -236,7 +236,7 @@ const AppealDetailPage = () => {
               </button>
               <button
                 onClick={() => setDecision("warned")}
-                className={`w-full h-11 px-4 flex items-center justify-center gap-2 border text-[13px] font-semibold rounded-lg transition-colors cursor-pointer ${
+                className={`w-full h-11 px-4 flex items-center justify-start gap-2 border text-[13px] font-semibold rounded-lg transition-colors cursor-pointer ${
                   decision === "warned"
                     ? "border-[#FDE68A] bg-[#FEFCE8] dark:bg-[#332b0d] text-[#A16207]"
                     : "border-[#E5E5E5] dark:border-[#262626] text-[#404040] dark:text-[#D4D4D4] hover:border-[#A3A3A3]"
@@ -247,7 +247,7 @@ const AppealDetailPage = () => {
               </button>
               <button
                 onClick={handleClose}
-                className="w-full h-11 px-4 bg-[#FF5900] hover:bg-[#E04F00] active:scale-[0.99] text-white text-[13px] font-semibold rounded-lg transition-all cursor-pointer"
+                className="w-full h-11 px-4 bg-[#0474F3] hover:bg-[#042480] text-start active:scale-[0.99] text-white text-[13px] font-semibold rounded-lg transition-all cursor-pointer"
               >
                 Shikoyatni yopish
               </button>

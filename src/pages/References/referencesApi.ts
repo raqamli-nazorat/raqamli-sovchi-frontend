@@ -4,23 +4,35 @@ export type RefItem = Record<string, any> & { id: string };
 
 export interface RefApi {
   isMock: boolean;
-  list: () => Promise<RefItem[]>;
+  list: (params?: Record<string, any>) => Promise<RefItem[]>;
   get: (id: string) => Promise<RefItem>;
   create: (data: Record<string, any>) => Promise<RefItem>;
   update: (id: string, data: Record<string, any>) => Promise<RefItem>;
   remove: (id: string) => Promise<void>;
 }
 
-// Backend javobi {success, data} yoki paginated {results} shaklida kelishi mumkin
 const unwrap = (res: any) => {
   const payload = res?.data?.data ?? res?.data;
-  return payload?.results ?? payload;
+  const results = payload?.results ?? payload;
+  if (Array.isArray(results)) {
+    const arr = [...results] as any;
+    if (payload && typeof payload === "object") {
+      if (typeof payload.count === "number") {
+        arr.count = payload.count;
+      }
+      if (payload.next !== undefined) {
+        arr.next = payload.next;
+      }
+    }
+    return arr;
+  }
+  return results;
 };
 
 const realApi = (base: string): RefApi => ({
   isMock: false,
-  list: async () => {
-    const items = unwrap(await axiosAPI.get(base));
+  list: async (params) => {
+    const items = unwrap(await axiosAPI.get(base, { params }));
     return Array.isArray(items) ? items : [];
   },
   get: async (id) => unwrap(await axiosAPI.get(`${base}${id}/`)),
@@ -51,7 +63,27 @@ const seed = (items: Record<string, any>[]): RefItem[] =>
 
 const mockApi = (store: RefItem[], onRemove?: (item: RefItem) => void): RefApi => ({
   isMock: true,
-  list: async () => store.map((i) => ({ ...i })),
+  list: async (params) => {
+    let items = store;
+    if (params) {
+      const { page, search, ...rest } = params;
+      items = items.filter((item) =>
+        Object.entries(rest).every(([key, val]) => String(item[key]) === String(val))
+      );
+      if (search) {
+        const q = String(search).toLowerCase();
+        items = items.filter((item) =>
+          String(item.name || item.text || item.id || "").toLowerCase().includes(q)
+        );
+      }
+      if (page) {
+        const pageSize = 10;
+        const start = (Number(page) - 1) * pageSize;
+        items = items.slice(start, start + pageSize);
+      }
+    }
+    return items.map((i) => ({ ...i }));
+  },
   get: async (id) => {
     const item = store.find((i) => i.id === id);
     if (!item) throw new Error("Yozuv topilmadi");
@@ -205,11 +237,11 @@ export const REF_APIS: Record<string, RefApi> = {
   roles: realApi("accounts/roles/"),
   regions: realApi("locations/region/"),
   districts: realApi("locations/district/"),
-  "education-levels": mockApi(educationLevels),
-  nationalities: mockApi(nationalities),
-  professions: mockApi(professions),
-  sections: sectionsApi,
-  questions: mockApi(questions),
+  "education-levels": realApi("references/education-levels/"),
+  nationalities: realApi("references/nationalities/"),
+  professions: realApi("references/professions/"),
+  sections: realApi("accounts/section-types/"),
+  questions: realApi("accounts/questions/"),
 };
 
 export const refApiError = (err: any, fallback: string): string => {

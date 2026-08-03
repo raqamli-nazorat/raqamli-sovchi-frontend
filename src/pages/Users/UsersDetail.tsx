@@ -412,7 +412,7 @@ const UsersDetail = () => {
     if (loading) {
         return (
             <div className="h-[calc(100vh-60px)] flex flex-col items-center justify-center gap-4 bg-[#F5F5F5] dark:bg-[#0a0a0a]">
-                <div className="w-10 h-10 border-4 border-[#FF5900] border-t-transparent rounded-full animate-spin" />
+                <div className="w-10 h-10 border-4 border-[#0474F3] border-t-transparent rounded-full animate-spin" />
                 <p className="text-sm text-gray-500 dark:text-zinc-400 font-medium">Ma'lumotlar yuklanmoqda...</p>
             </div>
         );
@@ -536,7 +536,7 @@ const UsersDetail = () => {
                             {/* Blur Photos state switcher */}
                             <button
                                 onClick={() => setBlurPhotos(!blurPhotos)}
-                                className="text-[11px] font-semibold text-gray-400 dark:text-zinc-500 hover:text-[#FF5900] dark:hover:text-[#FF5900] transition-colors cursor-pointer flex items-center gap-1.5"
+                                className="text-[11px] font-semibold text-gray-400 dark:text-zinc-500 hover:text-[#0474F3] dark:hover:text-[#0474F3] transition-colors cursor-pointer flex items-center gap-1.5"
                             >
                                 {blurPhotos ? (
                                     <>
@@ -594,7 +594,7 @@ const UsersDetail = () => {
                             {Array.from({ length: Math.max(0, 5 - photos.length) }).map((_, index) => (
                                 <div
                                     key={`empty-${index}`}
-                                    className="aspect-[3/4] sm:aspect-square border-2 border-dashed border-gray-200 dark:border-zinc-800 hover:border-[#FF5900]/40 rounded-xl flex flex-col items-center justify-center text-gray-400 dark:text-zinc-600 hover:text-gray-600 dark:hover:text-zinc-400 hover:bg-gray-50/30 dark:hover:bg-zinc-900/30 cursor-pointer transition-all"
+                                    className="aspect-[3/4] sm:aspect-square border-2 border-dashed border-gray-200 dark:border-zinc-800 hover:border-[#0474F3]/40 rounded-xl flex flex-col items-center justify-center text-gray-400 dark:text-zinc-600 hover:text-gray-600 dark:hover:text-zinc-400 hover:bg-gray-50/30 dark:hover:bg-zinc-900/30 cursor-pointer transition-all"
                                 >
                                     <Plus className="w-5 h-5 mb-1 opacity-70" />
                                     <span className="text-[10px] font-bold uppercase tracking-wider">bo'sh</span>
@@ -623,7 +623,7 @@ const UsersDetail = () => {
                                         {/* Progress line */}
                                         <div className="w-full bg-[#F5F5F5] dark:bg-zinc-800 h-2 rounded-full overflow-hidden">
                                             <div
-                                                className="bg-[#FF5900] h-full rounded-full transition-all duration-500"
+                                                className="bg-[#0474F3] h-full rounded-full transition-all duration-500"
                                                 style={{ width: `${percentage}%` }}
                                             />
                                         </div>
@@ -654,7 +654,7 @@ const UsersDetail = () => {
                             disabled={loadingAction || isVerified}
                             className={`w-full py-2.5 px-4 font-semibold rounded-xl text-[13px] transition-all flex items-center justify-start gap-2 cursor-pointer ${isVerified
                                 ? 'bg-gray-100 dark:bg-zinc-800 text-gray-400 dark:text-zinc-500 cursor-not-allowed border border-transparent'
-                                : 'bg-[#FF5900] hover:bg-[#E04F00] active:bg-[#C24400] text-white shadow-sm hover:shadow'
+                                : 'bg-[#0474F3] hover:bg-[#042480] active:bg-[#042480] text-white shadow-sm hover:shadow'
                                 }`}
                         >
                             {loadingAction ? (
@@ -773,7 +773,7 @@ const UsersDetail = () => {
                             className="flex items-center gap-3 mt-5 select-none cursor-pointer group"
                         >
                             <div className={`w-5 h-5 rounded flex items-center justify-center transition-all border ${sendNotification
-                                ? 'bg-[#FF5900] border-[#FF5900] text-white shadow-sm shadow-[#FF5900]/20'
+                                ? 'bg-[#0474F3] border-[#0474F3] text-white shadow-sm shadow-[#0474F3]/20'
                                 : 'border-[#e5e5e5] dark:border-[#262626] bg-white dark:bg-zinc-900 group-hover:border-gray-300 dark:group-hover:border-zinc-700'
                                 }`}>
                                 {sendNotification && <Check className="w-3.5 h-3.5 stroke-[3]" />}
@@ -809,7 +809,7 @@ const UsersDetail = () => {
                     <div className="w-full max-w-[480px] bg-white dark:bg-[#141414] rounded-[24px] border border-[#e5e5e5] dark:border-[#262626] p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
 
                         {/* Orange avatar/icon wrapper */}
-                        <div className="w-12 h-12 rounded-full bg-orange-50 dark:bg-orange-950/20 text-[#FF5900] flex items-center justify-center">
+                        <div className="w-12 h-12 rounded-full bg-orange-50 dark:bg-orange-950/20 text-[#0474F3] flex items-center justify-center">
                             <FileText className="w-6 h-6" />
                         </div>
 
@@ -848,7 +848,7 @@ const UsersDetail = () => {
                                 value={customDocName}
                                 onChange={(e) => setCustomDocName(e.target.value)}
                                 placeholder="Hujjat nomini yozing (masalan: Oylik maosh ma'lumotnomasi)..."
-                                className="w-full mt-3 px-3.5 py-2.5 bg-white dark:bg-zinc-900 border border-[#e5e5e5] dark:border-[#262626] rounded-xl text-[13px] text-[#0a0a0a] dark:text-[#fafafa] outline-none focus:border-[#FF5900] transition-colors"
+                                className="w-full mt-3 px-3.5 py-2.5 bg-white dark:bg-zinc-900 border border-[#e5e5e5] dark:border-[#262626] rounded-xl text-[13px] text-[#0a0a0a] dark:text-[#fafafa] outline-none focus:border-[#0474F3] transition-colors"
                             />
                         )}
 
@@ -862,7 +862,7 @@ const UsersDetail = () => {
                             </button>
                             <button
                                 onClick={handleDocSubmit}
-                                className="px-5 py-2.5 bg-[#FF5900] hover:bg-[#E04F00] active:bg-[#C24400] text-white rounded-xl text-[13px] font-semibold transition-colors cursor-pointer shadow-sm shadow-[#FF5900]/10"
+                                className="px-5 py-2.5 bg-[#0474F3] hover:bg-[#042480] active:bg-[#042480] text-white rounded-xl text-[13px] font-semibold transition-colors cursor-pointer shadow-sm shadow-[#0474F3]/10"
                             >
                                 So'rov yuborish
                             </button>

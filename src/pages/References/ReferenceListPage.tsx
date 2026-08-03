@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { ChevronRight, Plus, RefreshCw, Search } from "lucide-react";
 import { useHeader } from "../../components/Layout/Layout";
@@ -19,53 +19,85 @@ const ReferenceListPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  const [activeSearch, setActiveSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
+  const isLoadingRef = useRef(false);
+
+  const loadPage = useCallback(async (pageNum: number, searchQuery: string) => {
     if (!config || !api) return;
-    setLoading(true);
+    if (isLoadingRef.current) return;
+    isLoadingRef.current = true;
+
+    if (pageNum === 1) {
+      setLoading(true);
+    } else {
+      setLoadingMore(true);
+    }
     setError(null);
     try {
-      const relatedSlugs = config.relatedSlugs || [];
-      const [list, ...related] = await Promise.all([
-        api.list(),
-        ...relatedSlugs.map((slug) => REF_APIS[slug].list()),
-      ]);
-      const nextCtx: RefCtx = {};
-      relatedSlugs.forEach((slug, idx) => {
-        nextCtx[slug] = related[idx];
-      });
-      setItems(list);
-      setCtx(nextCtx);
+      const params: Record<string, any> = { page: pageNum };
+      if (searchQuery.trim()) {
+        params.search = searchQuery.trim();
+      }
+
+      const list = await api.list(params) as any;
+
+      if (pageNum === 1) {
+        setItems(list);
+      } else {
+        const hasDuplicates = list.some((item: any) =>
+          items.some((existing) => existing.id === item.id)
+        );
+        if (hasDuplicates || list.length === 0) {
+          setHasMore(false);
+          return;
+        }
+        setItems((prev) => [...prev, ...list]);
+      }
+
+      if (list && typeof list === "object" && "next" in list) {
+        setHasMore(!!list.next);
+      } else if (list && typeof list === "object" && "count" in list) {
+        const currentTotal = (pageNum === 1 ? 0 : items.length) + list.length;
+        setHasMore(currentTotal < list.count);
+      } else {
+        if (list.length < 10 || list.length % 10 !== 0) {
+          setHasMore(false);
+        } else {
+          setHasMore(true);
+        }
+      }
+      setPage(pageNum);
     } catch (err: any) {
       console.error(`References (${config.slug}) fetch error:`, err);
       setError(refApiError(err, "Ma'lumotlarni yuklashda xatolik yuz berdi."));
     } finally {
       setLoading(false);
+      setLoadingMore(false);
+      isLoadingRef.current = false;
     }
-  }, [entity]);
+  }, [config, api]);
 
   useEffect(() => {
     setSearch("");
+    setActiveSearch("");
+    setHasMore(true);
     setShowModal(false);
-    load();
-  }, [load]);
+    isLoadingRef.current = false;
+    loadPage(1, "");
+  }, [loadPage]);
 
   useEffect(() => {
     if (!config) return;
     setHeaderTitle("Ma'lumotnomalar");
     setHeaderSubtitle(`${config.plural} · ${config.subtitle}`);
-  }, [entity, setHeaderTitle, setHeaderSubtitle]);
-
-  const filtered = useMemo(() => {
-    if (!config || !search.trim()) return items;
-    const q = search.trim().toLowerCase();
-    return items.filter((item) =>
-      config.searchKeys.some((key) => String(item[key] ?? "").toLowerCase().includes(q))
-    );
-  }, [items, search, config]);
+  }, [entity, config, setHeaderTitle, setHeaderSubtitle]);
 
   if (!config || !api) {
     return (
@@ -82,9 +114,25 @@ const ReferenceListPage = () => {
     setSaveError(null);
     try {
       const payload = config.toPayload ? config.toPayload(values) : { ...values };
-      await api.create(payload);
+      
+      if (config.slug === "questions") {
+        const { options, ...questionPayload } = payload;
+        const createdQuestion = await api.create(questionPayload);
+        if (createdQuestion && createdQuestion.id && options) {
+          const optionsPayload = {
+            question_id: createdQuestion.id,
+            options: options,
+          };
+          const { axiosAPI } = await import("../../lib/axiosAPI");
+          await axiosAPI.post("accounts/options/bulk/", optionsPayload);
+        }
+      } else {
+        await api.create(payload);
+      }
+
       setShowModal(false);
-      await load();
+      setHasMore(true);
+      await loadPage(1, activeSearch);
     } catch (err: any) {
       console.error(`References (${config.slug}) create error:`, err);
       setSaveError(refApiError(err, "Saqlashda xatolik yuz berdi."));
@@ -93,11 +141,34 @@ const ReferenceListPage = () => {
     }
   };
 
+  const handleSearchSubmit = () => {
+    setActiveSearch(search);
+    setHasMore(true);
+    loadPage(1, search);
+  };
+
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const container = e.currentTarget;
+    if (loading || loadingMore || !hasMore) return;
+    const threshold = 50;
+    const isNearBottom =
+      container.scrollHeight - container.scrollTop - container.clientHeight < threshold;
+    if (isNearBottom) {
+      loadPage(page + 1, activeSearch);
+    }
+  };
+
   return (
-    <div className="p-6 space-y-4">
+    <div className="p-4 space-y-4">
       {/* ── Qidiruv + Qo'shish ── */}
       <div className="flex items-center justify-between gap-4 flex-wrap">
-        <div className="relative w-full max-w-[400px]">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleSearchSubmit();
+          }}
+          className="relative w-full max-w-[400px]"
+        >
           <Search
             size={14}
             className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#737373] pointer-events-none stroke-[2.5]"
@@ -105,26 +176,37 @@ const ReferenceListPage = () => {
           <input
             type="text"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => {
+              const val = e.target.value;
+              setSearch(val);
+              if (!val.trim()) {
+                setActiveSearch("");
+                setHasMore(true);
+                loadPage(1, "");
+              }
+            }}
             placeholder={config.searchPlaceholder}
-            className="w-full h-10 pl-9 pr-4 bg-white dark:bg-[#141414] rounded-lg border border-[#e5e5e5] dark:border-[#262626] text-[13px] text-[#0a0a0a] dark:text-[#fafafa] placeholder:text-[#a3a3a3] dark:placeholder:text-[#525252] focus:outline-none focus:border-[#FF5900] transition-colors"
+            className="w-full h-10 pl-9 pr-4 bg-white dark:bg-[#141414] rounded-lg border border-[#e5e5e5] dark:border-[#262626] text-[13px] text-[#0a0a0a] dark:text-[#fafafa] placeholder:text-[#a3a3a3] dark:placeholder:text-[#525252] focus:outline-none focus:border-[#0474F3] transition-colors"
           />
-        </div>
+        </form>
         <button
           onClick={() => {
             setSaveError(null);
             setShowModal(true);
           }}
-          className="h-10 px-4 flex items-center gap-1.5 bg-[#FF5900] hover:bg-[#E04F00] active:scale-[0.99] text-white text-[13px] font-semibold rounded-lg transition-all cursor-pointer"
+          className="h-10 px-4 flex items-center gap-1.5 bg-[#0474F3] hover:bg-[#042480] active:scale-[0.99] text-white text-[13px] font-semibold rounded-lg transition-all cursor-pointer"
         >
           <Plus className="w-4 h-4 stroke-[2.5]" /> Qo'shish
         </button>
       </div>
 
       {/* ── Jadval ── */}
-      <div className="bg-white dark:bg-[#141414] rounded-xl border border-[#E5E5E5] dark:border-[#262626] overflow-hidden">
+      <div
+        onScroll={handleScroll}
+        className="bg-white dark:bg-[#141414] rounded-xl border border-[#E5E5E5] dark:border-[#262626] overflow-y-auto max-h-[calc(100vh-150px)]"
+      >
         {/* Sarlavhalar */}
-        <div className="hidden md:flex items-center bg-[#FAFAFA] dark:bg-[#202020] px-6 py-3.5 border-b border-[#F5F5F5] dark:border-[#262626] text-[11px] font-semibold text-[#737373] dark:text-[#A3A3A3] tracking-wider gap-4">
+        <div className="hidden md:flex items-center bg-[#FAFAFA] dark:bg-[#202020] px-6 py-3.5 border-b border-[#F5F5F5] dark:border-[#262626] text-[11px] font-semibold text-[#737373] dark:text-[#A3A3A3] tracking-wider gap-4 sticky top-0 z-10">
           <div className="w-[32px]">#</div>
           {config.columns.map((col) => (
             <div key={col.header} className={col.width ? `${col.width} shrink-0` : "flex-1 min-w-0"}>
@@ -154,26 +236,26 @@ const ReferenceListPage = () => {
             <p className="text-[14px] font-semibold text-[#D32F2F]">Xatolik</p>
             <p className="text-[13px] text-[#737373] dark:text-[#A3A3A3] mt-1">{error}</p>
             <button
-              onClick={load}
-              className="mt-4 h-10 px-4 inline-flex items-center gap-2 bg-[#FF5900] hover:bg-[#E04F00] text-white text-[13px] font-semibold rounded-lg transition-colors cursor-pointer"
+              onClick={() => loadPage(1, activeSearch)}
+              className="mt-4 h-10 px-4 inline-flex items-center gap-2 bg-[#0474F3] hover:bg-[#042480] text-white text-[13px] font-semibold rounded-lg transition-colors cursor-pointer"
             >
               <RefreshCw className="w-4 h-4" strokeWidth={2.2} /> Qayta urinish
             </button>
           </div>
-        ) : filtered.length === 0 ? (
+        ) : items.length === 0 ? (
           <div className="p-10 text-center">
             <p className="text-[14px] font-semibold text-[#0A0A0A] dark:text-white">
-              {search ? "Natija topilmadi" : `${config.plural} ro'yxati bo'sh`}
+              {activeSearch ? "Natija topilmadi" : `${config.plural} ro'yxati bo'sh`}
             </p>
             <p className="text-[13px] text-[#737373] dark:text-[#A3A3A3] mt-1">
-              {search
-                ? `«${search}» bo'yicha hech narsa topilmadi.`
+              {activeSearch
+                ? `«${activeSearch}» bo'yicha hech narsa topilmadi.`
                 : "Yangi yozuv qo'shish uchun «Qo'shish» tugmasini bosing."}
             </p>
           </div>
         ) : (
           <div className="divide-y divide-[#F5F5F5] dark:divide-[#262626]">
-            {filtered.map((item, idx) => (
+            {items.map((item, idx) => (
               <div
                 key={item.id}
                 onClick={() => navigate(`/references/${config.slug}/${item.id}`)}
@@ -185,11 +267,8 @@ const ReferenceListPage = () => {
                 {config.columns.map((col, colIdx) => (
                   <div
                     key={col.header}
-                    className={`${col.width ? `md:${col.width} md:shrink-0` : "flex-1 min-w-0"} text-[13.5px] ${
-                      colIdx === 0
-                        ? "font-semibold text-[#0A0A0A] dark:text-white truncate"
-                        : "text-[#404040] dark:text-[#D4D4D4]"
-                    }`}
+                    className={`${col.width ? `${col.width} shrink-0` : "flex-1 min-w-0"} text-[13.5px] font-semibold text-[#0A0A0A] dark:text-white truncate`}
+                    title={col.value(item, ctx)}
                   >
                     {colIdx > 0 && (
                       <span className="md:hidden text-gray-400 mr-2 text-[11px] uppercase">
@@ -204,6 +283,12 @@ const ReferenceListPage = () => {
                 </div>
               </div>
             ))}
+            {loadingMore && (
+              <div className="flex items-center justify-center py-4.5 gap-2 border-t border-[#F5F5F5] dark:border-[#262626]">
+                <div className="w-4 h-4 border-2 border-[#0474F3] border-t-transparent rounded-full animate-spin" />
+                <span className="text-[12px] text-gray-500 dark:text-zinc-400 font-medium">Yuklanmoqda...</span>
+              </div>
+            )}
           </div>
         )}
       </div>

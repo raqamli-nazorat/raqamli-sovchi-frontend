@@ -159,7 +159,7 @@ const LoginPage = () => {
           if (user) {
             localStorage.setItem("user", JSON.stringify(user));
           }
-          
+
           // Clear login attempt state on success
           localStorage.removeItem("login_attempts");
           localStorage.removeItem("login_blocked_until");
@@ -237,7 +237,7 @@ const LoginPage = () => {
           <div className="space-y-5">
             {/* Item 1 */}
             <div className="flex items-start gap-4">
-              <div className="w-10 h-10 rounded-xl bg-white dark:bg-[] text-[#FF5900] flex items-center justify-center shrink-0">
+              <div className="w-10 h-10 rounded-xl bg-white dark:bg-[] text-[#0474F3] flex items-center justify-center shrink-0">
                 <HugeIcon icon={Shield01Icon} className="w-5 h-5" strokeWidth={2.3} />
               </div>
               <div>
@@ -248,7 +248,7 @@ const LoginPage = () => {
 
             {/* Item 2 */}
             <div className="flex items-start gap-4">
-              <div className="w-10 h-10 rounded-xl bg-white dark:bg-[] text-[#FF5900] flex items-center justify-center shrink-0">
+              <div className="w-10 h-10 rounded-xl bg-white dark:bg-[] text-[#0474F3] flex items-center justify-center shrink-0">
                 <HugeIcon icon={UserCheck01Icon} className="w-5 h-5" strokeWidth={2.3} />
               </div>
               <div>
@@ -259,7 +259,7 @@ const LoginPage = () => {
 
             {/* Item 3 */}
             <div className="flex items-start gap-4">
-              <div className="w-10 h-10 rounded-xl bg-white dark:bg-[] text-[#FF5900] flex items-center justify-center shrink-0 ">
+              <div className="w-10 h-10 rounded-xl bg-white dark:bg-[] text-[#0474F3] flex items-center justify-center shrink-0 ">
                 <HugeIcon icon={AiBrain01FreeIcons} className="w-5 h-5" strokeWidth={2.3} />
               </div>
               <div>
@@ -296,7 +296,7 @@ const LoginPage = () => {
                   value={username}
                   onChange={handlePhoneChange}
                   placeholder="+998"
-                  className="w-full h-11 pl-10 pr-4 bg-transparent border border-[#E5E5E5] dark:border-[#262626] rounded-lg focus:outline-none focus:border-[#FF5900] text-[13px] text-[#0A0A0A] dark:text-white placeholder-[#A3A3A3] dark:placeholder-[#525252] transition-colors"
+                  className="w-full h-11 pl-10 pr-4 bg-transparent border border-[#E5E5E5] dark:border-[#262626] rounded-lg focus:outline-none focus:border-[#0474F3] text-[13px] text-[#0A0A0A] dark:text-white placeholder-[#A3A3A3] dark:placeholder-[#525252] transition-colors"
                   required
                 />
               </div>
@@ -313,7 +313,7 @@ const LoginPage = () => {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••"
                   className={`w-full h-11 pl-10 pr-10 bg-transparent border ${error ? "border-[#EF4444]" : "border-[#E5E5E5] dark:border-[#262626]"
-                    } rounded-lg focus:outline-none focus:border-[#FF5900] text-[13px] text-[#0A0A0A] dark:text-white placeholder-[#A3A3A3] dark:placeholder-[#525252] transition-colors`}
+                    } rounded-lg focus:outline-none focus:border-[#0474F3] text-[13px] text-[#0A0A0A] dark:text-white placeholder-[#A3A3A3] dark:placeholder-[#525252] transition-colors`}
                   required
                 />
                 <button
@@ -364,7 +364,7 @@ const LoginPage = () => {
           <button
             type="submit"
             disabled={loading || blockedTimeLeft > 0}
-            className="w-full h-11 bg-[#FF5900] hover:bg-[#E04F00] active:scale-[0.99] disabled:bg-[#FFA270] text-white font-semibold text-[13px] rounded-lg transition-all flex items-center justify-center cursor-pointer disabled:cursor-default shadow-sm"
+            className="w-full h-11 bg-[#0474F3] hover:bg-[#042480] active:scale-[0.99] disabled:bg-[#03347d] text-white font-semibold text-[13px] rounded-lg transition-all flex items-center justify-center cursor-pointer disabled:cursor-default shadow-sm"
           >
             {loading ? (
               <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>

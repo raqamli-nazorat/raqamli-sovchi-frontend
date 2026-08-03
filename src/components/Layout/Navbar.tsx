@@ -12,6 +12,7 @@ const PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {
   "/settings": { title: "Sozlamalar", subtitle: "Platforma qoidalari va rollar" },
   "/psychologists": { title: "Psixologlar", subtitle: "Mutaxassislar va suhbatlar" },
   "/profile-moderation": { title: "Profil moderatsiyasi", subtitle: "Selfi tasdiqlash va rasm tekshiruvi" },
+  "/questions": { title: "Anketa savollari", subtitle: "Platforma savollari" },
 };
 
 const getPageInfo = (pathname: string, appeal?: Appeal) => {
@@ -42,7 +43,7 @@ const Navbar = ({ collapsed: _collapsed, onToggle: _onToggle, title: customTitle
   const appealId = location.pathname.startsWith("/appeals/")
     ? location.pathname.split("/")[2]
     : undefined;
-  
+
   const appeal: Appeal | undefined = useSelector((state: any) =>
     appealId ? state.appeals?.items?.find((a: Appeal) => a.id === appealId) : undefined
   );
@@ -50,7 +51,7 @@ const Navbar = ({ collapsed: _collapsed, onToggle: _onToggle, title: customTitle
 
   // URL query params orqali search boshqaruvi (main varianti)
   const { title: routeTitle, subtitle: routeSubtitle } = getPageInfo(location.pathname, appeal);
-  
+
   const displayTitle = customTitle ?? routeTitle;
   const displaySubtitle = customSubtitle ?? routeSubtitle;
 
@@ -95,7 +96,7 @@ const Navbar = ({ collapsed: _collapsed, onToggle: _onToggle, title: customTitle
               });
             }}
             placeholder="Foydalanuvchi, ID, telefon..."
-            className="h-9 pl-9 pr-4 rounded-lg border border-[#e5e5e5] dark:border-[#262626] text-[13px] text-[#737373] dark:text-[#a3a3a3] placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#FF5900]/20 focus:border-[#FF5900] transition-all w-[220px]"
+            className="h-9 pl-9 pr-4 rounded-lg border border-[#e5e5e5] dark:border-[#262626] text-[13px] text-[#737373] dark:text-[#a3a3a3] placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#0474F3]/20 focus:border-[#0474F3] transition-all w-[220px]"
           />
         </div>
 
@@ -107,7 +108,7 @@ const Navbar = ({ collapsed: _collapsed, onToggle: _onToggle, title: customTitle
             strokeWidth={2.5}
           />
           <span className="text-[12px] font-medium">Bildirishnomalar</span>
-          <span className="flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-[#FF5900] text-white text-[10px] font-bold">
+          <span className="flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-[#0474F3] text-white text-[10px] font-bold">
             {notificationCount}
           </span>
         </button>
