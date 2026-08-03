@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ChevronLeft, Trash2 } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
 import { useHeader } from "../../components/Layout/Layout";
 import { REF_APIS, refApiError, type RefItem } from "./referencesApi";
 import { REF_CONFIGS, fmtDateTime, shortId, type RefCtx } from "./referencesConfig";
@@ -273,8 +273,8 @@ const ReferenceDetailPage = () => {
       {showDeleteModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
           <div className="w-full max-w-[440px] bg-white dark:bg-[#141414] rounded-[24px] border border-[#e5e5e5] dark:border-[#262626] p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
-            <div className="w-12 h-12 rounded-full bg-[#FFF0F0] dark:bg-red-950/30 text-[#991B1B] dark:text-red-400 flex items-center justify-center">
-              <Trash2 className="w-6 h-6" />
+            <div className="w-12 h-12 rounded-full bg-[#FDECEC] dark:bg-red-950/30 flex items-center justify-center">
+              <span className="text-[22px] font-bold text-[#E02D2D] dark:text-red-400 leading-none">!</span>
             </div>
             <h3 className="text-[16px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-4">
               O'chirishni tasdiqlaysizmi?
@@ -287,14 +287,14 @@ const ReferenceDetailPage = () => {
             <div className="flex items-center justify-end gap-3 mt-6">
               <button
                 onClick={() => setShowDeleteModal(false)}
-                className="px-5 py-2.5 bg-white dark:bg-zinc-900 border border-[#e5e5e5] dark:border-[#262626] rounded-xl text-[13px] font-semibold text-[#404040] dark:text-[#e5e5e5] hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                className="px-5 py-2.5 bg-[#F5F5F5] dark:bg-[#262626] rounded-xl text-[13px] font-semibold text-[#404040] dark:text-[#e5e5e5] hover:bg-[#EBEBEB] dark:hover:bg-[#303030] transition-colors cursor-pointer"
               >
                 Bekor qilish
               </button>
               <button
                 onClick={handleDelete}
                 disabled={deleting}
-                className="px-5 py-2.5 bg-[#7F1D1D] hover:bg-[#991B1B] disabled:opacity-70 text-white rounded-xl text-[13px] font-semibold transition-colors cursor-pointer flex items-center gap-2"
+                className="px-5 py-2.5 bg-[#D63C00] hover:bg-[#C13600] active:bg-[#AD3000] disabled:opacity-70 text-white rounded-xl text-[13px] font-semibold transition-colors cursor-pointer flex items-center gap-2"
               >
                 {deleting && (
                   <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
