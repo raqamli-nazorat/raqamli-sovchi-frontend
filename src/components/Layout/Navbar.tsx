@@ -10,7 +10,6 @@ const PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {
   "/appeals": { title: "Shikoyatlar", subtitle: "Foydalanuvchi murojaatlari" },
   "/ai-chat": { title: "AI moderator", subtitle: "Suhbatlardagi qoidabuzarlik signallari" },
   "/settings": { title: "Sozlamalar", subtitle: "Platforma qoidalari va rollar" },
-  "/references/faq": { title: "Anketa savollari", subtitle: "Savollar va javoblar" },
   "/psychologists": { title: "Psixologlar", subtitle: "Mutaxassislar va suhbatlar" },
   "/profile-moderation": { title: "Profil moderatsiyasi", subtitle: "Selfi tasdiqlash va rasm tekshiruvi" },
 };
@@ -21,6 +20,10 @@ const getPageInfo = (pathname: string, appeal?: Appeal) => {
       title: "Shikoyat tafsiloti",
       subtitle: appeal ? `${appeal.id} · ${appeal.tag} · ${appeal.time}` : "Shikoyat bo'yicha batafsil",
     };
+  }
+  // Ma'lumotnomalar sahifalari aniq sarlavhani useHeader orqali o'zi o'rnatadi
+  if (pathname.startsWith("/references")) {
+    return { title: "Ma'lumotnomalar", subtitle: "" };
   }
   return PAGE_TITLES[pathname] ?? { title: "Sahifa", subtitle: "" };
 };

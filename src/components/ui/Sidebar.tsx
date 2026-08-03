@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -10,13 +11,41 @@ import {
   MoreHorizontalFreeIcons,
   ArrowLeft01FreeIcons,
   ArrowRight01FreeIcons,
+  ArrowDown01Icon,
+  ArrowUp01Icon,
+  BinocularsIcon,
   UserCheck01Icon,
   Flag02Icon,
   StethoscopeIcon,
   UserGroupIcon,
 } from "@hugeicons/core-free-icons";
 
-const MENU_GROUPS = [
+interface MenuChild {
+  label: string;
+  path: string;
+}
+
+interface MenuItem {
+  label: string;
+  path: string;
+  icon: typeof DashboardSquare01FreeIcons;
+  badge: number | null;
+  end: boolean;
+  children?: MenuChild[];
+}
+
+const REFERENCE_CHILDREN: MenuChild[] = [
+  { label: "Rollar", path: "/references/roles" },
+  { label: "Viloyatlar", path: "/references/regions" },
+  { label: "Tumanlar", path: "/references/districts" },
+  { label: "Ta'lim darajasi", path: "/references/education-levels" },
+  { label: "Millatlar", path: "/references/nationalities" },
+  { label: "Kasblar", path: "/references/professions" },
+  { label: "Savol bo'limlari", path: "/references/sections" },
+  { label: "Savollar", path: "/references/questions" },
+];
+
+const MENU_GROUPS: { label: string; items: MenuItem[] }[] = [
   {
     label: "UMUMIY",
     items: [
@@ -35,8 +64,16 @@ const MENU_GROUPS = [
   {
     label: "KONTENT",
     items: [
-      { label: "Anketa savollari", path: "/references/faq", icon: Task01FreeIcons, badge: 30, end: false },
+      { label: "Anketa savollari", path: "/references/questions", icon: Task01FreeIcons, badge: null, end: false },
       { label: "Psixologlar", path: "/psychologists", icon: StethoscopeIcon, badge: 3, end: false },
+      {
+        label: "Ma'lumotnomalar",
+        path: "/references",
+        icon: BinocularsIcon,
+        badge: null,
+        end: false,
+        children: REFERENCE_CHILDREN,
+      },
       { label: "Sozlamalar", path: "/settings", icon: Settings01FreeIcons, badge: null, end: false },
     ],
   },
@@ -53,6 +90,7 @@ interface SidebarProps {
 
 const Sidebar = ({ collapsed, onToggle }: SidebarProps) => {
   const location = useLocation();
+  const [refsOpen, setRefsOpen] = useState(location.pathname.startsWith("/references"));
   const appealsNewCount = useSelector(
     (state: any) => state.appeals.items.filter((a: Appeal) => a.status === "new").length
   );
@@ -152,6 +190,76 @@ const Sidebar = ({ collapsed, onToggle }: SidebarProps) => {
                 const exactRoot = item.path === "/" && location.pathname === "/";
                 const active = isActive || exactRoot;
                 const badge = badgeFor(item);
+
+                // ── Bolali element (Ma'lumotnomalar) — ochiladigan submenu ──
+                if (item.children) {
+                  const rowClass = `
+                    w-full flex items-center gap-3 rounded-lg px-3 py-2.5
+                    text-[13px] font-semibold group relative cursor-pointer
+                    ${active
+                      ? "bg-[#F5F5F5] dark:bg-[#171717] text-[#0A0A0A] dark:text-[#0A0A0A]"
+                      : "text-[#525252] dark:text-[#525252] hover:bg-[#F5F5F5] dark:hover:bg-[#171717] hover:text-[#0A0A0A] dark:hover:text-[#0A0A0A]"
+                    }
+                    ${collapsed ? "justify-center" : ""}
+                  `;
+
+                  return (
+                    <li key={item.path}>
+                      {collapsed ? (
+                        <NavLink to={item.children[0].path} title={item.label} className={rowClass}>
+                          <HugeiconsIcon
+                            icon={item.icon}
+                            size={18}
+                            strokeWidth={2.3}
+                            className={`shrink-0 ${active ? "active-icon" : "text-[#525252] dark:text-[#525252]"}`}
+                          />
+                        </NavLink>
+                      ) : (
+                        <>
+                          <button onClick={() => setRefsOpen((v) => !v)} className={rowClass}>
+                            <HugeiconsIcon
+                              icon={item.icon}
+                              size={18}
+                              strokeWidth={2.3}
+                              className={`shrink-0 ${active ? "active-icon" : "text-[#525252] dark:text-[#525252]"}`}
+                            />
+                            <span className="flex-1 truncate text-left">{item.label}</span>
+                            <HugeiconsIcon
+                              icon={refsOpen ? ArrowUp01Icon : ArrowDown01Icon}
+                              size={14}
+                              strokeWidth={2}
+                              className="shrink-0 text-[#A3A3A3]"
+                            />
+                          </button>
+                          {refsOpen && (
+                            <ul className="mt-0.5 space-y-0.5">
+                              {item.children.map((child) => {
+                                const childActive = location.pathname.startsWith(child.path);
+                                return (
+                                  <li key={child.path}>
+                                    <NavLink
+                                      to={child.path}
+                                      className={`
+                                        flex items-center rounded-lg pl-11 pr-3 py-2
+                                        text-[13px] font-medium
+                                        ${childActive
+                                          ? "bg-[#F5F5F5] dark:bg-[#171717] text-[#0A0A0A] dark:text-white font-semibold"
+                                          : "text-[#737373] dark:text-[#737373] hover:bg-[#F5F5F5] dark:hover:bg-[#171717] hover:text-[#0A0A0A] dark:hover:text-white"
+                                        }
+                                      `}
+                                    >
+                                      <span className="truncate">{child.label}</span>
+                                    </NavLink>
+                                  </li>
+                                );
+                              })}
+                            </ul>
+                          )}
+                        </>
+                      )}
+                    </li>
+                  );
+                }
 
                 return (
                   <li key={item.path}>
