@@ -13,11 +13,11 @@ import {
   ArrowRight01FreeIcons,
   ArrowDown01Icon,
   ArrowUp01Icon,
-  BinocularsIcon,
   UserCheck01Icon,
   Flag02Icon,
   StethoscopeIcon,
   UserGroupIcon,
+  LibraryIcon,
 } from "@hugeicons/core-free-icons";
 
 interface MenuChild {
@@ -64,12 +64,12 @@ const MENU_GROUPS: { label: string; items: MenuItem[] }[] = [
   {
     label: "KONTENT",
     items: [
-      { label: "Anketa savollari", path: "/references/questions", icon: Task01FreeIcons, badge: null, end: false },
+      { label: "Anketa savollari", path: "/questions", icon: Task01FreeIcons, badge: null, end: false },
       { label: "Psixologlar", path: "/psychologists", icon: StethoscopeIcon, badge: 3, end: false },
       {
         label: "Ma'lumotnomalar",
         path: "/references",
-        icon: BinocularsIcon,
+        icon: LibraryIcon,
         badge: null,
         end: false,
         children: REFERENCE_CHILDREN,
@@ -115,47 +115,47 @@ const Sidebar = ({ collapsed, onToggle }: SidebarProps) => {
       <style>{`
         /* Default color for all paths of active icons is blue */
         .active-icon path {
-          stroke: #0084FF !important;
+          stroke: #FF5900 !important;
         }
 
         /* 1. Dashboard active icon styling: all paths orange */
         .active-- path {
-          stroke: #FF5900 !important;
+          stroke: #0084FF !important;
         }
 
         /* 2. UserGroupIcon (/users): all paths orange */
         .active--users path {
-          stroke: #FF5900 !important;
+          stroke: #0084FF !important;
         }
 
         /* 3. UserCheck01Icon (/profile-moderation): checkmark (path 3) is orange */
         .active--profile-moderation path:nth-child(1) {
-          stroke: #FF5900 !important;
+          stroke: #0084FF !important;
         }
 
         /* 4. AiBrain01Icon (/ai-chat): left half (path 1) is orange */
         .active--ai-chat path:nth-child(1) {
-          stroke: #FF5900 !important;
+          stroke: #0084FF !important;
         }
 
         /* 5. Flag02Icon (/appeals): flagpole (path 1) is orange */
         .active--appeals path:nth-child(1) {
-          stroke: #FF5900 !important;
+          stroke: #0084FF !important;
         }
 
         /* 6. Task01Icon (/references-faq): clamp (path 1) is orange */
-        .active--references-faq path:nth-child(1) {
-          stroke: #FF5900 !important;
+        .active--questions path:nth-child(1) {
+          stroke: #0084FF !important;
         }
 
         /* 7. StethoscopeIcon (/psychologists): chestpiece & dot (paths 4 and 5) are orange */
         .active--psychologists path:nth-child(1) {
-          stroke: #FF5900 !important;
+          stroke: #0084FF !important;
         }
 
         /* 8. Settings01Icon (/settings): inner circle (path 2) is orange */
         .active--settings path:nth-child(1) {
-          stroke: #FF5900 !important;
+          stroke: #0084FF !important;
         }
       `}</style>
 
@@ -287,7 +287,7 @@ const Sidebar = ({ collapsed, onToggle }: SidebarProps) => {
                         <>
                           <span className="flex-1 truncate">{item.label}</span>
                           {badge !== null && (
-                            <span className={`rounded-xl py-0.5 px-1.5 text-[11px] bg-[#f5f5f5] font-semibold ${active ? "bg-[#FF5900]! dark:bg-[#FF5900]! text-white" : "text-[#737373] dark:text-[#a3a3a3]"} tabular-nums`}>
+                            <span className={`rounded-xl py-0.5 px-1.5 text-[11px] bg-[#f5f5f5] font-semibold ${active ? "bg-[#0474F3]! dark:bg-[#0474F3]! text-white" : "text-[#737373] dark:text-[#a3a3a3]"} tabular-nums`}>
                               {formatBadge(badge as number)}
                             </span>
                           )}
@@ -295,7 +295,7 @@ const Sidebar = ({ collapsed, onToggle }: SidebarProps) => {
                       )}
                       {/* Collapsed badge dot */}
                       {collapsed && badge !== null && (
-                        <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-[#FF5900] rounded-full text-[9px] text-white flex items-center justify-center font-bold">
+                        <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-[#0474F3] rounded-full text-[9px] text-white flex items-center justify-center font-bold">
                           {(badge as number) > 9 ? "9+" : badge}
                         </span>
                       )}

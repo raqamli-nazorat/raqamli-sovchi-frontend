@@ -52,11 +52,10 @@ const AppealsPage = () => {
             <button
               key={t.key}
               onClick={() => setTab(t.key)}
-              className={`h-10 px-4 rounded-lg text-[13px] font-semibold transition-colors cursor-pointer ${
-                tab === t.key
+              className={`h-10 px-4 rounded-lg text-[13px] font-semibold transition-colors cursor-pointer ${tab === t.key
                   ? "bg-[#171717] text-white dark:bg-white dark:text-[#0A0A0A]"
                   : "bg-white dark:bg-[#141414] border border-[#E5E5E5] dark:border-[#262626] text-[#404040] dark:text-[#D4D4D4] hover:border-[#A3A3A3]"
-              }`}
+                }`}
             >
               {t.label} · {t.count}
             </button>
@@ -87,11 +86,10 @@ const AppealsPage = () => {
           return (
             <div
               key={appeal.id}
-              className={`bg-white dark:bg-[#141414] border rounded-2xl px-6 py-5 flex items-center justify-between gap-6 transition-colors ${
-                reviewed
+              className={`bg-white dark:bg-[#141414] border rounded-2xl px-6 py-5 flex items-center justify-between gap-6 transition-colors ${reviewed
                   ? "border-[#86EFAC] dark:border-[#166534]"
                   : "border-[#E5E5E5] dark:border-[#262626]"
-              }`}
+                }`}
             >
               <div className="min-w-0 space-y-1.5">
                 <div className="flex items-center gap-2.5 flex-wrap">
@@ -123,7 +121,7 @@ const AppealsPage = () => {
                 ) : (
                   <button
                     onClick={() => navigate(`/appeals/${appeal.id}`)}
-                    className="h-10 px-4 bg-[#FF5900] hover:bg-[#E04F00] active:scale-[0.99] text-white text-[13px] font-semibold rounded-lg transition-all cursor-pointer"
+                    className="h-10 px-4 bg-[#0474F3] hover:bg-[#042480] active:scale-[0.99] text-white text-[13px] font-semibold rounded-lg transition-all cursor-pointer"
                   >
                     Ko'rib chiqish
                   </button>

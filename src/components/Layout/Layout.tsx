@@ -17,10 +17,12 @@ const Layout = () => {
   const [customTitle, setCustomTitle] = useState<string>();
   const [customSubtitle, setCustomSubtitle] = useState<string>();
 
-  useEffect(() => {
+  const [prevPathname, setPrevPathname] = useState(location.pathname);
+  if (location.pathname !== prevPathname) {
+    setPrevPathname(location.pathname);
     setCustomTitle(undefined);
     setCustomSubtitle(undefined);
-  }, [location.pathname]);
+  }
 
   const accessToken = localStorage.getItem("access");
   // const user = localStorage.getItem("user");
@@ -118,7 +120,7 @@ const Layout = () => {
           title={customTitle}
           subtitle={customSubtitle}
         />
-        <main className="flex-1 overflow-y-auto bg-[#F5F5F5] dark:bg-[#0a0a0a]">
+        <main className="flex-1 overflow-y-auto bg-[#fafafa] dark:bg-[#0a0a0a]">
           <Outlet context={{ setHeaderTitle: setCustomTitle, setHeaderSubtitle: setCustomSubtitle }} />
         </main>
       </div>

@@ -31,6 +31,7 @@ export interface RefEntityConfig {
   searchPlaceholder: string;
   searchKeys: string[];
   relatedSlugs?: string[];
+  getRelatedParams?: (slug: string, id: string) => Record<string, any> | undefined;
   columns: RefColumn[];
   formTitle: string;
   formHint?: string;
@@ -57,9 +58,9 @@ export const shortId = (id?: string) =>
 const boolLabel = (v: any) => (v ? "Ha" : "Yo'q");
 
 const GENDER_LABELS: Record<string, string> = {
-  ALL: "Hammaga",
-  GROOM: "Kuyov",
-  BRIDE: "Kelin",
+  all: "Hammaga",
+  groom: "Kuyov",
+  bride: "Kelin",
 };
 
 const HA_YOQ_OPTIONS = [
@@ -67,13 +68,35 @@ const HA_YOQ_OPTIONS = [
   { value: "true", label: "Ha" },
 ];
 
-const districtsOfRegion = (regionId: string, ctx: RefCtx) =>
-  (ctx.districts || []).filter((d) => d.region_info?.id === regionId);
+const districtsOfRegion = (regionId: string, ctx: RefCtx) => {
+  const items = ctx.districts || [];
+  const filtered = items.filter((d) => {
+    if (d.region_info) {
+      return String(d.region_info.id) === String(regionId);
+    }
+    if (d.region) {
+      if (typeof d.region === "object" && d.region !== null) {
+        return String(d.region.id) === String(regionId);
+      }
+      return String(d.region) === String(regionId);
+    }
+    return false;
+  });
+  return filtered.length > 0 ? filtered : items;
+};
 
-const questionsOfSection = (sectionId: string, ctx: RefCtx) =>
-  (ctx.questions || [])
-    .filter((q) => q.section === sectionId)
-    .sort((a, b) => (a.order || 0) - (b.order || 0));
+const questionsOfSection = (sectionId: string, ctx: RefCtx) => {
+  const items = ctx.questions || [];
+  const sorted = [...items].sort((a, b) => (a.order || 0) - (b.order || 0));
+  const filtered = sorted.filter((q) => {
+    if (!q.section) return false;
+    if (typeof q.section === "object") {
+      return String(q.section.id) === String(sectionId) || String(q.section.code) === String(sectionId);
+    }
+    return String(q.section) === String(sectionId);
+  });
+  return filtered.length > 0 ? filtered : sorted;
+};
 
 const sectionName = (sectionId: string, ctx: RefCtx) =>
   (ctx.sections || []).find((s) => s.id === sectionId)?.name || "—";
@@ -93,14 +116,15 @@ const simpleNameConfig = (
   searchPlaceholder: base.searchPlaceholder,
   searchKeys: ["name"],
   columns: [
-    { header: "Nomi", value: (i) => i.name || "—" },
-    { header: "Yaratilgan", width: "w-[160px]", value: (i) => fmtDate(i.created_at) },
+    { header: "Nomi", value: (i) => i.name || "" },
+    { header: "Yaratilgan", value: (i) => fmtDate(i.created_at) },
+    { header: "Yangilangan", value: (i) => fmtDate(i.updated_at) },
   ],
   formTitle: base.formTitle,
   formHint: "Nom takrorlanmasligi kerak.",
   fields: [{ name: "name", label: "Nomi", type: "text", required: true }],
-  titleOf: (i) => i.name || "—",
-  detailFields: [{ label: "Nomi", value: (i) => i.name || "—" }],
+  titleOf: (i) => i.name || "",
+  detailFields: [{ label: "Nomi", value: (i) => i.name || "" }],
   deleteNote: () => base.deleteNoteText,
 });
 
@@ -114,9 +138,10 @@ export const REF_CONFIGS: Record<string, RefEntityConfig> = {
     searchPlaceholder: "Rol nomi bo'yicha qidirish...",
     searchKeys: ["name"],
     columns: [
-      { header: "Nomi", value: (i) => i.name || "—" },
-      { header: "Asosiy rol", width: "w-[180px]", value: (i) => boolLabel(i.is_default) },
-      { header: "Yaratilgan", width: "w-[160px]", value: (i) => fmtDate(i.created_at) },
+      { header: "Nomi", value: (i) => i.name || "" },
+      { header: "Asosiy rol", value: (i) => boolLabel(i.is_default) },
+      { header: "Yaratilgan", value: (i) => fmtDate(i.created_at) },
+      { header: "Yangilangan", value: (i) => fmtDate(i.updated_at) },
     ],
     formTitle: "Yangi rol",
     fields: [
@@ -125,9 +150,9 @@ export const REF_CONFIGS: Record<string, RefEntityConfig> = {
     ],
     toPayload: (v) => ({ name: v.name.trim(), is_default: v.is_default === "true" }),
     toFormValues: (i) => ({ name: i.name || "", is_default: String(!!i.is_default) }),
-    titleOf: (i) => i.name || "—",
+    titleOf: (i) => i.name || "",
     detailFields: [
-      { label: "Nomi", value: (i) => i.name || "—" },
+      { label: "Nomi", value: (i) => i.name || "" },
       { label: "Asosiy rol", value: (i) => boolLabel(i.is_default) },
     ],
     deleteNote: () => "Rol o'chirilsa, unga biriktirilgan foydalanuvchilar rolsiz qoladi.",
@@ -144,15 +169,16 @@ export const REF_CONFIGS: Record<string, RefEntityConfig> = {
     searchPlaceholder: "Viloyat nomi yoki kodi...",
     searchKeys: ["name", "code"],
     relatedSlugs: ["districts"],
+    getRelatedParams: (slug, id) => (slug === "districts" ? { region: id } : undefined),
     columns: [
-      { header: "Nomi", value: (i) => i.name || "—" },
-      { header: "Kodi", width: "w-[140px]", value: (i) => (i.code != null ? String(i.code) : "—") },
+      { header: "Nomi", value: (i) => i.name || "" },
+      { header: "Kodi", value: (i) => (i.code != null ? String(i.code) : "") },
       {
         header: "Tumanlar",
-        width: "w-[140px]",
-        value: (i, ctx) => String(districtsOfRegion(i.id, ctx).length),
+        value: (i) => i.count || "",
       },
-      { header: "Yaratilgan", width: "w-[160px]", value: (i) => fmtDate(i.created_at) },
+      { header: "Yaratilgan", value: (i) => fmtDate(i.created_at) },
+      { header: "Yangilangan", value: (i) => fmtDate(i.updated_at) },
     ],
     formTitle: "Yangi viloyat",
     formHint: "Kodi ixtiyoriy — keyin ham qo'shsa bo'ladi.",
@@ -162,18 +188,18 @@ export const REF_CONFIGS: Record<string, RefEntityConfig> = {
     ],
     toPayload: (v) => ({ name: v.name.trim(), code: v.code === "" ? null : Number(v.code) }),
     toFormValues: (i) => ({ name: i.name || "", code: i.code != null ? String(i.code) : "" }),
-    titleOf: (i) => i.name || "—",
+    titleOf: (i) => i.name || "",
     detailFields: [
-      { label: "Nomi", value: (i) => i.name || "—" },
-      { label: "Kodi", value: (i) => (i.code != null ? String(i.code) : "—") },
-      { label: "Tumanlar", value: (i, ctx) => `${districtsOfRegion(i.id, ctx).length} ta` },
+      { label: "Nomi", value: (i) => i.name || "" },
+      { label: "Kodi", value: (i) => (i.code != null ? String(i.code) : "") },
+      { label: "Tumanlar", value: (i) => i.count || "" },
     ],
     childList: {
-      title: (i, ctx) => `Tumanlar · ${districtsOfRegion(i.id, ctx).length} ta`,
+      title: (i) => `Tumanlar · ${i.count} ta`,
       rows: (i, ctx) =>
         districtsOfRegion(i.id, ctx).map((d) => ({
           left: d.name,
-          right: d.code != null ? String(d.code) : "—",
+          right: d.code != null ? String(d.code) : "",
         })),
     },
     deleteNote: (i, ctx) =>
@@ -188,12 +214,12 @@ export const REF_CONFIGS: Record<string, RefEntityConfig> = {
     cardTitle: "Tuman kartasi",
     searchPlaceholder: "Tuman nomi yoki kodi...",
     searchKeys: ["name", "code"],
-    relatedSlugs: ["regions"],
     columns: [
-      { header: "Nomi", value: (i) => i.name || "—" },
-      { header: "Kodi", width: "w-[140px]", value: (i) => (i.code != null ? String(i.code) : "—") },
-      { header: "Viloyat", width: "w-[200px]", value: (i) => i.region_info?.name || "—" },
-      { header: "Yaratilgan", width: "w-[160px]", value: (i) => fmtDate(i.created_at) },
+      { header: "Nomi", value: (i) => i.name || "" },
+      { header: "Kodi", value: (i) => (i.code != null ? String(i.code) : "") },
+      { header: "Viloyat", value: (i) => i.region_info?.name || "" },
+      { header: "Yaratilgan", value: (i) => fmtDate(i.created_at) },
+      { header: "Yangilangan", value: (i) => fmtDate(i.updated_at) },
     ],
     formTitle: "Yangi tuman",
     fields: [
@@ -211,11 +237,11 @@ export const REF_CONFIGS: Record<string, RefEntityConfig> = {
       code: i.code != null ? String(i.code) : "",
       region: i.region_info?.id || "",
     }),
-    titleOf: (i) => i.name || "—",
+    titleOf: (i) => i.name || "",
     detailFields: [
-      { label: "Nomi", value: (i) => i.name || "—" },
-      { label: "Kodi", value: (i) => (i.code != null ? String(i.code) : "—") },
-      { label: "Viloyat", value: (i) => i.region_info?.name || "—" },
+      { label: "Nomi", value: (i) => i.name || "" },
+      { label: "Kodi", value: (i) => (i.code != null ? String(i.code) : "") },
+      { label: "Viloyat", value: (i) => i.region_info?.name || "" },
     ],
     deleteNote: () => "Tuman o'chirilsa, unga bog'langan profillar hududsiz qoladi.",
   },
@@ -259,22 +285,23 @@ export const REF_CONFIGS: Record<string, RefEntityConfig> = {
     searchPlaceholder: "Bo'lim nomi...",
     searchKeys: ["name"],
     relatedSlugs: ["questions"],
+    getRelatedParams: (slug, id) => (slug === "questions" ? { section: id } : undefined),
     columns: [
-      { header: "Nomi", value: (i) => i.name || "—" },
+      { header: "Nomi", value: (i) => i.name || "" },
       {
         header: "Savollar",
-        width: "w-[140px]",
-        value: (i, ctx) => String(questionsOfSection(i.id, ctx).length),
+        value: (i) => i.count,
       },
-      { header: "Yaratilgan", width: "w-[160px]", value: (i) => fmtDate(i.created_at) },
+      { header: "Yaratilgan", value: (i) => fmtDate(i.created_at) },
+      { header: "Yangilangan", value: (i) => fmtDate(i.updated_at) },
     ],
     formTitle: "Yangi savol bo'limi",
     formHint: "Bo'lim yaratilgach, unga savollar qo'shasiz.",
     fields: [{ name: "name", label: "Nomi", type: "text", required: true }],
-    titleOf: (i) => i.name || "—",
+    titleOf: (i) => i.name || "",
     detailFields: [
-      { label: "Nomi", value: (i) => i.name || "—" },
-      { label: "Savollar", value: (i, ctx) => `${questionsOfSection(i.id, ctx).length} ta` },
+      { label: "Nomi", value: (i) => i.name || "" },
+      { label: "Savollar", value: (i) => `${i.count} ta` },
       {
         label: "Tuzoq savollar",
         value: (i, ctx) =>
@@ -301,17 +328,14 @@ export const REF_CONFIGS: Record<string, RefEntityConfig> = {
     cardTitle: "Savol kartasi",
     searchPlaceholder: "Savol matni bo'yicha...",
     searchKeys: ["text"],
-    relatedSlugs: ["sections"],
     columns: [
-      { header: "Savol matni", value: (i) => i.text || "—" },
-      { header: "Bo'lim", width: "w-[200px]", value: (i, ctx) => sectionName(i.section, ctx) },
-      {
-        header: "Kimga",
-        width: "w-[120px]",
-        value: (i) => GENDER_LABELS[i.target_gender] || i.target_gender || "—",
-      },
-      { header: "Tuzoq", width: "w-[100px]", value: (i) => boolLabel(i.is_trap_question) },
-      { header: "Tartib", width: "w-[100px]", value: (i) => String(i.order ?? "—") },
+      { header: "Savol matni", width: "w-[300px]", value: (i) => i.text || "" },
+      { header: "Bo'lim", width: "w-[200px]", value: (i) => i.section_info?.name || "" },
+      { header: "Kimga", value: (i) => GENDER_LABELS[i.target_gender] || i.target_gender || "" },
+      { header: "Tuzoq", value: (i) => boolLabel(i.is_trap_question) },
+      { header: "Tartib", value: (i) => String(i.order || "") },
+      { header: "Yaratilgan", value: (i) => fmtDate(i.created_at) },
+      { header: "Yangilangan", value: (i) => fmtDate(i.updated_at) },
     ],
     formTitle: "Yangi savol",
     fields: [
@@ -322,9 +346,9 @@ export const REF_CONFIGS: Record<string, RefEntityConfig> = {
         label: "Kimga",
         type: "select",
         staticOptions: [
-          { value: "ALL", label: "Hammaga" },
-          { value: "GROOM", label: "Kuyov" },
-          { value: "BRIDE", label: "Kelin" },
+          { value: "all", label: "Hammaga" },
+          { value: "groom", label: "Kuyov" },
+          { value: "bride", label: "Kelin" },
         ],
       },
       { name: "is_trap_question", label: "Tuzoq savol", type: "select", staticOptions: HA_YOQ_OPTIONS },
@@ -337,7 +361,7 @@ export const REF_CONFIGS: Record<string, RefEntityConfig> = {
     toPayload: (v) => ({
       section: v.section,
       text: v.text.trim(),
-      target_gender: v.target_gender || "ALL",
+      target_gender: v.target_gender || "all",
       is_trap_question: v.is_trap_question === "true",
       order: Number(v.order),
       options: [
@@ -348,12 +372,13 @@ export const REF_CONFIGS: Record<string, RefEntityConfig> = {
       ],
     }),
     toFormValues: (i) => {
+      const opts = i.options_info || i.options || [];
       const opt = (letter: string) =>
-        (i.options || []).find((o: any) => o.option_letter === letter)?.text || "";
+        opts.find((o: any) => o.option_letter === letter)?.text || "";
       return {
-        section: i.section || "",
+        section: i.section_info?.id || i.section || "",
         text: i.text || "",
-        target_gender: i.target_gender || "ALL",
+        target_gender: i.target_gender || "all",
         is_trap_question: String(!!i.is_trap_question),
         order: i.order != null ? String(i.order) : "",
         option_a: opt("A"),
@@ -363,22 +388,22 @@ export const REF_CONFIGS: Record<string, RefEntityConfig> = {
       };
     },
     titleOf: (i) => i.text || "—",
-    headerSubtitleOf: (i, ctx) => `${i.order}-savol · ${sectionName(i.section, ctx)}`,
+    headerSubtitleOf: (i) => `${i.order}-savol · ${i.section_info?.name || ""}`,
     detailFields: [
-      { label: "Bo'lim", value: (i, ctx) => sectionName(i.section, ctx) },
-      { label: "Kimga", value: (i) => GENDER_LABELS[i.target_gender] || i.target_gender || "—" },
+      { label: "Bo'lim", value: (i) => i.section_info?.name || "" },
+      { label: "Kimga", value: (i) => GENDER_LABELS[i.target_gender] || i.target_gender || "" },
       { label: "Tuzoq savol", value: (i) => boolLabel(i.is_trap_question) },
       { label: "Tartib", value: (i) => String(i.order ?? "—") },
     ],
     childList: {
-      title: (i) => `Javob variantlari · ${(i.options || []).length} ta`,
+      title: (i) => `Javob variantlari · ${(i.options_info || []).length} ta`,
       rows: (i) =>
-        (i.options || []).map((o: any) => ({
+        (i.options_info || []).map((o: any) => ({
           left: `${o.option_letter} · ${o.text}`,
-          right: `vazn ${o.weight}`,
+          right: `ball ${o.weight}`,
         })),
     },
     deleteNote: (i) =>
-      `Savolni o'chirish uning ${(i.options || []).length} ta variantini va berilgan javoblarni ham o'chiradi.`,
+      `Savolni o'chirish uning ${(i.options_info || []).length} ta variantini va berilgan javoblarni ham o'chiradi.`,
   },
 };

@@ -21,7 +21,7 @@ interface UserResult {
 const FILTERS = ["Hammasi", "Kuyov", "Kelin", "Vakil"];
 
 const UsersPage = () => {
-    const navigate = useNavigate();
+  const navigate = useNavigate();
 
   const [users, setUsers] = useState<UserResult[]>([]);
   const [loading, setLoading] = useState(false);
@@ -265,8 +265,8 @@ const UsersPage = () => {
                 key={filter}
                 onClick={() => setActiveFilter(filter)}
                 className={`px-3 h-8 rounded-lg font-semibold text-[12px] transition-all cursor-pointer border ${isActive
-                    ? "bg-[#0A0A0A] text-white border-[#0A0A0A] dark:bg-white dark:text-black dark:border-white"
-                    : "bg-white text-[#525252] border-[#E5E5E5] hover:bg-gray-50 dark:bg-[#141414] dark:text-[#A3A3A3] dark:border-[#262626] dark:hover:bg-[#1c1c1c]"
+                  ? "bg-[#0A0A0A] text-white border-[#0A0A0A] dark:bg-white dark:text-black dark:border-white"
+                  : "bg-white text-[#525252] border-[#E5E5E5] hover:bg-gray-50 dark:bg-[#141414] dark:text-[#A3A3A3] dark:border-[#262626] dark:hover:bg-[#1c1c1c]"
                   }`}
               >
                 {filter}
@@ -380,7 +380,7 @@ const UsersPage = () => {
                     <span className="md:hidden text-gray-400 mr-2 text-[11px] uppercase w-16">Anketa:</span>
                     <div className="w-24 bg-[#E5E5E5] dark:bg-zinc-800 h-1.5 rounded-full overflow-hidden shrink-0">
                       <div
-                        className="bg-[#FF5900] h-full transition-all duration-500"
+                        className="bg-[#0474F3] h-full transition-all duration-500"
                         style={{ width: `${user.completion_percentage || 0}%` }}
                       />
                     </div>
@@ -413,7 +413,7 @@ const UsersPage = () => {
         {hasMore && !loading && (
           <div ref={observerTarget} className="h-10 w-full flex items-center justify-center py-6">
             {loadingMore && (
-              <div className="w-5 h-5 border-2 border-[#FF5900] border-t-transparent rounded-full animate-spin" />
+              <div className="w-5 h-5 border-2 border-[#0474F3] border-t-transparent rounded-full animate-spin" />
             )}
           </div>
         )}

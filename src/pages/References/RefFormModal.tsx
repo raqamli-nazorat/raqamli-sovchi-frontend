@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { X } from "lucide-react";
 import Select from "../../components/ui/Select";
+import { REF_APIS } from "./referencesApi";
 import type { RefCtx, RefField } from "./referencesConfig";
 
 interface RefFormModalProps {
@@ -27,7 +28,6 @@ const RefFormModal = ({
   title,
   hint,
   fields,
-  ctx,
   initialValues,
   saving,
   error,
@@ -39,6 +39,27 @@ const RefFormModal = ({
     ...initialValues,
   }));
   const [validationError, setValidationError] = useState<string | null>(null);
+  const [loadedOptions, setLoadedOptions] = useState<Record<string, { value: string; label: string }[]>>({});
+
+  useEffect(() => {
+    const loadOptions = async () => {
+      const selectFields = fields.filter((f) => f.type === "select" && f.optionsFromSlug);
+      for (const f of selectFields) {
+        const slug = f.optionsFromSlug!;
+        try {
+          const list = await REF_APIS[slug].list();
+          const opts = list.map((item) => ({
+            value: item.id,
+            label: item.name || item.text || item.id,
+          }));
+          setLoadedOptions((prev) => ({ ...prev, [slug]: opts }));
+        } catch (err) {
+          console.error(`Failed to load options for slug ${slug}:`, err);
+        }
+      }
+    };
+    loadOptions();
+  }, [fields]);
 
   const setValue = (name: string, value: string) =>
     setValues((prev) => ({ ...prev, [name]: value }));
@@ -46,10 +67,7 @@ const RefFormModal = ({
   const selectOptions = (field: RefField): { value: string; label: string }[] => {
     if (field.staticOptions) return field.staticOptions;
     if (field.optionsFromSlug) {
-      return (ctx[field.optionsFromSlug] || []).map((item) => ({
-        value: item.id,
-        label: item.name || item.text || item.id,
-      }));
+      return loadedOptions[field.optionsFromSlug] || [];
     }
     return [];
   };
@@ -66,7 +84,7 @@ const RefFormModal = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-      <div className="w-full max-w-[480px] max-h-[90vh] overflow-y-auto bg-white dark:bg-[#141414] rounded-[24px] border border-[#e5e5e5] dark:border-[#262626] p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+      <div className="w-full max-w-[560px] bg-white dark:bg-[#141414] rounded-[24px] border border-[#e5e5e5] dark:border-[#262626] p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
         <div className="flex items-center justify-between">
           <h3 className="text-[16px] font-bold text-[#0A0A0A] dark:text-[#fafafa]">{title}</h3>
           <button
@@ -77,7 +95,7 @@ const RefFormModal = ({
           </button>
         </div>
 
-        <div className="mt-4 space-y-4">
+        <div className="mt-4 space-y-4 max-h-[70vh] overflow-y-auto">
           {fields.map((field) => (
             <div key={field.name}>
               <label className="text-[12px] font-semibold text-[#404040] dark:text-zinc-300 block mb-2">
@@ -95,7 +113,7 @@ const RefFormModal = ({
                   value={values[field.name] || ""}
                   onChange={(e) => setValue(field.name, e.target.value)}
                   placeholder={field.placeholder}
-                  className="w-full px-3.5 py-2.5 bg-white dark:bg-zinc-900 border border-[#e5e5e5] dark:border-[#262626] rounded-xl text-[13px] text-[#0a0a0a] dark:text-[#fafafa] outline-none focus:border-[#FF5900] transition-colors"
+                  className="w-full px-3.5 py-2.5 bg-white dark:bg-zinc-900 border border-[#e5e5e5] dark:border-[#262626] rounded-xl text-[13px] text-[#0a0a0a] dark:text-[#fafafa] outline-none focus:border-[#0474F3] transition-colors"
                 />
               )}
             </div>
@@ -120,7 +138,7 @@ const RefFormModal = ({
           <button
             onClick={handleSubmit}
             disabled={saving}
-            className="px-5 py-2.5 bg-[#FF5900] hover:bg-[#E04F00] active:bg-[#C24400] disabled:bg-[#FFA270] text-white rounded-xl text-[13px] font-semibold transition-colors cursor-pointer disabled:cursor-default shadow-sm flex items-center gap-2"
+            className="px-5 py-2.5 bg-[#0474F3] hover:bg-[#023399] active:bg-[#0474F3] disabled:bg-[#4599f8] text-white rounded-xl text-[13px] font-semibold transition-colors cursor-pointer disabled:cursor-default shadow-sm flex items-center gap-2"
           >
             {saving && (
               <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
