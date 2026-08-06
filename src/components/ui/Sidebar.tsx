@@ -173,7 +173,7 @@ const Sidebar = ({ collapsed, onToggle }: SidebarProps) => {
       </div>
 
       {/* ── Navigation ── */}
-      <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-5">
+      <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-5" onClick={() => { collapsed !== false && onToggle() }}>
         {MENU_GROUPS.map((group) => (
           <div key={group.label}>
             {!collapsed && (
@@ -206,7 +206,7 @@ const Sidebar = ({ collapsed, onToggle }: SidebarProps) => {
                   return (
                     <li key={item.path}>
                       {collapsed ? (
-                        <NavLink to={item.children[0].path} title={item.label} className={rowClass}>
+                        <NavLink to={item.children[0].path} title={item.label} className={rowClass} onClick={(e) => e.stopPropagation()}>
                           <HugeiconsIcon
                             icon={item.icon}
                             size={18}
@@ -216,7 +216,7 @@ const Sidebar = ({ collapsed, onToggle }: SidebarProps) => {
                         </NavLink>
                       ) : (
                         <>
-                          <button onClick={() => setRefsOpen((v) => !v)} className={rowClass}>
+                          <button onClick={(e) => { e.stopPropagation(); setRefsOpen((v) => !v) }} className={rowClass}>
                             <HugeiconsIcon
                               icon={item.icon}
                               size={18}
@@ -276,6 +276,7 @@ const Sidebar = ({ collapsed, onToggle }: SidebarProps) => {
                         }
                         ${collapsed ? "justify-center" : ""}
                       `}
+                      onClick={(e) => e.stopPropagation()}
                     >
                       <HugeiconsIcon
                         icon={item.icon}

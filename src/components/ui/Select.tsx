@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { ChevronDown, Check, X } from 'lucide-react';
 
 // Single select props
@@ -26,11 +27,70 @@ type SelectProps = SelectSingleProps | SelectMultipleProps;
 const Select = (props: SelectProps) => {
   const { options, placeholder = "Tanlang...", className = "" } = props;
   const [isOpen, setIsOpen] = useState(false);
+  const [coords, setCoords] = useState<{
+    top?: number;
+    bottom?: number;
+    left: number;
+    width: number;
+  }>({
+    left: 0,
+    width: 0,
+  });
   const containerRef = useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const updateCoords = () => {
+    if (containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect();
+      const dropdownHeight = 200; // max-h of the dropdown
+      const margin = 4;
+      const viewportHeight = window.innerHeight;
+
+      // Check if there is enough space below
+      const spaceBelow = viewportHeight - rect.bottom;
+      const spaceAbove = rect.top;
+
+      if (spaceBelow < dropdownHeight + margin && spaceAbove > spaceBelow) {
+        // Place above: set bottom, clear top
+        setCoords({
+          bottom: viewportHeight - rect.top + margin,
+          left: rect.left,
+          width: rect.width,
+        });
+      } else {
+        // Place below: set top, clear bottom
+        setCoords({
+          top: rect.bottom + margin,
+          left: rect.left,
+          width: rect.width,
+        });
+      }
+    }
+  };
+
+  useLayoutEffect(() => {
+    if (isOpen) {
+      updateCoords();
+      const handleScroll = () => {
+        updateCoords();
+      };
+      window.addEventListener("resize", handleScroll);
+      window.addEventListener("scroll", handleScroll, true);
+      return () => {
+        window.removeEventListener("resize", handleScroll);
+        window.removeEventListener("scroll", handleScroll, true);
+      };
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(target) &&
+        (!dropdownRef.current || !dropdownRef.current.contains(target))
+      ) {
         setIsOpen(false);
       }
     };
@@ -105,7 +165,10 @@ const Select = (props: SelectProps) => {
     <div className={`relative ${className}`} ref={containerRef}>
       <button
         type="button"
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => {
+          updateCoords();
+          setIsOpen(!isOpen);
+        }}
         className="w-full flex items-center justify-between pl-3.5 pr-3 py-2.5 bg-white dark:bg-zinc-900 border border-[#e5e5e5] dark:border-[#262626] rounded-xl text-[13px] text-[#0a0a0a] dark:text-[#fafafa] outline-none cursor-pointer hover:border-gray-300 dark:hover:border-zinc-700 transition-colors focus:border-[#0474F3]"
       >
         <span className={`truncate mr-2 ${!hasValue ? 'text-[#a3a3a3] dark:text-[#525252]' : ''}`}>
@@ -145,8 +208,18 @@ const Select = (props: SelectProps) => {
         </div>
       )}
 
-      {isOpen && (
-        <div className="absolute left-0 right-0 bottom-full mb-1 z-[999999] bg-white dark:bg-zinc-900 border border-[#e5e5e5] dark:border-[#262626] rounded-xl shadow-lg overflow-y-auto max-h-[220px] py-1 animate-in fade-in slide-in-from-bottom-1 duration-150">
+      {isOpen && coords.width > 0 && createPortal(
+        <div
+          ref={dropdownRef}
+          style={{
+            position: 'fixed',
+            top: coords.top !== undefined ? `${coords.top}px` : undefined,
+            bottom: coords.bottom !== undefined ? `${coords.bottom}px` : undefined,
+            left: `${coords.left}px`,
+            width: `${coords.width}px`,
+          }}
+          className="z-[999999] bg-white dark:bg-zinc-900 border border-[#e5e5e5] dark:border-[#262626] rounded-xl shadow-lg overflow-y-auto max-h-[200px] py-1 animate-in fade-in slide-in-from-bottom-1 duration-150"
+        >
           {selectOptions.map((opt) => (
             <div
               key={opt.value}
@@ -161,7 +234,8 @@ const Select = (props: SelectProps) => {
               {isSelected(opt.value) && <Check className="w-3.5 h-3.5 text-[#0474F3] stroke-[2.5]" />}
             </div>
           ))}
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

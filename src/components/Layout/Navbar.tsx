@@ -1,4 +1,4 @@
-import { useLocation, useSearchParams } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Search01FreeIcons, Notification02Icon } from "@hugeicons/core-free-icons";
@@ -38,6 +38,7 @@ interface NavbarProps {
 
 const Navbar = ({ collapsed: _collapsed, onToggle: _onToggle, title: customTitle, subtitle: customSubtitle }: NavbarProps) => {
   const location = useLocation();
+  const navigate = useNavigate();
 
   // Redux orqali joriy shikoyatni topish (Asadbek varianti)
   const appealId = location.pathname.startsWith("/appeals/")
@@ -101,7 +102,10 @@ const Navbar = ({ collapsed: _collapsed, onToggle: _onToggle, title: customTitle
         </div>
 
         {/* Notification button */}
-        <button className="relative flex items-center cursor-pointer gap-2 h-9 px-3 rounded-lg border border-[#e5e5e5] dark:border-[#262626] text-[#404040] dark:text-[#a3a3a3] transition-all">
+        <button
+          onClick={() => navigate("/notification")}
+          className="relative flex items-center cursor-pointer gap-2 h-9 px-3 rounded-lg border border-[#e5e5e5] dark:border-[#262626] text-[#404040] dark:text-[#a3a3a3] transition-all hover:border-gray-300 dark:hover:border-zinc-600"
+        >
           <HugeiconsIcon
             icon={Notification02Icon}
             size={16}

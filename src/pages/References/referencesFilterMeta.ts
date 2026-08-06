@@ -99,12 +99,15 @@ export const getFilterChips = (
   const chips: FilterChip[] = [];
 
   const addDate = (prefix: "created_at" | "updated_at", label: string) => {
-    const after = filters[`${prefix}_after`];
-    const before = filters[`${prefix}_before`];
+    const isCreated = prefix === "created_at";
+    const after = filters[isCreated ? "start_date" : `${prefix}_after`];
+    const before = filters[isCreated ? "end_date" : `${prefix}_before`];
     const text = fmtDateRangeChip(label, after, before);
     if (text) {
       chips.push({
-        keys: [`${prefix}_after`, `${prefix}_before`, `${prefix}__gte`, `${prefix}__lte`],
+        keys: isCreated
+          ? ["start_date", "end_date"]
+          : [`${prefix}_after`, `${prefix}_before`, `${prefix}__gte`, `${prefix}__lte`],
         label: text,
       });
     }
