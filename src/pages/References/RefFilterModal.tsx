@@ -36,8 +36,8 @@ const HA_YOQ_SEGMENTED = [
 ];
 
 const buildValues = (initial: Record<string, any>): Record<string, any> => ({
-  created_at_after: parseDate(initial.created_at_after || initial.created_at__gte),
-  created_at_before: parseDate(initial.created_at_before || initial.created_at__lte),
+  created_at_after: parseDate(initial.start_date || initial.created_at_after || initial.created_at__gte),
+  created_at_before: parseDate(initial.end_date || initial.created_at_before || initial.created_at__lte),
   updated_at_after: parseDate(initial.updated_at_after || initial.updated_at__gte),
   updated_at_before: parseDate(initial.updated_at_before || initial.updated_at__lte),
   // roles
@@ -118,13 +118,11 @@ const RefFilterModal = ({
 
     if (values.created_at_after) {
       const formatted = dayjs(values.created_at_after).format("YYYY-MM-DD");
-      params.created_at_after = formatted;
-      params.created_at__gte = formatted;
+      params.start_date = formatted;
     }
     if (values.created_at_before) {
       const formatted = dayjs(values.created_at_before).format("YYYY-MM-DD");
-      params.created_at_before = formatted;
-      params.created_at__lte = formatted;
+      params.end_date = formatted;
     }
     if (values.updated_at_after) {
       const formatted = dayjs(values.updated_at_after).format("YYYY-MM-DD");

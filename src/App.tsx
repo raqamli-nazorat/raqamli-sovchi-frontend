@@ -11,7 +11,9 @@ import {
   UsersDetailPage,
   ReferenceListPage,
   ReferenceDetailPage,
-  AQuestions
+  AQuestions,
+  SettingPage,
+  NotificationPage
 } from "./pages";
 import Layout from "./components/Layout/Layout";
 
@@ -93,7 +95,8 @@ const router = createBrowserRouter([
       { path: "/questions", element: <AQuestions /> },
       { path: "/references/:entity/:id", element: <ReferenceDetailPage /> },
       { path: "/psychologists", element: <UsersPage /> },
-      { path: "/settings", element: <UsersPage /> },
+      { path: "/settings", element: <SettingPage /> },
+      { path: "/notification", element: <NotificationPage /> },
     ],
   },
   {
