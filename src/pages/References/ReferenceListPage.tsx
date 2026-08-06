@@ -1,10 +1,12 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ChevronRight, Plus, RefreshCw, Search } from "lucide-react";
+import { ChevronRight, Plus, RefreshCw, Search, SlidersHorizontal, X } from "lucide-react";
 import { useHeader } from "../../components/Layout/Layout";
 import { REF_APIS, refApiError, type RefItem } from "./referencesApi";
 import { REF_CONFIGS, type RefCtx } from "./referencesConfig";
+import { getFilterChips } from "./referencesFilterMeta";
 import RefFormModal from "./RefFormModal";
+import RefFilterModal from "./RefFilterModal";
 
 const ReferenceListPage = () => {
   const { entity } = useParams<{ entity: string }>();
@@ -15,6 +17,7 @@ const ReferenceListPage = () => {
   const api = entity ? REF_APIS[entity] : undefined;
 
   const [items, setItems] = useState<RefItem[]>([]);
+  const [totalCount, setTotalCount] = useState<number | null>(null);
   const [ctx, setCtx] = useState<RefCtx>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -24,12 +27,14 @@ const ReferenceListPage = () => {
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [showModal, setShowModal] = useState(false);
+  const [showFilterModal, setShowFilterModal] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [filters, setFilters] = useState<Record<string, any>>({});
 
   const isLoadingRef = useRef(false);
 
-  const loadPage = useCallback(async (pageNum: number, searchQuery: string) => {
+  const loadPage = useCallback(async (pageNum: number, searchQuery: string, currentFilters: Record<string, any> = {}) => {
     if (!config || !api) return;
     if (isLoadingRef.current) return;
     isLoadingRef.current = true;
@@ -41,7 +46,7 @@ const ReferenceListPage = () => {
     }
     setError(null);
     try {
-      const params: Record<string, any> = { page: pageNum };
+      const params: Record<string, any> = { page: pageNum, ...currentFilters };
       if (searchQuery.trim()) {
         params.search = searchQuery.trim();
       }
@@ -59,6 +64,12 @@ const ReferenceListPage = () => {
           return;
         }
         setItems((prev) => [...prev, ...list]);
+      }
+
+      if (list && typeof list === "object" && "count" in list) {
+        setTotalCount(list.count);
+      } else {
+        setTotalCount(pageNum === 1 ? list.length : null);
       }
 
       if (list && typeof list === "object" && "next" in list) {
@@ -89,9 +100,31 @@ const ReferenceListPage = () => {
     setActiveSearch("");
     setHasMore(true);
     setShowModal(false);
+    setShowFilterModal(false);
+    setFilters({});
+    setTotalCount(null);
     isLoadingRef.current = false;
-    loadPage(1, "");
+    loadPage(1, "", {});
   }, [loadPage]);
+
+  // Loaded purely so filter chips can show readable names instead of raw ids
+  // (e.g. "Viloyat: Toshkent shahri" instead of "Viloyat: 3").
+  useEffect(() => {
+    const loadCtxData = async () => {
+      try {
+        if (entity === "districts") {
+          const list = await REF_APIS.regions.list();
+          setCtx((c) => ({ ...c, regions: list }));
+        } else if (entity === "questions") {
+          const list = await REF_APIS.sections.list();
+          setCtx((c) => ({ ...c, sections: list }));
+        }
+      } catch (err) {
+        console.error("Error loading reference context:", err);
+      }
+    };
+    loadCtxData();
+  }, [entity]);
 
   useEffect(() => {
     if (!config) return;
@@ -114,7 +147,7 @@ const ReferenceListPage = () => {
     setSaveError(null);
     try {
       const payload = config.toPayload ? config.toPayload(values) : { ...values };
-      
+
       if (config.slug === "questions") {
         const { options, ...questionPayload } = payload;
         const createdQuestion = await api.create(questionPayload);
@@ -132,7 +165,7 @@ const ReferenceListPage = () => {
 
       setShowModal(false);
       setHasMore(true);
-      await loadPage(1, activeSearch);
+      await loadPage(1, activeSearch, filters);
     } catch (err: any) {
       console.error(`References (${config.slug}) create error:`, err);
       setSaveError(refApiError(err, "Saqlashda xatolik yuz berdi."));
@@ -144,7 +177,28 @@ const ReferenceListPage = () => {
   const handleSearchSubmit = () => {
     setActiveSearch(search);
     setHasMore(true);
-    loadPage(1, search);
+    loadPage(1, search, filters);
+  };
+
+  const handleFilterSubmit = (newFilters: Record<string, any>) => {
+    setFilters(newFilters);
+    setShowFilterModal(false);
+    setHasMore(true);
+    loadPage(1, activeSearch, newFilters);
+  };
+
+  const handleRemoveChip = (keys: string[]) => {
+    const newFilters = { ...filters };
+    keys.forEach((k) => delete newFilters[k]);
+    setFilters(newFilters);
+    setHasMore(true);
+    loadPage(1, activeSearch, newFilters);
+  };
+
+  const handleClearAllFilters = () => {
+    setFilters({});
+    setHasMore(true);
+    loadPage(1, activeSearch, {});
   };
 
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
@@ -154,9 +208,13 @@ const ReferenceListPage = () => {
     const isNearBottom =
       container.scrollHeight - container.scrollTop - container.clientHeight < threshold;
     if (isNearBottom) {
-      loadPage(page + 1, activeSearch);
+      loadPage(page + 1, activeSearch, filters);
     }
   };
+
+  const filterChips = entity ? getFilterChips(entity, filters, ctx) : [];
+  const hasActiveFilters = filterChips.length > 0;
+  const resultCount = totalCount ?? items.length;
 
   return (
     <div className="p-4 space-y-4">
@@ -182,23 +240,67 @@ const ReferenceListPage = () => {
               if (!val.trim()) {
                 setActiveSearch("");
                 setHasMore(true);
-                loadPage(1, "");
+                loadPage(1, "", filters);
               }
             }}
             placeholder={config.searchPlaceholder}
             className="w-full h-10 pl-9 pr-4 bg-white dark:bg-[#141414] rounded-lg border border-[#e5e5e5] dark:border-[#262626] text-[13px] text-[#0a0a0a] dark:text-[#fafafa] placeholder:text-[#a3a3a3] dark:placeholder:text-[#525252] focus:outline-none focus:border-[#0474F3] transition-colors"
           />
         </form>
-        <button
-          onClick={() => {
-            setSaveError(null);
-            setShowModal(true);
-          }}
-          className="h-10 px-4 flex items-center gap-1.5 bg-[#0474F3] hover:bg-[#042480] active:scale-[0.99] text-white text-[13px] font-semibold rounded-lg transition-all cursor-pointer"
-        >
-          <Plus className="w-4 h-4 stroke-[2.5]" /> Qo'shish
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => {
+              setShowFilterModal(true);
+            }}
+            className="relative h-10 px-4 flex items-center gap-1.5 bg-white hover:bg-[#f5f5f5] active:scale-[0.99] text-[#0a0a0a] dark:text-[#fafafa] border border-[#e5e5e5] dark:border-[#262626] rounded-lg transition-all cursor-pointer text-[13px] font-semibold"
+          >
+            <SlidersHorizontal className="w-4 h-4" /> Filter
+            {hasActiveFilters && (
+              <span className="absolute top-1.5 right-1.5 w-[7px] h-[7px] bg-[#EF4444] rounded-full" />
+            )}
+          </button>
+          <button
+            onClick={() => {
+              setSaveError(null);
+              setShowModal(true);
+            }}
+            className="h-10 px-4 flex items-center gap-1.5 bg-[#0474F3] hover:bg-[#042480] active:scale-[0.99] text-white text-[13px] font-semibold rounded-lg transition-all cursor-pointer"
+          >
+            <Plus className="w-4 h-4 stroke-[2.5]" /> Qo'shish
+          </button>
+        </div>
       </div>
+
+      {/* ── Faol filtrlar qatori ── */}
+      {hasActiveFilters && (
+        <div className="flex items-center flex-wrap gap-2">
+          <span className="text-[13px] text-[#737373] dark:text-[#A3A3A3]">
+            {resultCount} ta natija
+          </span>
+          {filterChips.map((chip) => (
+            <span
+              key={chip.keys.join("|")}
+              className="inline-flex items-center gap-1 pl-3 pr-2 py-1.5 bg-[#0474F3]/10 text-[#0474F3] text-[12.5px] font-medium rounded-full"
+            >
+              {chip.label}
+              <button
+                type="button"
+                onClick={() => handleRemoveChip(chip.keys)}
+                className="p-0.5 hover:text-[#023399] transition-colors cursor-pointer"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </span>
+          ))}
+          <button
+            type="button"
+            onClick={handleClearAllFilters}
+            className="text-[13px] font-semibold text-[#0474F3] hover:text-[#023399] transition-colors cursor-pointer"
+          >
+            Tozalash
+          </button>
+        </div>
+      )}
 
       {/* ── Jadval ── */}
       <div
@@ -303,6 +405,16 @@ const ReferenceListPage = () => {
           error={saveError}
           onClose={() => setShowModal(false)}
           onSubmit={handleCreate}
+        />
+      )}
+
+      {entity && (
+        <RefFilterModal
+          entity={entity}
+          isOpen={showFilterModal}
+          onClose={() => setShowFilterModal(false)}
+          onSubmit={handleFilterSubmit}
+          initialFilters={filters}
         />
       )}
     </div>

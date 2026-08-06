@@ -29,8 +29,14 @@ type UserResult = {
         birth_year: number,
         height: number,
         weight: number,
-        health_status: string,
-        marital_status: string,
+        health_status_info: {
+            id: string,
+            name: string
+        } | null,
+        marital_status_info: {
+            id: string,
+            name: string
+        } | null,
         bio: string,
         voice_intro: string | null,
         latitude: number | null,
@@ -82,8 +88,14 @@ const MOCK_USER: UserResult = {
         birth_year: 1999, // 2026 - 1999 = 27 yosh
         height: 178,
         weight: 74,
-        health_status: "healthy",
-        marital_status: "never_married",
+        health_status_info: {
+            id: "1",
+            name: "healthy"
+        },
+        marital_status_info: {
+            id: "1",
+            name: "never_married"
+        },
         bio: "Samimiylik va baxtli oila tarafdoriman.",
         voice_intro: null,
         latitude: null,
@@ -510,12 +522,12 @@ const UsersDetail = () => {
 
                             <div>
                                 <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3] tracking-wider">Oilaviy holat</p>
-                                <p className="text-[12px] font-semibold text-[#0a0a0a] dark:text-[#fafafa] mt-1">{translateValue(profile.marital_status, MARITAL_STATUS_LABELS)}</p>
+                                <p className="text-[12px] font-semibold text-[#0a0a0a] dark:text-[#fafafa] mt-1">{profile.marital_status_info?.name}</p>
                             </div>
 
                             <div>
                                 <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3] tracking-wider">Sog'liq</p>
-                                <p className="text-[12px] font-semibold text-[#0a0a0a] dark:text-[#fafafa] mt-1">{translateValue(profile.health_status, HEALTH_STATUS_LABELS)}</p>
+                                <p className="text-[12px] font-semibold text-[#0a0a0a] dark:text-[#fafafa] mt-1">{profile.health_status_info?.name}</p>
                             </div>
 
                             <div>
