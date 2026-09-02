@@ -40,6 +40,9 @@ export interface RefEntityConfig {
   fields: RefField[];
   toPayload?: (values: Record<string, string>) => Record<string, any>;
   toFormValues?: (item: RefItem) => Record<string, string>;
+  // true — tahrirlash modali ochilishidan oldin GET /{base}/{id}/ chaqiriladi
+  // (ro'yxatdagi qisqa obyektda bo'lmagan maydonlarni, masalan permissions, olish uchun)
+  loadDetailOnEdit?: boolean;
   titleOf: (item: RefItem) => string;
   headerSubtitleOf?: (item: RefItem, ctx: RefCtx) => string;
   detailFields: { label: string; value: (item: RefItem, ctx: RefCtx) => string }[];
@@ -135,28 +138,34 @@ export const REF_CONFIGS: Record<string, RefEntityConfig> = {
     slug: "roles",
     singular: "Rol",
     plural: "Rollar",
-    subtitle: "Rollar",
+    subtitle: "Rollar · tizim rollari",
     cardTitle: "Rol kartasi",
     searchPlaceholder: "Rol nomi bo'yicha qidirish...",
     searchKeys: ["name"],
     columns: [
       { header: "Nomi", value: (i) => i.name || "" },
-      { header: "Yaratilgan", value: (i) => fmtDate(i.created_at) },
-      { header: "Yangilangan", value: (i) => fmtDate(i.updated_at) },
+      { header: "Asosiy rol", width: "w-[140px]", value: (i) => boolLabel(i.is_default) },
+      { header: "Yaratilgan", width: "w-[160px]", value: (i) => fmtDateTime(i.created_at) },
     ],
     formTitle: "Yangi rol",
+    loadDetailOnEdit: true,
     fields: [
       { name: "name", label: "Nomi", type: "text", required: true },
       { name: "permissions", label: "Ruxsatlar", type: "permissions" },
     ],
+    // POST /accounts/roles/  → { name, is_default, permissions: [id,...] }
+    // PATCH /accounts/roles/{id}/ → { name, permissions: [id,...] }
     toPayload: (v) => ({
       name: v.name.trim(),
+      is_default: v.is_default === "true",
       permissions: v.permissions
         ? v.permissions.split(",").filter(Boolean).map(Number)
         : [],
     }),
+    // Tahrirlashda checkboxlar `permissions` (id ro'yxati) bo'yicha belgilanadi.
     toFormValues: (i) => ({
       name: i.name || "",
+      is_default: String(!!i.is_default),
       permissions: Array.isArray(i.permissions)
         ? i.permissions.map(String).join(",")
         : Array.isArray(i.permissions_info)
@@ -164,8 +173,16 @@ export const REF_CONFIGS: Record<string, RefEntityConfig> = {
           : "",
     }),
     titleOf: (i) => i.name || "",
-    detailFields: [{ label: "Nomi", value: (i) => i.name || "" }],
-    deleteNote: () => "Rolga biriktirilgan foydalanuvchilar huquqsiz qoladi.",
+    detailFields: [
+      { label: "Nomi", value: (i) => i.name || "" },
+      { label: "Asosiy rol", value: (i) => boolLabel(i.is_default) },
+    ],
+    deleteNote: (i) => {
+      const n = i.users_count ?? i.user_count ?? i.assigned_users_count;
+      return n != null && Number(n) > 0
+        ? `Bu rolga ${n} ta foydalanuvchi biriktirilgan. O'chirilsa, ular huquqsiz qoladi.`
+        : "Rolga biriktirilgan foydalanuvchilar huquqsiz qoladi.";
+    },
     deleteNoun: "rolini",
   },
 

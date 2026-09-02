@@ -36,6 +36,7 @@ const ReferenceListPage = () => {
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [filters, setFilters] = useState<Record<string, any>>({});
+  const [loadingDetail, setLoadingDetail] = useState(false);
 
   const isLoadingRef = useRef(false);
 
@@ -155,10 +156,23 @@ const ReferenceListPage = () => {
     setShowFormModal(true);
   };
 
-  const openEdit = (item: RefItem) => {
-    setEditItem(item);
+  const openEdit = async (item: RefItem) => {
     setSaveError(null);
+    setEditItem(item);
     setShowFormModal(true);
+    // Ba'zi bo'limlarda (masalan Rollar) ro'yxatdagi obyekt qisqa keladi —
+    // to'liq maydonlar (permissions va h.k.) uchun detail chaqiramiz.
+    if (config?.loadDetailOnEdit && api) {
+      setLoadingDetail(true);
+      try {
+        const detail = await api.get(item.id);
+        if (detail) setEditItem((prev) => ({ ...prev, ...detail } as RefItem));
+      } catch (err) {
+        console.error(`References (${config.slug}) detail fetch error:`, err);
+      } finally {
+        setLoadingDetail(false);
+      }
+    }
   };
 
   const handleSave = async (values: Record<string, string>) => {
@@ -437,6 +451,7 @@ const ReferenceListPage = () => {
 
       {showFormModal && (
         <RefFormModal
+          key={editItem ? `edit-${editItem.id}-${loadingDetail ? "loading" : "ready"}` : "create"}
           title={editItem ? config.singular : config.formTitle}
           hint={editItem ? undefined : config.formHint}
           fields={config.fields}
@@ -449,6 +464,7 @@ const ReferenceListPage = () => {
               : undefined
           }
           saving={saving}
+          detailLoading={loadingDetail}
           error={saveError}
           onClose={() => {
             setShowFormModal(false);
