@@ -8,6 +8,5 @@ export { default as AppealDetailPage } from "./Appeals/AppealDetailPage";
 export { default as UsersDetailPage } from "./Users/UsersDetail";
 export { default as AQuestions } from "./AQuestions/AQuestions";
 export { default as ReferenceListPage } from "./References/ReferenceListPage";
-export { default as ReferenceDetailPage } from "./References/ReferenceDetailPage";
 export { default as SettingPage } from "./Setting/Setting";
 export { default as NotificationPage } from "./Setting/NotificationPage";
