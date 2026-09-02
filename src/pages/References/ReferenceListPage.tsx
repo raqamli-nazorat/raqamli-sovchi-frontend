@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
-import { ChevronRight, Plus, RefreshCw, Search, SlidersHorizontal, X } from "lucide-react";
+import { Plus, RefreshCw, Search, SlidersHorizontal, X } from "lucide-react";
 import { useHeader } from "../../components/Layout/Layout";
 import { axiosAPI } from "../../lib/axiosAPI";
 import { REF_APIS, refApiError, type RefItem } from "./referencesApi";
@@ -359,7 +359,6 @@ const ReferenceListPage = () => {
               {col.header}
             </div>
           ))}
-          <div className="w-[24px]" />
         </div>
 
         {loading ? (
@@ -424,9 +423,6 @@ const ReferenceListPage = () => {
                     {col.value(item, ctx)}
                   </div>
                 ))}
-                <div className="w-[24px] hidden md:flex items-center justify-end text-gray-400">
-                  <ChevronRight size={16} />
-                </div>
               </div>
             ))}
             {loadingMore && (
@@ -490,6 +486,7 @@ const ReferenceListPage = () => {
           isOpen={showFilterModal}
           onClose={() => setShowFilterModal(false)}
           onSubmit={handleFilterSubmit}
+          onClear={handleClearAllFilters}
           initialFilters={filters}
         />
       )}

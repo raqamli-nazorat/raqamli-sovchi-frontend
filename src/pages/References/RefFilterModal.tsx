@@ -11,6 +11,8 @@ interface RefFilterModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (filters: Record<string, any>) => void;
+  // filtrlarni bekor qiladi, lekin modalni ochiq qoldiradi
+  onClear?: () => void;
   initialFilters?: Record<string, any>;
 }
 
@@ -65,6 +67,7 @@ const RefFilterModal = ({
   isOpen,
   onClose,
   onSubmit,
+  onClear,
   initialFilters = {},
 }: RefFilterModalProps) => {
   const [values, setValues] = useState<Record<string, any>>(() => buildValues(initialFilters));
@@ -110,6 +113,8 @@ const RefFilterModal = ({
 
   const handleClear = () => {
     setValues(buildValues({}));
+    // Barcha filtrlarni bekor qilib, ro'yxatni yangilaymiz — modal ochiq qoladi
+    onClear?.();
   };
 
   const handleApply = () => {
