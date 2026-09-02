@@ -486,7 +486,6 @@ const ReferenceListPage = () => {
           isOpen={showFilterModal}
           onClose={() => setShowFilterModal(false)}
           onSubmit={handleFilterSubmit}
-          onClear={handleClearAllFilters}
           initialFilters={filters}
         />
       )}
