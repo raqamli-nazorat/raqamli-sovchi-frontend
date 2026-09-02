@@ -12,6 +12,8 @@ interface RefFormModalProps {
   ctx: RefCtx;
   initialValues?: Record<string, string>;
   saving: boolean;
+  // tahrirlash modalida obyekt detali (permissions va h.k.) hali yuklanmoqda
+  detailLoading?: boolean;
   error: string | null;
   onClose: () => void;
   onSubmit: (values: Record<string, string>) => void;
@@ -24,6 +26,14 @@ interface Permission {
   name: string;
   codename: string;
   model_name: string;
+  group_label?: string;
+}
+
+// GET /accounts/permissions/ javobi guruhlangan yoki tekis kelishi mumkin
+interface PermissionGroupResp {
+  model_name: string;
+  group_label?: string;
+  permissions: Permission[];
 }
 
 const ACTION_COLUMNS = [
@@ -32,6 +42,24 @@ const ACTION_COLUMNS = [
   { key: "change", label: "Tahrirlash" },
   { key: "delete", label: "O'chirish" },
 ];
+
+// codename'dan amalni aniqlash. Django standarti `view_x/add_x/change_x/delete_x`,
+// ammo backendda boshqa nomlanish ham bo'lishi mumkin (create_/edit_/read_ va h.k.).
+const ACTION_SYNONYMS: Record<string, string[]> = {
+  view: ["view", "read", "list", "see", "retrieve"],
+  add: ["add", "create", "new"],
+  change: ["change", "edit", "update", "modify"],
+  delete: ["delete", "remove", "destroy"],
+};
+
+const classifyAction = (codename?: string): string | null => {
+  if (!codename) return null;
+  const tokens = codename.toLowerCase().split(/[^a-z]+/).filter(Boolean);
+  for (const [action, words] of Object.entries(ACTION_SYNONYMS)) {
+    if (tokens.some((t) => words.includes(t))) return action;
+  }
+  return null;
+};
 
 // model_name → o'zbekcha guruh nomi. Backend model nomlariga qarab to'ldiriladi;
 // mos kelmaganlari model_name'ning o'zidan chiroyli ko'rinishda chiqadi.
@@ -49,6 +77,23 @@ const PERM_GROUP_LABELS: Record<string, string> = {
 const humanize = (s: string) =>
   s ? s.charAt(0).toUpperCase() + s.slice(1).replace(/[_-]+/g, " ") : s;
 
+// Django/allauth ichki modellari — rol ruxsatlari jadvalida ko'rsatilmaydi
+const FRAMEWORK_MODELS = new Set([
+  "logentry",
+  "permission",
+  "group",
+  "contenttype",
+  "session",
+  "site",
+  "token",
+  "tokenproxy",
+  "emailaddress",
+  "emailconfirmation",
+  "socialaccount",
+  "socialapp",
+  "socialtoken",
+]);
+
 const emptyValues = (fields: RefField[]) => {
   const values: Record<string, string> = {};
   for (const f of fields) {
@@ -63,6 +108,7 @@ const RefFormModal = ({
   fields,
   initialValues,
   saving,
+  detailLoading = false,
   error,
   onClose,
   onSubmit,
@@ -80,7 +126,7 @@ const RefFormModal = ({
   >({});
 
   const hasPermissions = fields.some((f) => f.type === "permissions");
-  const [permissions, setPermissions] = useState<Permission[]>([]);
+  const [permData, setPermData] = useState<(Permission | PermissionGroupResp)[]>([]);
   const [permsLoading, setPermsLoading] = useState(false);
 
   const baseline = useMemo(
@@ -115,8 +161,24 @@ const RefFormModal = ({
     axiosAPI
       .get("accounts/permissions/")
       .then((res) => {
+        // Wrapper bo'lsa payload response.data.data ichida bo'ladi.
+        // Javob quyidagi ko'rinishlardan biri bo'lishi mumkin:
+        //   massiv:        [{ id, codename, model_name, group_label }]
+        //   guruh-massiv:  [{ model_name, group_label, permissions: [...] }]
+        //   guruh-obyekt:  { "<model>": { model_name, group_label, permissions: [...] } }
         const data = res.data?.data ?? res.data;
-        setPermissions(Array.isArray(data) ? data : data?.results ?? []);
+        let arr: unknown[] = [];
+        if (Array.isArray(data)) arr = data;
+        else if (Array.isArray(data?.results)) arr = data.results;
+        else if (data && typeof data === "object") arr = Object.values(data);
+
+        if (arr.length === 0) {
+          console.warn(
+            "[roles] GET accounts/permissions/ bo'sh yoki kutilmagan formatda javob qaytardi:",
+            res.data
+          );
+        }
+        setPermData(arr as (Permission | PermissionGroupResp)[]);
       })
       .catch((err) => console.error("Failed to load permissions:", err))
       .finally(() => setPermsLoading(false));
@@ -132,28 +194,73 @@ const RefFormModal = ({
   };
 
   // ── Ruxsatlar jadvali ──
+  // GET /accounts/permissions/ javobi ikki ko'rinishda bo'lishi mumkin:
+  //   guruhlangan: [{ model_name, group_label, permissions: [{id,name,codename,...}] }]
+  //   tekis:       [{ id, name, codename, model_name, group_label }]
+  // Ikkalasini ham qo'llab-quvvatlaymiz; qatorlar `group_label` bo'yicha birlashtiriladi.
   const permGroups = useMemo(() => {
-    const map = new Map<string, Record<string, Permission>>();
-    for (const p of permissions) {
-      const action = ACTION_COLUMNS.find((c) => p.codename?.startsWith(`${c.key}_`))?.key;
-      if (!action) continue;
-      if (!map.has(p.model_name)) map.set(p.model_name, {});
-      map.get(p.model_name)![action] = p;
+    // 1. Har qanday shakldan tekis Permission ro'yxatini yig'ib olamiz
+    const flat: Permission[] = [];
+    for (const entry of permData) {
+      if (!entry) continue;
+      const nested = (entry as PermissionGroupResp).permissions;
+      if (Array.isArray(nested)) {
+        for (const p of nested) {
+          flat.push({
+            ...p,
+            model_name: p.model_name ?? (entry as PermissionGroupResp).model_name,
+            group_label: p.group_label ?? (entry as PermissionGroupResp).group_label,
+          });
+        }
+      } else {
+        flat.push(entry as Permission);
+      }
     }
-    return [...map.entries()].map(([model, actions]) => ({
-      model,
-      label: PERM_GROUP_LABELS[model] || humanize(model),
-      actions,
-    }));
-  }, [permissions]);
+
+    // 2. group_label (bo'lmasa model_name) bo'yicha guruhlaymiz.
+    //    Framework modellari (token, logentry, socialaccount, ...) tashlab yuboriladi.
+    const groups = new Map<string, { label: string; actions: Record<string, Permission[]> }>();
+    for (const p of flat) {
+      const model = (p.model_name || "").toLowerCase();
+      if (FRAMEWORK_MODELS.has(model)) continue;
+      const label = p.group_label || PERM_GROUP_LABELS[model] || humanize(model) || "Boshqa";
+      const action = classifyAction(p.codename);
+      if (!action) continue;
+      if (!groups.has(label)) groups.set(label, { label, actions: {} });
+      const bucket = groups.get(label)!.actions;
+      bucket[action] ||= [];
+      if (!bucket[action].some((x) => x.id === p.id)) bucket[action].push(p);
+    }
+
+    const result = [...groups.values()]
+      .filter((g) => Object.keys(g.actions).length > 0)
+      .sort((a, b) => a.label.localeCompare(b.label, "uz"));
+
+    if (!permsLoading && permData.length > 0 && result.length === 0) {
+      console.warn(
+        "[roles] Ruxsatlar keldi, lekin hech biri view/add/change/delete amaliga mos kelmadi. " +
+          "Backend codename'larini tekshiring:",
+        permData
+      );
+    }
+    return result;
+  }, [permData, permsLoading]);
 
   const checkedIds = (name: string): Set<number> =>
     new Set((values[name] || "").split(",").filter(Boolean).map(Number));
 
-  const togglePerm = (name: string, id: number) => {
+  // Bir katakda bir nechta permission bo'lishi mumkin (masalan user+role bitta
+  // "Foydalanuvchilar va rollar" qatoriga birlashganda) — hammasini birga sozlaymiz.
+  const cellChecked = (name: string, perms?: Permission[]) => {
+    if (!perms || perms.length === 0) return false;
     const set = checkedIds(name);
-    if (set.has(id)) set.delete(id);
-    else set.add(id);
+    return perms.every((p) => set.has(p.id));
+  };
+
+  const toggleCell = (name: string, perms: Permission[]) => {
+    const set = checkedIds(name);
+    const allOn = perms.every((p) => set.has(p.id));
+    perms.forEach((p) => (allOn ? set.delete(p.id) : set.add(p.id)));
     setValue(name, [...set].join(","));
   };
 
@@ -172,14 +279,13 @@ const RefFormModal = ({
   // ── Bitta maydon ──
   const renderField = (field: RefField) => {
     if (field.type === "permissions") {
-      const checked = checkedIds(field.name);
       return (
-        <div key={field.name}>
-          <p className="text-[13px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mb-1">
+        <div key={field.name} className="flex flex-col min-h-0 flex-1">
+          <p className="text-[13px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mb-1 shrink-0">
             {field.label}
           </p>
-          <div className="border border-[#f0f0f0] dark:border-[#262626] rounded-xl overflow-hidden">
-            <div className="grid grid-cols-[1fr_repeat(4,72px)] items-center px-4 py-2.5 bg-[#FAFAFA] dark:bg-[#1c1c1c] text-[11px] font-semibold text-[#737373] dark:text-[#a3a3a3]">
+          <div className="border border-[#f0f0f0] dark:border-[#262626] rounded-xl overflow-hidden flex flex-col min-h-0 flex-1">
+            <div className="grid grid-cols-[1fr_repeat(4,72px)] items-center px-4 py-2.5 bg-[#FAFAFA] dark:bg-[#1c1c1c] text-[11px] font-semibold text-[#737373] dark:text-[#a3a3a3] shrink-0">
               <span />
               {ACTION_COLUMNS.map((c) => (
                 <span key={c.key} className="text-center">
@@ -187,34 +293,37 @@ const RefFormModal = ({
                 </span>
               ))}
             </div>
-            {permsLoading && (
-              <p className="px-4 py-4 text-[12px] text-[#a3a3a3]">Yuklanmoqda…</p>
-            )}
-            {!permsLoading && permGroups.length === 0 && (
-              <p className="px-4 py-4 text-[12px] text-[#a3a3a3]">Ruxsatlar topilmadi.</p>
-            )}
-            {permGroups.map((g) => (
-              <div
-                key={g.model}
-                className="grid grid-cols-[1fr_repeat(4,72px)] items-center px-4 py-2.5 border-t border-[#f0f0f0] dark:border-[#262626]"
-              >
-                <span className="text-[13px] text-[#0A0A0A] dark:text-[#fafafa]">{g.label}</span>
-                {ACTION_COLUMNS.map((c) => {
-                  const perm = g.actions[c.key];
-                  return (
-                    <span key={c.key} className="flex justify-center">
-                      <input
-                        type="checkbox"
-                        disabled={!perm}
-                        checked={!!perm && checked.has(perm.id)}
-                        onChange={() => perm && togglePerm(field.name, perm.id)}
-                        className="w-[18px] h-[18px] rounded-[6px] border-[#d4d4d4] dark:border-zinc-600 accent-[#0474F3] cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
-                      />
-                    </span>
-                  );
-                })}
-              </div>
-            ))}
+            {/* Faqat shu ro'yxat scroll bo'ladi — yuqori qism qotib turadi */}
+            <div className="overflow-y-auto min-h-0 flex-1">
+              {(permsLoading || detailLoading) && (
+                <p className="px-4 py-4 text-[12px] text-[#a3a3a3]">Yuklanmoqda…</p>
+              )}
+              {!permsLoading && !detailLoading && permGroups.length === 0 && (
+                <p className="px-4 py-4 text-[12px] text-[#a3a3a3]">Ruxsatlar topilmadi.</p>
+              )}
+              {!detailLoading && permGroups.map((g) => (
+                <div
+                  key={g.label}
+                  className="grid grid-cols-[1fr_repeat(4,72px)] items-center px-4 py-2.5 border-t border-[#f0f0f0] dark:border-[#262626]"
+                >
+                  <span className="text-[13px] text-[#0A0A0A] dark:text-[#fafafa]">{g.label}</span>
+                  {ACTION_COLUMNS.map((c) => {
+                    const perms = g.actions[c.key];
+                    return (
+                      <span key={c.key} className="flex justify-center">
+                        <input
+                          type="checkbox"
+                          disabled={!perms}
+                          checked={cellChecked(field.name, perms)}
+                          onChange={() => perms && toggleCell(field.name, perms)}
+                          className="w-[18px] h-[18px] rounded-[6px] border-[#d4d4d4] dark:border-zinc-600 accent-[#0474F3] cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                        />
+                      </span>
+                    );
+                  })}
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       );
@@ -266,8 +375,8 @@ const RefFormModal = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
       <div
         className={`w-full ${
-          hasPermissions ? "max-w-[680px]" : "max-w-[460px]"
-        } bg-white dark:bg-[#141414] rounded-[20px] border border-[#e5e5e5] dark:border-[#262626] shadow-2xl animate-in fade-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]`}
+          hasPermissions ? "max-w-[680px] h-[85vh]" : "max-w-[460px] max-h-[90vh]"
+        } bg-white dark:bg-[#141414] rounded-[20px] border border-[#e5e5e5] dark:border-[#262626] shadow-2xl animate-in fade-in zoom-in-95 duration-200 flex flex-col`}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-6 pt-6 pb-4 shrink-0">
@@ -280,8 +389,14 @@ const RefFormModal = ({
           </button>
         </div>
 
-        {/* Body */}
-        <div className="px-6 pb-2 space-y-4 overflow-y-auto min-h-0">{rows}</div>
+        {/* Body — permissions modalida yuqori qism qotib turadi, faqat ro'yxat scroll bo'ladi */}
+        <div
+          className={`px-6 pb-2 space-y-4 min-h-0 ${
+            hasPermissions ? "flex flex-col flex-1 overflow-hidden" : "overflow-y-auto"
+          }`}
+        >
+          {rows}
+        </div>
 
         {hint && <p className="text-[12px] text-[#737373] dark:text-[#a3a3a3] px-6 mt-3">{hint}</p>}
         {(validationError || error) && (
@@ -312,7 +427,7 @@ const RefFormModal = ({
             </button>
             <button
               onClick={handleSubmit}
-              disabled={saving || (isEdit && !dirty)}
+              disabled={saving || detailLoading || (isEdit && !dirty)}
               className="px-5 py-2.5 flex items-center gap-2 bg-[#0474F3] hover:bg-[#023399] active:bg-[#0474F3] disabled:bg-[#E5E5E5] disabled:text-[#a3a3a3] dark:disabled:bg-zinc-800 disabled:cursor-not-allowed text-white rounded-xl text-[13px] font-semibold transition-colors cursor-pointer shadow-sm"
             >
               {saving ? (
