@@ -8,12 +8,14 @@ export type RefCtx = Record<string, RefItem[]>;
 export interface RefField {
   name: string;
   label: string;
-  type: "text" | "number" | "select";
+  type: "text" | "number" | "select" | "permissions";
   required?: boolean;
   placeholder?: string;
   // select variantlari: statik yoki bog'liq entity ro'yxatidan (id/name)
   staticOptions?: { value: string; label: string }[];
   optionsFromSlug?: string;
+  // ketma-ket kelgan span'li maydonlar bitta qatorga (grid) joylashadi
+  span?: number;
 }
 
 export interface RefColumn {
@@ -46,6 +48,8 @@ export interface RefEntityConfig {
     rows: (item: RefItem, ctx: RefCtx) => { left: string; right: string }[];
   };
   deleteNote: (item: RefItem, ctx: RefCtx) => string;
+  // O'chirish tasdig'i sarlavhasi uchun tushum kelishigidagi ot: «X» <deleteNoun> o'chirasizmi?
+  deleteNoun: string;
   // null — o'chirish mumkin; string — nima uchun mumkin emasligi
   cantDeleteReason?: (item: RefItem) => string | null;
 }
@@ -98,14 +102,11 @@ const questionsOfSection = (sectionId: string, ctx: RefCtx) => {
   return filtered.length > 0 ? filtered : sorted;
 };
 
-const sectionName = (sectionId: string, ctx: RefCtx) =>
-  (ctx.sections || []).find((s) => s.id === sectionId)?.name || "—";
-
 // Oddiy "faqat nom" ma'lumotnomalar uchun umumiy qolip
 const simpleNameConfig = (
   base: Pick<
     RefEntityConfig,
-    "slug" | "singular" | "plural" | "subtitle" | "searchPlaceholder"
+    "slug" | "singular" | "plural" | "subtitle" | "searchPlaceholder" | "deleteNoun"
   > & { formTitle: string; deleteNoteText: string }
 ): RefEntityConfig => ({
   slug: base.slug,
@@ -126,6 +127,7 @@ const simpleNameConfig = (
   titleOf: (i) => i.name || "",
   detailFields: [{ label: "Nomi", value: (i) => i.name || "" }],
   deleteNote: () => base.deleteNoteText,
+  deleteNoun: base.deleteNoun,
 });
 
 export const REF_CONFIGS: Record<string, RefEntityConfig> = {
@@ -133,38 +135,45 @@ export const REF_CONFIGS: Record<string, RefEntityConfig> = {
     slug: "roles",
     singular: "Rol",
     plural: "Rollar",
-    subtitle: "tizim rollari",
+    subtitle: "Rollar",
     cardTitle: "Rol kartasi",
     searchPlaceholder: "Rol nomi bo'yicha qidirish...",
     searchKeys: ["name"],
     columns: [
       { header: "Nomi", value: (i) => i.name || "" },
-      { header: "Asosiy rol", value: (i) => boolLabel(i.is_default) },
       { header: "Yaratilgan", value: (i) => fmtDate(i.created_at) },
       { header: "Yangilangan", value: (i) => fmtDate(i.updated_at) },
     ],
     formTitle: "Yangi rol",
     fields: [
       { name: "name", label: "Nomi", type: "text", required: true },
-      { name: "is_default", label: "Asosiy rol", type: "select", staticOptions: HA_YOQ_OPTIONS },
+      { name: "permissions", label: "Ruxsatlar", type: "permissions" },
     ],
-    toPayload: (v) => ({ name: v.name.trim(), is_default: v.is_default === "true" }),
-    toFormValues: (i) => ({ name: i.name || "", is_default: String(!!i.is_default) }),
+    toPayload: (v) => ({
+      name: v.name.trim(),
+      permissions: v.permissions
+        ? v.permissions.split(",").filter(Boolean).map(Number)
+        : [],
+    }),
+    toFormValues: (i) => ({
+      name: i.name || "",
+      permissions: Array.isArray(i.permissions)
+        ? i.permissions.map(String).join(",")
+        : Array.isArray(i.permissions_info)
+          ? i.permissions_info.map((p: any) => String(p.id ?? p)).join(",")
+          : "",
+    }),
     titleOf: (i) => i.name || "",
-    detailFields: [
-      { label: "Nomi", value: (i) => i.name || "" },
-      { label: "Asosiy rol", value: (i) => boolLabel(i.is_default) },
-    ],
-    deleteNote: () => "Rol o'chirilsa, unga biriktirilgan foydalanuvchilar rolsiz qoladi.",
-    cantDeleteReason: (i) =>
-      i.is_default ? "Asosiy rolni o'chirib bo'lmaydi. Avval boshqa rolni asosiy qiling." : null,
+    detailFields: [{ label: "Nomi", value: (i) => i.name || "" }],
+    deleteNote: () => "Rolga biriktirilgan foydalanuvchilar huquqsiz qoladi.",
+    deleteNoun: "rolini",
   },
 
   regions: {
     slug: "regions",
     singular: "Viloyat",
     plural: "Viloyatlar",
-    subtitle: "hududiy bo'linish",
+    subtitle: "Viloyatlar",
     cardTitle: "Viloyat kartasi",
     searchPlaceholder: "Viloyat nomi yoki kodi...",
     searchKeys: ["name", "code"],
@@ -173,10 +182,6 @@ export const REF_CONFIGS: Record<string, RefEntityConfig> = {
     columns: [
       { header: "Nomi", value: (i) => i.name || "" },
       { header: "Kodi", value: (i) => (i.code != null ? String(i.code) : "") },
-      {
-        header: "Tumanlar",
-        value: (i) => i.count || "",
-      },
       { header: "Yaratilgan", value: (i) => fmtDate(i.created_at) },
       { header: "Yangilangan", value: (i) => fmtDate(i.updated_at) },
     ],
@@ -202,15 +207,18 @@ export const REF_CONFIGS: Record<string, RefEntityConfig> = {
           right: d.code != null ? String(d.code) : "",
         })),
     },
-    deleteNote: (i, ctx) =>
-      `Viloyatni o'chirish uning ${districtsOfRegion(i.id, ctx).length} ta tumanini ham o'chiradi.`,
+    deleteNote: (i) =>
+      i.count && Number(i.count) > 0
+        ? `Bu viloyatga ${i.count} ta tuman biriktirilgan. O'chirilsa, ular bog'lanishsiz qoladi.`
+        : "Viloyat o'chirilsa, unga bog'langan tumanlar bog'lanishsiz qoladi.",
+    deleteNoun: "viloyatini",
   },
 
   districts: {
     slug: "districts",
     singular: "Tuman",
     plural: "Tumanlar",
-    subtitle: "viloyatga bog'liq",
+    subtitle: "Tumanlar",
     cardTitle: "Tuman kartasi",
     searchPlaceholder: "Tuman nomi yoki kodi...",
     searchKeys: ["name", "code"],
@@ -243,7 +251,8 @@ export const REF_CONFIGS: Record<string, RefEntityConfig> = {
       { label: "Kodi", value: (i) => (i.code != null ? String(i.code) : "") },
       { label: "Viloyat", value: (i) => i.region_info?.name || "" },
     ],
-    deleteNote: () => "Tuman o'chirilsa, unga bog'langan profillar hududsiz qoladi.",
+    deleteNote: () => "Tumanga bog'langan anketalar tumansiz qoladi.",
+    deleteNoun: "tumanini",
   },
 
   "education-levels": simpleNameConfig({
@@ -253,7 +262,8 @@ export const REF_CONFIGS: Record<string, RefEntityConfig> = {
     subtitle: "Ta'lim darajasi",
     searchPlaceholder: "Daraja nomi...",
     formTitle: "Yangi ta'lim darajasi",
-    deleteNoteText: "Daraja o'chirilsa, uni tanlagan profillarda bu maydon bo'sh qoladi.",
+    deleteNoteText: "Bu darajani tanlagan anketalarda maydon bo'sh qoladi.",
+    deleteNoun: "ta'lim darajasini",
   }),
 
   nationalities: simpleNameConfig({
@@ -263,7 +273,8 @@ export const REF_CONFIGS: Record<string, RefEntityConfig> = {
     subtitle: "Millatlar",
     searchPlaceholder: "Millat nomi...",
     formTitle: "Yangi millat",
-    deleteNoteText: "Millat o'chirilsa, uni tanlagan profillarda bu maydon bo'sh qoladi.",
+    deleteNoteText: "Bu millatni tanlagan anketalarda maydon bo'sh qoladi.",
+    deleteNoun: "millatini",
   }),
 
   professions: simpleNameConfig({
@@ -273,14 +284,15 @@ export const REF_CONFIGS: Record<string, RefEntityConfig> = {
     subtitle: "Kasblar",
     searchPlaceholder: "Kasb nomi...",
     formTitle: "Yangi kasb",
-    deleteNoteText: "Kasb o'chirilsa, uni tanlagan profillarda bu maydon bo'sh qoladi.",
+    deleteNoteText: "Bu kasbni ko'rsatgan anketalarda maydon bo'sh qoladi.",
+    deleteNoun: "kasbini",
   }),
 
   sections: {
     slug: "sections",
     singular: "Savol bo'limi",
     plural: "Savol bo'limlari",
-    subtitle: "SectionType",
+    subtitle: "Savol bo'limlari",
     cardTitle: "Savol bo'limi",
     searchPlaceholder: "Bo'lim nomi...",
     searchKeys: ["name"],
@@ -316,15 +328,22 @@ export const REF_CONFIGS: Record<string, RefEntityConfig> = {
           right: `${q.order}-tartib`,
         })),
     },
-    deleteNote: (i, ctx) =>
-      `Bo'limni o'chirish uning ${questionsOfSection(i.id, ctx).length} ta savolini ham o'chiradi.`,
+    deleteNote: (i) =>
+      i.count && Number(i.count) > 0
+        ? `Bo'limda ${i.count} ta savol bor. O'chirilsa, savollar ham o'chadi.`
+        : "Bo'lim o'chirilsa, unga tegishli savollar ham o'chadi.",
+    deleteNoun: "bo'limini",
+    cantDeleteReason: (i) =>
+      i.count && Number(i.count) > 0
+        ? "Savollari bor bo'limni o'chirib bo'lmaydi — avval savollarni boshqa bo'limga ko'chiring."
+        : null,
   },
 
   questions: {
     slug: "questions",
     singular: "Savol",
     plural: "Savollar",
-    subtitle: "anketa savollari",
+    subtitle: "Savollar",
     cardTitle: "Savol kartasi",
     searchPlaceholder: "Savol matni bo'yicha...",
     searchKeys: ["text"],
@@ -345,14 +364,15 @@ export const REF_CONFIGS: Record<string, RefEntityConfig> = {
         name: "target_gender",
         label: "Kimga",
         type: "select",
+        span: 1,
         staticOptions: [
           { value: "all", label: "Hammaga" },
           { value: "groom", label: "Kuyov" },
           { value: "bride", label: "Kelin" },
         ],
       },
-      { name: "is_trap_question", label: "Tuzoq savol", type: "select", staticOptions: HA_YOQ_OPTIONS },
-      { name: "order", label: "Tartib", type: "number", required: true },
+      { name: "is_trap_question", label: "Tuzoq savol", type: "select", span: 1, staticOptions: HA_YOQ_OPTIONS },
+      { name: "order", label: "Tartib", type: "number", required: true, span: 1 },
       { name: "option_a", label: "A varianti", type: "text", required: true, placeholder: "Variant matni..." },
       { name: "option_b", label: "B varianti", type: "text", required: true, placeholder: "Variant matni..." },
       { name: "option_c", label: "C varianti", type: "text", required: true, placeholder: "Variant matni..." },
@@ -403,7 +423,7 @@ export const REF_CONFIGS: Record<string, RefEntityConfig> = {
           right: `ball ${o.weight}`,
         })),
     },
-    deleteNote: (i) =>
-      `Savolni o'chirish uning ${(i.options_info || []).length} ta variantini va berilgan javoblarni ham o'chiradi.`,
+    deleteNote: () => "Savolga berilgan javoblar saqlanmaydi.",
+    deleteNoun: "savolini",
   },
 };

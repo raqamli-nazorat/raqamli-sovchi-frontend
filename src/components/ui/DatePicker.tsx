@@ -37,8 +37,16 @@ const calendarLocales: Record<string, any> = {
 const toDateObj = (v: any): Date | null => {
      if (!v) return null
      if (v instanceof Date) return isNaN(v.getTime()) ? null : v
-     // Dayjs parsing for DD.MM.YYYY HH:mm / DD.MM.YYYY formats
-     const parsed = dayjs(v, ["DD.MM.YYYY HH:mm", "DD.MM.YYYY", "YYYY-MM-DD HH:mm", "YYYY-MM-DD"], true)
+     // Dayjs parsing for DD.MM.YYYY HH:mm / DD.MM.YYYY / ISO formats
+     const parsed = dayjs(v, [
+          "DD.MM.YYYY HH:mm",
+          "DD.MM.YYYY",
+          "YYYY-MM-DD HH:mm",
+          "YYYY-MM-DD",
+          "YYYY-MM-DDTHH:mm:ss",
+          "YYYY-MM-DDTHH:mm:ssZ",
+          "YYYY-MM-DDTHH:mm:ss.SSSZ"
+     ], true)
      if (parsed.isValid()) return parsed.toDate()
      const d = new Date(v)
      return isNaN(d.getTime()) ? null : d
@@ -47,6 +55,7 @@ const toDateObj = (v: any): Date | null => {
 export interface DatePickerProps {
      currentLang?: string
      label?: string
+     prefixLabel?: string
      placeholder?: string
      showTime?: boolean
      className?: string
@@ -62,11 +71,13 @@ export interface DatePickerProps {
      minDate?: any
      maxDate?: any
      disabled?: boolean
+     defaultTime?: "start" | "end" | "now"
 }
 
 export const DatePicker = ({
      currentLang = "uz",
      label,
+     prefixLabel,
      placeholder,
      showTime = false,
      className = "",
@@ -82,6 +93,7 @@ export const DatePicker = ({
      minDate,
      maxDate,
      disabled = false,
+     defaultTime,
      ...props
 }: DatePickerProps) => {
      const autoId = useId()
@@ -187,35 +199,65 @@ export const DatePicker = ({
                {displayLabel && <FieldLabel className={labelClassName} htmlFor={fieldId}>{displayLabel}</FieldLabel>}
 
                <div className={cn(
-                    "relative flex items-center h-10 rounded-xl border transition-colors",
+                    "relative flex items-center rounded-xl border transition-colors bg-white dark:bg-zinc-900",
+                    prefixLabel ? "h-[52px] px-3.5" : "h-10 px-3.5",
                     error ? "border-red-500" : "border-[#e5e5e5] dark:border-[#262626]",
                     "focus-within:border-[#0474F3]",
                     disabled && "opacity-50 cursor-not-allowed",
                     inputClassName
                )}>
-                    <input
-                         id={fieldId}
-                         value={inputValue}
-                         placeholder={displayPlaceholder}
-                         maxLength={maxChars}
-                         onChange={handleChange}
-                         className="flex-1 h-full px-3.5 bg-transparent text-[13px] text-[#0a0a0a] dark:text-[#fafafa] placeholder:text-[#a3a3a3] dark:placeholder:text-[#525252] outline-none focus:ring-0"
-                         onBlur={() => {
-                              if (inputValue.length < maxChars || isNaN(dayjs(inputValue, currentFormat, true).toDate().getTime())) {
-                                   setInputValue(formatDate(date))
-                              }
-                         }}
-                         onKeyDown={(e) => {
-                              if (e.key === "ArrowDown") {
-                                   e.preventDefault()
-                                   setOpen(true)
-                              }
-                         }}
-                         disabled={disabled}
-                         {...props}
-                    />
+                    {prefixLabel ? (
+                         <div className="flex-1 flex flex-col justify-center min-w-0 pr-2">
+                              <span className="text-[11px] text-[#737373] dark:text-[#a3a3a3] font-normal leading-tight select-none mb-0.5">
+                                   {prefixLabel}
+                              </span>
+                              <input
+                                   id={fieldId}
+                                   value={inputValue}
+                                   placeholder={displayPlaceholder}
+                                   maxLength={maxChars}
+                                   onChange={handleChange}
+                                   className="w-full bg-transparent text-[13px] font-medium text-[#0a0a0a] dark:text-[#fafafa] placeholder:text-[#a3a3a3] dark:placeholder:text-[#525252] outline-none focus:ring-0 p-0 leading-tight"
+                                   onBlur={() => {
+                                        if (inputValue.length < maxChars || isNaN(dayjs(inputValue, currentFormat, true).toDate().getTime())) {
+                                             setInputValue(formatDate(date))
+                                        }
+                                   }}
+                                   onKeyDown={(e) => {
+                                        if (e.key === "ArrowDown") {
+                                             e.preventDefault()
+                                             setOpen(true)
+                                        }
+                                   }}
+                                   disabled={disabled}
+                                   {...props}
+                              />
+                         </div>
+                    ) : (
+                         <input
+                              id={fieldId}
+                              value={inputValue}
+                              placeholder={displayPlaceholder}
+                              maxLength={maxChars}
+                              onChange={handleChange}
+                              className="flex-1 h-full bg-transparent text-[13px] text-[#0a0a0a] dark:text-[#fafafa] placeholder:text-[#a3a3a3] dark:placeholder:text-[#525252] outline-none focus:ring-0"
+                              onBlur={() => {
+                                   if (inputValue.length < maxChars || isNaN(dayjs(inputValue, currentFormat, true).toDate().getTime())) {
+                                        setInputValue(formatDate(date))
+                                   }
+                              }}
+                              onKeyDown={(e) => {
+                                   if (e.key === "ArrowDown") {
+                                        e.preventDefault()
+                                        setOpen(true)
+                                   }
+                              }}
+                              disabled={disabled}
+                              {...props}
+                         />
+                    )}
 
-                    <div className="flex items-center pr-2.5 gap-1 shrink-0">
+                    <div className="flex items-center gap-1 shrink-0">
                          {date && !disabled && (
                               <button
                                    type="button"
@@ -271,7 +313,11 @@ export const DatePicker = ({
                                                   if (inputValue.length === 16) {
                                                        const timePart = inputValue.slice(11)
                                                        const [hours, minutes] = timePart.split(":")
-                                                       baseDate = baseDate.hour(parseInt(hours)).minute(parseInt(minutes))
+                                                       baseDate = baseDate.hour(parseInt(hours, 10) || 0).minute(parseInt(minutes, 10) || 0)
+                                                  } else if (prefixLabel === "gacha" || defaultTime === "end") {
+                                                       baseDate = baseDate.hour(23).minute(59)
+                                                  } else if (prefixLabel === "dan" || defaultTime === "start") {
+                                                       baseDate = baseDate.hour(0).minute(0)
                                                   } else {
                                                        baseDate = baseDate.hour(dayjs().hour()).minute(dayjs().minute())
                                                   }
@@ -290,3 +336,4 @@ export const DatePicker = ({
           </Field>
      )
 }
+

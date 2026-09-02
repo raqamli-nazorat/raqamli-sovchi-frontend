@@ -1,51 +1,6 @@
 import dayjs from "dayjs";
 import type { RefCtx } from "./referencesConfig";
 
-export interface OrderingOption {
-  value: string;
-  label: string;
-}
-
-const DATE_ORDERING_OPTIONS: OrderingOption[] = [
-  { value: "-created_at", label: "Yangi yaratilgan" },
-  { value: "created_at", label: "Eski yaratilgan" },
-  { value: "-updated_at", label: "Yangi yangilangan" },
-  { value: "updated_at", label: "Eski yangilangan" },
-];
-
-const NAME_ORDERING_OPTIONS: OrderingOption[] = [
-  { value: "name", label: "Nomi (A→Z)" },
-  { value: "-name", label: "Nomi (Z→A)" },
-];
-
-// NOTE: backend `ordering` values below (districts_count, questions_count, order, ...) are
-// placeholders picked to match the Figma copy. Backend field/param names will be confirmed
-// and adjusted later — the important part for now is that a request goes out with a sensible key.
-export const ORDERING_OPTIONS: Record<string, OrderingOption[]> = {
-  roles: [...NAME_ORDERING_OPTIONS, ...DATE_ORDERING_OPTIONS],
-  regions: [
-    { value: "-districts_count", label: "Tumanlar soni (ko'p→kam)" },
-    { value: "districts_count", label: "Tumanlar soni (kam→ko'p)" },
-    ...NAME_ORDERING_OPTIONS,
-    ...DATE_ORDERING_OPTIONS,
-  ],
-  districts: [...NAME_ORDERING_OPTIONS, ...DATE_ORDERING_OPTIONS],
-  "education-levels": [...NAME_ORDERING_OPTIONS, ...DATE_ORDERING_OPTIONS],
-  nationalities: [...NAME_ORDERING_OPTIONS, ...DATE_ORDERING_OPTIONS],
-  professions: [...NAME_ORDERING_OPTIONS, ...DATE_ORDERING_OPTIONS],
-  sections: [
-    { value: "-questions_count", label: "Savollar soni (ko'p→kam)" },
-    { value: "questions_count", label: "Savollar soni (kam→ko'p)" },
-    ...NAME_ORDERING_OPTIONS,
-    ...DATE_ORDERING_OPTIONS,
-  ],
-  questions: [
-    { value: "order", label: "Tartib (1→30)" },
-    { value: "-order", label: "Tartib (30→1)" },
-    ...DATE_ORDERING_OPTIONS,
-  ],
-};
-
 export const GENDER_LABELS: Record<string, string> = {
   all: "Hammaga",
   groom: "Kuyov",
@@ -113,15 +68,6 @@ export const getFilterChips = (
     }
   };
 
-  if (entity === "roles" && filters.is_default) {
-    chips.push({ keys: ["is_default"], label: `Asosiy rol: ${boolLabel(filters.is_default)}` });
-  }
-
-  if (entity === "regions") {
-    const text = fmtRangeChip("Tumanlar soni", filters.districts_count_min, filters.districts_count_max);
-    if (text) chips.push({ keys: ["districts_count_min", "districts_count_max"], label: text });
-  }
-
   if (entity === "districts" && filters.region) {
     chips.push({ keys: ["region"], label: `Viloyat: ${namesFromIds(filters.region, ctx.regions)}` });
   }
@@ -129,9 +75,6 @@ export const getFilterChips = (
   if (entity === "sections") {
     const text = fmtRangeChip("Savollar soni", filters.questions_count_min, filters.questions_count_max);
     if (text) chips.push({ keys: ["questions_count_min", "questions_count_max"], label: text });
-    if (filters.has_no_questions === "true") {
-      chips.push({ keys: ["has_no_questions"], label: "Faqat savolsiz bo'limlar" });
-    }
   }
 
   if (entity === "questions") {
@@ -150,17 +93,10 @@ export const getFilterChips = (
         label: `Tuzoq savol: ${boolLabel(filters.is_trap_question)}`,
       });
     }
-    const orderText = fmtRangeChip("Tartib", filters.order_min, filters.order_max);
-    if (orderText) chips.push({ keys: ["order_min", "order_max"], label: orderText });
   }
 
   addDate("created_at", "Yaratilgan");
   addDate("updated_at", "Yangilangan");
-
-  if (filters.ordering) {
-    const opt = ORDERING_OPTIONS[entity]?.find((o) => o.value === filters.ordering);
-    if (opt) chips.push({ keys: ["ordering"], label: `Saralash: ${opt.label}` });
-  }
 
   return chips;
 };

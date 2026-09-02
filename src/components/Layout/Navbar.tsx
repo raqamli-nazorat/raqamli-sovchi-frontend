@@ -6,7 +6,7 @@ import type { Appeal } from "../../store/slices/appealsSlice";
 
 const PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {
   "/": { title: "Boshqaruv paneli", subtitle: "Umumiy holat va navbatdagi vazifalar" },
-  "/users": { title: "Foydalanuvchilar", subtitle: "Kelin, kuyov va vakillar reyestri" },
+  "/users": { title: "Foydalanuvchilar", subtitle: "" },
   "/appeals": { title: "Shikoyatlar", subtitle: "Foydalanuvchi murojaatlari" },
   "/ai-chat": { title: "AI moderator", subtitle: "Suhbatlardagi qoidabuzarlik signallari" },
   "/settings": { title: "Sozlamalar", subtitle: "Platforma qoidalari va rollar" },

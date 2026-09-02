@@ -1,16 +1,17 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import { ChevronRight, Plus, RefreshCw, Search, SlidersHorizontal, X } from "lucide-react";
+import { useParams } from "react-router-dom";
+import { Plus, RefreshCw, Search, SlidersHorizontal, X } from "lucide-react";
 import { useHeader } from "../../components/Layout/Layout";
+import { axiosAPI } from "../../lib/axiosAPI";
 import { REF_APIS, refApiError, type RefItem } from "./referencesApi";
 import { REF_CONFIGS, type RefCtx } from "./referencesConfig";
 import { getFilterChips } from "./referencesFilterMeta";
 import RefFormModal from "./RefFormModal";
 import RefFilterModal from "./RefFilterModal";
+import RefDeleteModal from "./RefDeleteModal";
 
 const ReferenceListPage = () => {
   const { entity } = useParams<{ entity: string }>();
-  const navigate = useNavigate();
   const { setHeaderTitle, setHeaderSubtitle } = useHeader();
 
   const config = entity ? REF_CONFIGS[entity] : undefined;
@@ -26,10 +27,14 @@ const ReferenceListPage = () => {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [showModal, setShowModal] = useState(false);
+  const [showFormModal, setShowFormModal] = useState(false);
+  const [editItem, setEditItem] = useState<RefItem | null>(null);
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [deleteItem, setDeleteItem] = useState<RefItem | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const [filters, setFilters] = useState<Record<string, any>>({});
 
   const isLoadingRef = useRef(false);
@@ -99,7 +104,9 @@ const ReferenceListPage = () => {
     setSearch("");
     setActiveSearch("");
     setHasMore(true);
-    setShowModal(false);
+    setShowFormModal(false);
+    setEditItem(null);
+    setDeleteItem(null);
     setShowFilterModal(false);
     setFilters({});
     setTotalCount(null);
@@ -129,7 +136,7 @@ const ReferenceListPage = () => {
   useEffect(() => {
     if (!config) return;
     setHeaderTitle("Ma'lumotnomalar");
-    setHeaderSubtitle(`${config.plural} · ${config.subtitle}`);
+    setHeaderSubtitle(config.subtitle);
   }, [entity, config, setHeaderTitle, setHeaderSubtitle]);
 
   if (!config || !api) {
@@ -142,7 +149,19 @@ const ReferenceListPage = () => {
     );
   }
 
-  const handleCreate = async (values: Record<string, string>) => {
+  const openCreate = () => {
+    setEditItem(null);
+    setSaveError(null);
+    setShowFormModal(true);
+  };
+
+  const openEdit = (item: RefItem) => {
+    setEditItem(item);
+    setSaveError(null);
+    setShowFormModal(true);
+  };
+
+  const handleSave = async (values: Record<string, string>) => {
     setSaving(true);
     setSaveError(null);
     try {
@@ -150,27 +169,55 @@ const ReferenceListPage = () => {
 
       if (config.slug === "questions") {
         const { options, ...questionPayload } = payload;
-        const createdQuestion = await api.create(questionPayload);
-        if (createdQuestion && createdQuestion.id && options) {
-          const optionsPayload = {
-            question_id: createdQuestion.id,
-            options: options,
-          };
-          const { axiosAPI } = await import("../../lib/axiosAPI");
-          await axiosAPI.post("accounts/options/bulk/", optionsPayload);
+        if (editItem) {
+          await api.update(editItem.id, questionPayload);
+          if (options) {
+            await axiosAPI.patch("accounts/options/bulk/", {
+              question_id: editItem.id,
+              options,
+            });
+          }
+        } else {
+          const created = await api.create(questionPayload);
+          if (created && created.id && options) {
+            await axiosAPI.post("accounts/options/bulk/", {
+              question_id: created.id,
+              options,
+            });
+          }
         }
+      } else if (editItem) {
+        await api.update(editItem.id, payload);
       } else {
         await api.create(payload);
       }
 
-      setShowModal(false);
+      setShowFormModal(false);
+      setEditItem(null);
       setHasMore(true);
       await loadPage(1, activeSearch, filters);
     } catch (err: any) {
-      console.error(`References (${config.slug}) create error:`, err);
+      console.error(`References (${config.slug}) save error:`, err);
       setSaveError(refApiError(err, "Saqlashda xatolik yuz berdi."));
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!deleteItem) return;
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      await api.remove(deleteItem.id);
+      setDeleteItem(null);
+      setHasMore(true);
+      await loadPage(1, activeSearch, filters);
+    } catch (err: any) {
+      console.error(`References (${config.slug}) delete error:`, err);
+      setDeleteError(refApiError(err, "O'chirishda xatolik yuz berdi."));
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -260,10 +307,7 @@ const ReferenceListPage = () => {
             )}
           </button>
           <button
-            onClick={() => {
-              setSaveError(null);
-              setShowModal(true);
-            }}
+            onClick={openCreate}
             className="h-10 px-4 flex items-center gap-1.5 bg-[#0474F3] hover:bg-[#042480] active:scale-[0.99] text-white text-[13px] font-semibold rounded-lg transition-all cursor-pointer"
           >
             <Plus className="w-4 h-4 stroke-[2.5]" /> Qo'shish
@@ -315,7 +359,6 @@ const ReferenceListPage = () => {
               {col.header}
             </div>
           ))}
-          <div className="w-[24px]" />
         </div>
 
         {loading ? (
@@ -338,7 +381,7 @@ const ReferenceListPage = () => {
             <p className="text-[14px] font-semibold text-[#D32F2F]">Xatolik</p>
             <p className="text-[13px] text-[#737373] dark:text-[#A3A3A3] mt-1">{error}</p>
             <button
-              onClick={() => loadPage(1, activeSearch)}
+              onClick={() => loadPage(1, activeSearch, filters)}
               className="mt-4 h-10 px-4 inline-flex items-center gap-2 bg-[#0474F3] hover:bg-[#042480] text-white text-[13px] font-semibold rounded-lg transition-colors cursor-pointer"
             >
               <RefreshCw className="w-4 h-4" strokeWidth={2.2} /> Qayta urinish
@@ -360,7 +403,7 @@ const ReferenceListPage = () => {
             {items.map((item, idx) => (
               <div
                 key={item.id}
-                onClick={() => navigate(`/references/${config.slug}/${item.id}`)}
+                onClick={() => openEdit(item)}
                 className="flex flex-col md:flex-row md:items-center px-6 py-4.5 gap-1 md:gap-4 hover:bg-gray-50/50 dark:hover:bg-zinc-900/30 transition-colors cursor-pointer"
               >
                 <div className="w-[32px] text-[13px] text-[#A3A3A3] tabular-nums hidden md:block">
@@ -380,9 +423,6 @@ const ReferenceListPage = () => {
                     {col.value(item, ctx)}
                   </div>
                 ))}
-                <div className="w-[24px] hidden md:flex items-center justify-end text-gray-400">
-                  <ChevronRight size={16} />
-                </div>
               </div>
             ))}
             {loadingMore && (
@@ -395,16 +435,48 @@ const ReferenceListPage = () => {
         )}
       </div>
 
-      {showModal && (
+      {showFormModal && (
         <RefFormModal
-          title={config.formTitle}
-          hint={config.formHint}
+          title={editItem ? config.singular : config.formTitle}
+          hint={editItem ? undefined : config.formHint}
           fields={config.fields}
           ctx={ctx}
+          initialValues={
+            editItem
+              ? config.toFormValues
+                ? config.toFormValues(editItem)
+                : ({ ...editItem } as Record<string, string>)
+              : undefined
+          }
           saving={saving}
           error={saveError}
-          onClose={() => setShowModal(false)}
-          onSubmit={handleCreate}
+          onClose={() => {
+            setShowFormModal(false);
+            setEditItem(null);
+          }}
+          onSubmit={handleSave}
+          onDelete={
+            editItem
+              ? () => {
+                  setShowFormModal(false);
+                  setDeleteError(null);
+                  setDeleteItem(editItem);
+                }
+              : undefined
+          }
+        />
+      )}
+
+      {deleteItem && (
+        <RefDeleteModal
+          name={config.titleOf(deleteItem)}
+          noun={config.deleteNoun}
+          note={config.deleteNote(deleteItem, ctx)}
+          blockReason={config.cantDeleteReason ? config.cantDeleteReason(deleteItem) : null}
+          deleting={deleting}
+          error={deleteError}
+          onClose={() => setDeleteItem(null)}
+          onConfirm={handleDelete}
         />
       )}
 
@@ -414,6 +486,7 @@ const ReferenceListPage = () => {
           isOpen={showFilterModal}
           onClose={() => setShowFilterModal(false)}
           onSubmit={handleFilterSubmit}
+          onClear={handleClearAllFilters}
           initialFilters={filters}
         />
       )}
