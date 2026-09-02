@@ -10,7 +10,6 @@ import {
   AppealDetailPage,
   UsersDetailPage,
   ReferenceListPage,
-  ReferenceDetailPage,
   AQuestions,
   SettingPage,
   NotificationPage
@@ -93,7 +92,6 @@ const router = createBrowserRouter([
       { path: "/appeals/:id", element: <AppealDetailPage /> },
       { path: "/references/:entity", element: <ReferenceListPage /> },
       { path: "/questions", element: <AQuestions /> },
-      { path: "/references/:entity/:id", element: <ReferenceDetailPage /> },
       { path: "/psychologists", element: <UsersPage /> },
       { path: "/settings", element: <SettingPage /> },
       { path: "/notification", element: <NotificationPage /> },
