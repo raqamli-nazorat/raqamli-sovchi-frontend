@@ -11,8 +11,6 @@ interface RefFilterModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (filters: Record<string, any>) => void;
-  // filtrlarni bekor qiladi, lekin modalni ochiq qoldiradi
-  onClear?: () => void;
   initialFilters?: Record<string, any>;
 }
 
@@ -40,7 +38,22 @@ const HA_YOQ_SEGMENTED = [
 const startOfYear = () => dayjs().startOf("year").toDate();
 const endOfYear = () => dayjs().endOf("year").toDate();
 
+// Barcha maydonlar bo'sh — "Tozalash" shu holatga keltiradi
+const emptyValues = (): Record<string, any> => ({
+  created_at_after: null,
+  created_at_before: null,
+  updated_at_after: null,
+  updated_at_before: null,
+  region: [],
+  questions_count_min: "",
+  questions_count_max: "",
+  section: [],
+  target_gender: "",
+  is_trap_question: "",
+});
+
 const buildValues = (initial: Record<string, any>): Record<string, any> => ({
+  ...emptyValues(),
   created_at_after:
     parseDate(initial.start_date || initial.created_at_after || initial.created_at__gte) ||
     startOfYear(),
@@ -67,7 +80,6 @@ const RefFilterModal = ({
   isOpen,
   onClose,
   onSubmit,
-  onClear,
   initialFilters = {},
 }: RefFilterModalProps) => {
   const [values, setValues] = useState<Record<string, any>>(() => buildValues(initialFilters));
@@ -112,9 +124,9 @@ const RefFilterModal = ({
   };
 
   const handleClear = () => {
-    setValues(buildValues({}));
-    // Barcha filtrlarni bekor qilib, ro'yxatni yangilaymiz — modal ochiq qoladi
-    onClear?.();
+    // Faqat modal ichidagi maydonlarni bo'shatamiz.
+    // Ro'yxat "Qo'llash" bosilgandagina yangilanadi.
+    setValues(emptyValues());
   };
 
   const handleApply = () => {
