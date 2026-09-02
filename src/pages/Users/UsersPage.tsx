@@ -282,9 +282,9 @@ const UsersPage = () => {
       </div>
 
       {/* Users List Container */}
-      <div className="bg-white dark:bg-[#141414] rounded-xl border border-[#E5E5E5] dark:border-[#262626] shadow-xs overflow-y-auto max-h-[calc(100vh-140px)]">
+      <div className="bg-white dark:bg-[#141414] dark:border-[#262626] overflow-y-auto max-h-[calc(100vh-140px)]">
         {/* Table Headers */}
-        <div className="hidden md:flex bg-[#FAFAFA] dark:bg-[#202020] items-center px-6 py-3.5 border-b border-[#F5F5F5] dark:border-[#262626] text-[11px] font-semibold text-[#737373] dark:text-[#A3A3A3] tracking-wider sticky top-0 z-10">
+        <div className="hidden md:flex bg-[#f5f5f5] dark:bg-[#202020] items-center px-6 py-3.5 border-b border-[#F5F5F5] dark:border-[#262626] text-[11px] font-semibold text-[#737373] dark:text-[#A3A3A3] tracking-wider sticky top-0 z-10">
           <div className="flex-1 min-w-[240px]">Foydalanuvchi</div>
           <div className="w-[130px]">Turi</div>
           <div className="w-[160px]">Hudud</div>
