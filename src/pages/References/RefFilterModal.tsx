@@ -190,16 +190,20 @@ const RefFilterModal = ({
       {sectionLabel(label)}
       <div className="grid grid-cols-2 gap-3 mt-2">
         <DatePicker
+          prefixLabel="dan"
+          showTime
           value={values[afterKey]}
           onChange={(d: Date | null) => setVal(afterKey, d)}
           widthClass="w-full"
-          placeholder="Boshlanish sanasi"
+          placeholder="01.01.2026 00:00"
         />
         <DatePicker
+          prefixLabel="gacha"
+          showTime
           value={values[beforeKey]}
           onChange={(d: Date | null) => setVal(beforeKey, d)}
           widthClass="w-full"
-          placeholder="Tugash sanasi"
+          placeholder="31.12.2026 23:59"
         />
       </div>
     </div>
