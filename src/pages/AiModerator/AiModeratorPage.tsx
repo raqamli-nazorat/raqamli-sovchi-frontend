@@ -94,11 +94,11 @@ const AiModeratorPage = () => {
       </div>
 
       {/* ── Signallar jadvali ── */}
-      <div className="bg-white dark:bg-[#141414] border border-[#E5E5E5] dark:border-[#262626] rounded-2xl overflow-hidden">
+      <div className="bg-white dark:bg-[#141414] overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left">
             <thead>
-              <tr className="bg-[#FAFAFA] dark:bg-[#1c1c1c] border-b border-[#F0F0F0] dark:border-[#262626]">
+              <tr className="bg-[#f5f5f5] dark:bg-[#1c1c1c] border-b border-[#F0F0F0] dark:border-[#262626]">
                 <th className="px-6 py-3.5 text-[13px] font-medium text-[#525252] dark:text-[#A3A3A3]">
                   Foydalanuvchi
                 </th>
