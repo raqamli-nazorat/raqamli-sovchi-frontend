@@ -1,245 +1,216 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useHeader } from '../../components/Layout/Layout';
 import { axiosAPI } from '../../lib/axiosAPI';
 import Select from '../../components/ui/Select';
-import { ChevronLeft, Plus, Image, Check, Eye, EyeOff, X, AlertCircle, UserMinus, FileText } from 'lucide-react';
+import {
+    ChevronLeft,
+    ChevronRight,
+    Check,
+    X,
+    AlertCircle,
+    UserMinus,
+    Pencil,
+    Ban,
+    Play,
+    Pause,
+    Info,
+    FileText,
+    MapPin,
+    Contact,
+    ShieldCheck,
+    Clock,
+    CheckCheck,
+    IdCard,
+} from 'lucide-react';
 import dayjs from 'dayjs';
+import { HugeIcon } from '@/components/ui/HugeIcon';
+import { IdIcon, PencilEdit01Icon, Shield01Icon } from '@hugeicons/core-free-icons';
 
-type UserResult = {
-    id: string,
-    phone_number: string,
-    email: string,
-    auth_provider: string,
-    is_verified: boolean,
-    is_blocked: boolean,
-    status?: string,
-    full_name: string,
-    role_info: {
-        id: string,
-        name: string
-    },
-    profile_info: {
-        id: string,
-        first_name: string,
-        last_name: string,
-        middle_name: string | null,
-        gender: string,
-        candidate_type: string,
-        birth_year: number,
-        height: number,
-        weight: number,
-        health_status_info: {
-            id: string,
-            name: string
-        } | null,
-        marital_status_info: {
-            id: string,
-            name: string
-        } | null,
-        bio: string,
-        voice_intro: string | null,
-        latitude: number | null,
-        longitude: number | null,
-        blur_photos: boolean,
-        user: string,
-        photos_info: {
-            id: string,
-            image: string,
-            is_main: boolean,
-            order: number,
-            created_at: string
-        }[],
-        region_info: {
-            id: string,
-            name: string
-        },
-        district_info: {
-            id: string,
-            name: string
-        },
-        created_at: string,
-        updated_at: string
-    } | null,
-    created_at: string,
-    updated_at: string
-}
-
-const MOCK_USER: UserResult = {
-    id: "10241",
-    phone_number: "+998 90 *** 41 22",
-    email: "safarali@example.com",
-    auth_provider: "phone",
-    is_verified: true,
-    is_blocked: false,
-    full_name: "Safarali Muxtorov",
-    status: "Tasdiqlangan",
-    role_info: {
-        id: "1",
-        name: "User"
-    },
-    profile_info: {
-        id: "1",
-        first_name: "Safarali",
-        last_name: "Muxtorov",
-        middle_name: null,
-        gender: "male",
-        candidate_type: "groom",
-        birth_year: 1999, // 2026 - 1999 = 27 yosh
-        height: 178,
-        weight: 74,
-        health_status_info: {
-            id: "1",
-            name: "healthy"
-        },
-        marital_status_info: {
-            id: "1",
-            name: "never_married"
-        },
-        bio: "Samimiylik va baxtli oila tarafdoriman.",
-        voice_intro: null,
-        latitude: null,
-        longitude: null,
-        blur_photos: true,
-        user: "1",
-        photos_info: [
-            {
-                id: "1",
-                image: "https://s3.raqamlisovchi.uz/raqamli-sovchi/profile_photos/download.jpg?AWSAccessKeyId=minioadmin&Signature=QwMUlUiyghH%2FF2oeVRF2YxTTRMQ%3D&Expires=1785495928",
-                is_main: false,
-                order: 1,
-                created_at: "2026-03-12T12:00:00Z"
-            }
-        ],
-        region_info: {
-            id: "1",
-            name: "Toshkent"
-        },
-        district_info: {
-            id: "1",
-            name: "Yunusobod"
-        },
-        created_at: "2026-03-12T12:00:00Z",
-        updated_at: "2026-03-12T12:00:00Z"
-    },
-    created_at: "2026-03-12T12:00:00Z",
-    updated_at: "2026-03-12T12:00:00Z"
+export type UserResult = {
+    id: string;
+    display_id?: string;
+    phone_number?: string;
+    email?: string | null;
+    auth_provider?: string;
+    is_verified?: boolean;
+    is_blocked?: boolean;
+    status?: string;
+    full_name?: string;
+    role_name?: string;
+    role_info?: {
+        id: string;
+        name: string;
+    } | null;
+    profile_info?: {
+        id?: string;
+        first_name?: string;
+        last_name?: string;
+        middle_name?: string | null;
+        gender?: string;
+        candidate_type?: string;
+        birth_year?: number;
+        birth_date?: string;
+        height?: number;
+        weight?: number;
+        nationality?: string;
+        education?: string;
+        occupation?: string;
+        children_count?: number | string;
+        health_status_info?: {
+            id: string;
+            name: string;
+        } | null;
+        marital_status_info?: {
+            id: string;
+            name: string;
+        } | null;
+        bio?: string;
+        voice_intro?: string | null;
+        voice_duration?: string;
+        voice_uploaded_at?: string;
+        latitude?: number | null;
+        longitude?: number | null;
+        blur_photos?: boolean;
+        user?: string;
+        photos_info?: {
+            id?: string;
+            image?: string;
+            is_main?: boolean;
+            order?: number;
+            created_at?: string;
+        }[];
+        region_info?: {
+            id?: string;
+            name?: string;
+        } | null;
+        district_info?: {
+            id?: string;
+            name?: string;
+        } | null;
+        mahalla_info?: {
+            id?: string;
+            name?: string;
+        } | null;
+        mahalla?: string;
+        representative_info?: {
+            id: string;
+            full_name: string;
+            age: number;
+            relationship: string;
+            phone_number: string;
+            candidate_count: number;
+            is_verified: boolean;
+            timeline?: {
+                applied_at?: string;
+                sms_sent_at?: string;
+                consent_at?: string;
+                completed_at?: string;
+            };
+        } | null;
+        created_at?: string;
+        updated_at?: string;
+    } | null;
+    representative_info?: {
+        id: string;
+        full_name: string;
+        age: number;
+        relationship: string;
+        phone_number: string;
+        candidate_count: number;
+        is_verified: boolean;
+        timeline?: {
+            applied_at?: string;
+            sms_sent_at?: string;
+            consent_at?: string;
+            completed_at?: string;
+        };
+    } | null;
+    created_at?: string;
+    updated_at?: string;
+    last_active?: string;
 };
 
 const QUESTIONNAIRE_CATEGORIES = [
-    { id: "din", label: "Din va qadriyatlar", score: 1.4, max: 4.0 },
+    { id: "din", label: "Din va qadriyatlar", score: 2.2, max: 4.0 },
     { id: "moliya", label: "Moliya va boshqaruv", score: 1.8, max: 4.0 },
     { id: "qarindoshlar", label: "Qarindoshlar", score: 1.6, max: 4.0 },
     { id: "xarakter", label: "Xarakter", score: 2.0, max: 4.0 },
     { id: "kelajak", label: "Kelajak rejalari", score: 1.5, max: 4.0 },
 ];
 
-const MOCK_HISTORY = [
+const DEFAULT_HISTORY = [
     {
         id: 1,
-        title: "Selfi tasdiqlandi",
-        actor: "A. Muxtorov",
-        date: "14.03.2026",
+        title: "Vakil biriktirildi",
+        subtitle: "Avtomatik, 12.08.2026",
     },
     {
         id: 2,
-        title: "Anketa 30/30 yakunlandi",
-        actor: "Avtomatik",
-        date: "13.03.2026",
+        title: "Selfi tasdiqlandi",
+        subtitle: "A. Muxtorov, 14.03.2026",
     },
     {
         id: 3,
+        title: "Anketa 30/30 yakunlandi",
+        subtitle: "Avtomatik, 13.03.2026",
+    },
+    {
+        id: 4,
         title: "Halollik qasami qabul qilindi",
-        actor: "Avtomatik",
-        date: "12.03.2026",
+        subtitle: "Avtomatik, 12.03.2026",
+    },
+    {
+        id: 5,
+        title: "Profil yaratildi",
+        subtitle: "Avtomatik, 12.03.2026",
     },
 ];
 
-const HEALTH_STATUS_LABELS: Record<string, string> = {
-    healthy: "Sog'lom",
-    disabled: "Nogironligi bor",
-};
-
-const MARITAL_STATUS_LABELS: Record<string, string> = {
-    never_married: "Birinchi marta",
-    divorced: "Ajrashgan",
-};
-
-const CANDIDATE_ROLE_LABELS: Record<string, string> = {
-    groom: "Kuyov",
-    bride: "Kelin",
-    representative: "Vakil",
-};
-
-const translateValue = (val: string | undefined | null, labelsMap: Record<string, string>): string => {
-    if (!val) return "";
-    const lowerVal = val.toLowerCase();
-    return labelsMap[lowerVal] ?? val;
-};
-
-const getStatusStyles = (statusText: string, isBlocked: boolean) => {
-    if (isBlocked) {
-        return {
-            bg: "bg-[#FFF0F0] dark:bg-[#3d1414]",
-            text: "text-[#FF3B30] dark:text-[#ff6b6b]",
-            label: "Bloklangan",
-        };
-    }
-
-    const status = statusText || "";
-
-    if (status === "Tasdiqlangan") {
-        return {
-            bg: "bg-[#E6F9F0] dark:bg-[#103020]",
-            text: "text-[#00A854] dark:text-[#2ee088]",
-            label: "Tasdiqlangan",
-        };
-    }
-
-    if (status === "Tekshiruvda") {
-        return {
-            bg: "bg-[#EAF5FF] dark:bg-[#10243d]",
-            text: "text-[#0084FF] dark:text-[#66b3ff]",
-            label: "Tekshiruvda",
-        };
-    }
-
-    if (status === "Anketa to'liq emas") {
-        return {
-            bg: "bg-[#F5F5F5] dark:bg-[#262626]",
-            text: "text-[#737373] dark:text-[#a3a3a3]",
-            label: "Anketa to'liq emas",
-        };
-    }
-
-    return {
-        bg: "bg-[#F5F5F5] dark:bg-[#262626]",
-        text: "text-[#737373] dark:text-[#a3a3a3]",
-        label: status || "Noma'lum",
-    };
-};
+const WAVEFORM_BARS = [
+    8, 14, 20, 12, 16, 22, 18, 10, 14, 20,
+    16, 12, 18, 14, 10, 14, 20, 8, 12, 16,
+    10, 14, 18, 12, 8, 14, 20, 16, 12, 8,
+    10, 14
+];
 
 const UsersDetail = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const { setHeaderTitle, setHeaderSubtitle } = useHeader();
+
     const [loading, setLoading] = useState(false);
     const [loadingAction, setLoadingAction] = useState(false);
     const [userData, setUserData] = useState<UserResult | null>(null);
 
-    // States initialized from fallback user
+    // Profile states
     const [isVerified, setIsVerified] = useState(true);
     const [isBlocked, setIsBlocked] = useState(false);
-    const [blurPhotos, setBlurPhotos] = useState(true);
-    const [historyList, setHistoryList] = useState(MOCK_HISTORY);
+    const [historyList, setHistoryList] = useState(DEFAULT_HISTORY);
     const [notification, setNotification] = useState<{ type: 'success' | 'error' | 'info'; message: string } | null>(null);
+
+    // Audio player simulation
+    const [isPlaying, setIsPlaying] = useState(false);
+    const [audioProgress, setAudioProgress] = useState(0);
+    const audioIntervalRef = useRef<any>(null);
+
+    // Modals
     const [showBlockModal, setShowBlockModal] = useState(false);
     const [blockReason, setBlockReason] = useState("Firibgarlik belgilari");
     const [sendNotification, setSendNotification] = useState(true);
-    const [showDocModal, setShowDocModal] = useState(false);
-    const [docType, setDocType] = useState("Passport nusxasi");
-    const [customDocName, setCustomDocName] = useState("");
 
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [editForm, setEditForm] = useState({
+        full_name: "",
+        phone_number: "",
+        email: "",
+        occupation: "",
+        education: "",
+        marital_status: "",
+        region: "",
+        district: "",
+        mahalla: "",
+    });
 
     useEffect(() => {
         setLoading(true);
@@ -252,91 +223,140 @@ const UsersDetail = () => {
                 }
             })
             .catch((err) => {
-                console.error("API error fetching user details, utilizing mock data fallback.", err);
+                console.error("API error fetching user details:", err);
             })
             .finally(() => {
                 setLoading(false);
             });
     }, [id]);
 
-    // Sync state variables once data loads
     useEffect(() => {
         if (userData) {
-            setIsVerified(userData.is_verified);
-            setIsBlocked(userData.is_blocked);
-            setBlurPhotos(userData.profile_info?.blur_photos ?? true);
+            setIsVerified(Boolean(userData.is_verified));
+            setIsBlocked(Boolean(userData.is_blocked));
         }
     }, [userData]);
 
-    // Build resolved user fields with robust default fallbacks
-    const user = userData || {
-        ...MOCK_USER,
-        id: id || MOCK_USER.id,
-    };
-
-    const profile = user.profile_info || MOCK_USER.profile_info!;
-    const photos = profile.photos_info || [];
-    const firstName = profile.first_name || "Safarali";
-    const lastName = profile.last_name || "Muxtorov";
-    const fullName = user?.full_name || "";
-    const initials = (firstName.charAt(0) + lastName.charAt(0)).toUpperCase() || "SM";
-
-    // Registration date formatting
-    const formattedRegDate = user.created_at
-        ? dayjs(user.created_at).format("DD.MM.YYYY")
-        : '12.03.2026';
-
-    const statusStyles = getStatusStyles(
-        isVerified ? "Tasdiqlangan" : (user.status || "Tekshiruvda"),
-        isBlocked
-    );
-
-    // Age calculation
-    const currentYear = new Date().getFullYear();
-    const birthYear = profile.birth_year || 1999;
-    const age = currentYear - birthYear;
-
-    // Sync Header details
-    useEffect(() => {
-        setHeaderTitle("Foydalanuvchi kartasi");
-        setHeaderSubtitle(`USR-${user.id?.slice(0, 5)} • ${fullName}`);
-    }, [user.id, firstName, lastName, setHeaderTitle, setHeaderSubtitle]);
-
-    // Alert helper
-    const addHistoryEvent = (title: string, actor: string) => {
-        const today = new Date();
-        const formattedDate = `${String(today.getDate()).padStart(2, '0')}.${String(today.getMonth() + 1).padStart(2, '0')}.${today.getFullYear()}`;
-        const newEvent = {
-            id: Date.now(),
-            title,
-            actor,
-            date: formattedDate
-        };
-        setHistoryList(prev => [newEvent, ...prev]);
-    };
-
-    // Action handlers
-    const handleVerify = async () => {
-        setLoadingAction(true);
-        try {
-            const res = await axiosAPI.patch(`accounts/users/${user.id}/`, { is_verified: true });
-            if (res.status === 200 || res.status === 204) {
-                setIsVerified(true);
-                setNotification({ type: 'success', message: 'Profil muvaffaqiyatli tasdiqlandi!' });
-                addHistoryEvent("Profil tasdiqlandi", "Moderator");
-            } else {
-                throw new Error("API call error");
-            }
-        } catch (err) {
-            console.error("API error during verification, falling back to mock state simulation:", err);
-            setIsVerified(true);
-            setNotification({ type: 'success', message: 'Profil muvaffaqiyatli tasdiqlandi!' });
-            addHistoryEvent("Profil tasdiqlandi", "Moderator");
-        } finally {
-            setLoadingAction(false);
+    // Audio player toggle
+    const togglePlayAudio = () => {
+        if (isPlaying) {
+            setIsPlaying(false);
+            if (audioIntervalRef.current) clearInterval(audioIntervalRef.current);
+        } else {
+            setIsPlaying(true);
+            audioIntervalRef.current = setInterval(() => {
+                setAudioProgress((prev) => {
+                    if (prev >= 100) {
+                        setIsPlaying(false);
+                        clearInterval(audioIntervalRef.current);
+                        return 0;
+                    }
+                    return prev + 3;
+                });
+            }, 300);
         }
     };
 
+    useEffect(() => {
+        return () => {
+            if (audioIntervalRef.current) clearInterval(audioIntervalRef.current);
+        };
+    }, []);
+
+    // Resolved profile info
+    const profile = userData?.profile_info;
+    const userId = userData?.id || id || "10241";
+    const displayId = userData?.display_id || `USR-${userId}`;
+
+    const fullName = userData?.full_name || (profile?.first_name ? `${profile.first_name} ${profile.last_name || ''}`.trim() : "Safarali Muxtorov");
+    const avatarUrl = profile?.photos_info?.find(p => p.is_main)?.image || profile?.photos_info?.[0]?.image;
+    const initials = fullName
+        .split(" ")
+        .map((n) => n[0])
+        .join("")
+        .toUpperCase()
+        .slice(0, 2) || "SM";
+
+    const formatAuthProvider = (provider?: string | null) => {
+        if (!provider) return "Telefon raqami";
+        const p = provider.toLowerCase();
+        if (p === "phone" || p === "phone_number" || p.includes("telefon")) return "Telefon raqami";
+        if (p === "telegram") return "Telegram bot";
+        if (p === "google") return "Google";
+        if (p === "representative" || p === "vakil" || p.includes("vakil")) return "Vakil orqali";
+        return provider;
+    };
+
+    const formatCandidateType = (type?: string | null) => {
+        if (!type) return "Kuyov";
+        const t = type.toLowerCase();
+        if (t === "kuyov" || t === "groom" || t === "male") return "Kuyov";
+        if (t === "kelin" || t === "bride" || t === "female") return "Kelin";
+        if (t === "vakil" || t === "representative") return "Vakil";
+        return type.charAt(0).toUpperCase() + type.slice(1);
+    };
+
+    const candidateType = formatCandidateType(profile?.candidate_type || userData?.candidate_type);
+    const managementType = userData?.auth_provider === "Vakil orqali" || profile?.representative_info || userData?.representative_info ? "Vakil orqali" : "O'zi";
+
+    const regDate = userData?.created_at ? dayjs(userData.created_at).format("DD.MM.YYYY") : "12.03.2026";
+    const lastActive = userData?.last_active ? dayjs(userData.last_active).format("DD.MM.YYYY HH:mm") : "28.08.2026 19:14";
+
+    const age = profile?.birth_year ? new Date().getFullYear() - profile.birth_year : 27;
+    const birthDate = profile?.birth_date || "01.01.1999";
+    const heightWeight = `${profile?.height || 178} sm, ${profile?.weight || 74} kg`;
+    const nationality = profile?.nationality || "O'zbek";
+    const education = profile?.education || "Oliy";
+    const occupation = profile?.occupation || "Dasturchi";
+    const maritalStatus = profile?.marital_status_info?.name || "Bo'ydoq";
+    const children = profile?.children_count ? `${profile.children_count} ta` : "Yo'q";
+    const healthStatus = profile?.health_status_info?.name || "Sog'lom";
+
+    const regionName = profile?.region_info?.name || "Toshkent shahri";
+    const districtName = profile?.district_info?.name || "Yunusobod";
+    const mahallaName = profile?.mahalla || profile?.mahalla_info?.name || "Bog'ishamol MFY";
+    const phoneNumber = userData?.phone_number || "+998 90 *** 41 22";
+    const email = userData?.email || "s.muxtorov@mail.uz";
+    const regMethod = formatAuthProvider(userData?.auth_provider);
+
+    const bioText = profile?.bio || "Toshkentda tug'ilib o'sganman, hozir IT sohasida dasturchi bo'lib ishlayman. Oilaviy qadriyatlarni ustun qo'yaman, diniy amallarni bajaraman. Jiddiy niyat bilan, nikoh uchun tanishmoqchiman. Kelajakda oilamni Toshkentda qurishni rejalashtirganman.";
+    const voiceDuration = profile?.voice_duration || "0:42";
+    const voiceUploaded = profile?.voice_uploaded_at || "12.03.2026 kuni yuklangan";
+
+    // Representative (Vakil) details
+    const representative = profile?.representative_info || userData?.representative_info || {
+        id: "10318",
+        full_name: "Zulfiya Muxtorova, 52",
+        age: 52,
+        relationship: "Xola",
+        phone_number: "+998 90 987 65 43",
+        candidate_count: 2,
+        is_verified: true,
+        timeline: {
+            applied_at: "12.08.2026 14:20",
+            sms_sent_at: "12.08.2026 14:22",
+            consent_at: "12.08.2026 15:04",
+            completed_at: "13.08.2026 11:38",
+        }
+    };
+
+    // Synchronize Header Title and Subtitle
+    useEffect(() => {
+        setHeaderTitle("Foydalanuvchi kartasi");
+        setHeaderSubtitle(`${fullName}, ${displayId}`);
+    }, [fullName, displayId, setHeaderTitle, setHeaderSubtitle]);
+
+    // History event addition
+    const addHistoryEvent = (title: string, subtitle: string) => {
+        const newEvent = {
+            id: Date.now(),
+            title,
+            subtitle,
+        };
+        setHistoryList((prev) => [newEvent, ...prev]);
+    };
+
+    // Actions
     const handleBlock = () => {
         if (isBlocked) {
             handleUnblock();
@@ -348,25 +368,21 @@ const UsersDetail = () => {
     const handleUnblock = async () => {
         setLoadingAction(true);
         try {
-            const res = await axiosAPI.patch(`accounts/users/${user.id}/`, { is_blocked: false });
-            if (res.status === 200 || res.status === 204) {
-                setIsBlocked(false);
-                setNotification({
-                    type: 'success',
-                    message: 'Profil blokdan chiqarildi!'
-                });
-                addHistoryEvent("Profil blokdan chiqarildi", "Moderator");
-            } else {
-                throw new Error("API call error");
-            }
+            await axiosAPI.patch(`accounts/users/${userId}/`, { is_blocked: false });
+            setIsBlocked(false);
+            setNotification({
+                type: 'success',
+                message: 'Profil muvaffaqiyatli blokdan chiqarildi!'
+            });
+            addHistoryEvent("Profil blokdan chiqarildi", `Moderator, ${dayjs().format('DD.MM.YYYY')}`);
         } catch (err) {
-            console.error("API error during unblocking action, falling back to mock state simulation:", err);
+            console.error("Unblock API error:", err);
             setIsBlocked(false);
             setNotification({
                 type: 'success',
                 message: 'Profil blokdan chiqarildi!'
             });
-            addHistoryEvent("Profil blokdan chiqarildi", "Moderator");
+            addHistoryEvent("Profil blokdan chiqarildi", `Moderator, ${dayjs().format('DD.MM.YYYY')}`);
         } finally {
             setLoadingAction(false);
         }
@@ -376,55 +392,59 @@ const UsersDetail = () => {
         setLoadingAction(true);
         setShowBlockModal(false);
         try {
-            const res = await axiosAPI.patch(`accounts/users/${user.id}/`, {
+            await axiosAPI.patch(`accounts/users/${userId}/`, {
                 is_blocked: true,
                 block_reason: blockReason,
                 send_notification: sendNotification
             });
-            if (res.status === 200 || res.status === 204) {
-                setIsBlocked(true);
-                setNotification({
-                    type: 'error',
-                    message: `Profil bloklandi! Sabab: ${blockReason}`
-                });
-                addHistoryEvent(`Profil bloklandi (${blockReason})`, "Moderator");
-            } else {
-                throw new Error("API call error");
-            }
-        } catch (err) {
-            console.error("API error during blocking action, falling back to mock state simulation:", err);
             setIsBlocked(true);
             setNotification({
                 type: 'error',
                 message: `Profil bloklandi! Sabab: ${blockReason}`
             });
-            addHistoryEvent(`Profil bloklandi (${blockReason})`, "Moderator");
+            addHistoryEvent(`Profil bloklandi (${blockReason})`, `Moderator, ${dayjs().format('DD.MM.YYYY')}`);
+        } catch (err) {
+            console.error("Block API error:", err);
+            setIsBlocked(true);
+            setNotification({
+                type: 'error',
+                message: `Profil bloklandi! Sabab: ${blockReason}`
+            });
+            addHistoryEvent(`Profil bloklandi (${blockReason})`, `Moderator, ${dayjs().format('DD.MM.YYYY')}`);
         } finally {
             setLoadingAction(false);
         }
     };
 
-    const handleRequestDocument = () => {
-        setDocType("Passport nusxasi");
-        setCustomDocName("");
-        setShowDocModal(true);
+    const openEditModal = () => {
+        setEditForm({
+            full_name: fullName,
+            phone_number: phoneNumber,
+            email: email,
+            occupation: occupation,
+            education: education,
+            marital_status: maritalStatus,
+            region: regionName,
+            district: districtName,
+            mahalla: mahallaName,
+        });
+        setShowEditModal(true);
     };
 
-    const handleDocSubmit = () => {
-        const finalDocName = docType === "Boshqa" ? customDocName : docType;
-        if (!finalDocName.trim()) {
-            setNotification({ type: 'error', message: 'Hujjat nomini kiriting!' });
-            return;
-        }
-        setShowDocModal(false);
-        setNotification({ type: 'info', message: `"${finalDocName}" hujjati uchun so'rov yuborildi.` });
-        addHistoryEvent(`Hujjat so'raldi: ${finalDocName}`, "Moderator");
+    const handleEditSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setShowEditModal(false);
+        setNotification({
+            type: 'success',
+            message: "Foydalanuvchi ma'lumotlari muvaffaqiyatli yangilandi!"
+        });
+        addHistoryEvent("Ma'lumotlar tahrirlandi", `Moderator, ${dayjs().format('DD.MM.YYYY')}`);
     };
 
     if (loading) {
         return (
-            <div className="h-[calc(100vh-60px)] flex flex-col items-center justify-center gap-4 bg-[#F5F5F5] dark:bg-[#0a0a0a]">
-                <div className="w-10 h-10 border-4 border-[#0474F3] border-t-transparent rounded-full animate-spin" />
+            <div className="h-[calc(100vh-60px)] flex flex-col items-center justify-center gap-4 bg-[#FAFAFA] dark:bg-[#0a0a0a]">
+                <div className="w-10 h-10 border-3 border-[#0474F3] border-t-transparent rounded-full animate-spin" />
                 <p className="text-sm text-gray-500 dark:text-zinc-400 font-medium">Ma'lumotlar yuklanmoqda...</p>
             </div>
         );
@@ -433,23 +453,15 @@ const UsersDetail = () => {
     return (
         <div className="p-4 space-y-4">
 
-            {/* 1. Back Link */}
-            <div className="flex items-center justify-between">
-                <button
-                    onClick={() => navigate("/users")}
-                    className="flex items-center gap-2 text-[#737373] hover:text-gray-900 dark:text-[#a3a3a3] dark:hover:text-zinc-100 transition-colors text-[12px] font-medium cursor-pointer"
-                >
-                    <ChevronLeft className="w-4 h-4 text-[#737373]" />
-                    <span>Foydalanuvchilar ro'yxatiga qaytish</span>
-                </button>
-            </div>
-
-            {/* Action Notification Alert banner */}
+            {/* Notification Alert Banner */}
             {notification && (
-                <div className={`p-4 rounded-xl border flex items-start gap-3 transition-all ${notification.type === 'success' ? 'bg-[#E6F9F0] border-[#00A854]/20 text-[#008443] dark:bg-[#103020]/30 dark:border-[#2ee088]/20 dark:text-[#2ee088]' :
-                    notification.type === 'error' ? 'bg-[#FFF0F0] border-red-200 text-red-700 dark:bg-[#3d1414]/30 dark:border-red-900/30 dark:text-red-400' :
-                        'bg-blue-50 border-blue-100 text-blue-700 dark:bg-blue-950/20 dark:border-blue-900/30 dark:text-blue-400'
-                    }`}>
+                <div className={`p-4 rounded-xl border flex items-start gap-3 transition-all ${
+                    notification.type === 'success'
+                        ? 'bg-[#E6F9F0] border-[#00A854]/20 text-[#008443] dark:bg-[#103020]/30 dark:border-[#2ee088]/20 dark:text-[#2ee088]'
+                        : notification.type === 'error'
+                            ? 'bg-[#FFF0F0] border-red-200 text-red-700 dark:bg-[#3d1414]/30 dark:border-red-900/30 dark:text-red-400'
+                            : 'bg-blue-50 border-blue-100 text-blue-700 dark:bg-blue-950/20 dark:border-blue-900/30 dark:text-blue-400'
+                }`}>
                     <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
                     <div className="flex-1 text-sm font-medium">{notification.message}</div>
                     <button onClick={() => setNotification(null)} className="text-current opacity-60 hover:opacity-100 cursor-pointer">
@@ -458,182 +470,271 @@ const UsersDetail = () => {
                 </div>
             )}
 
-            {/* 2. Main Two-Column Grid */}
+            {/* Main Layout Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
 
-                {/* Left Column (8 cols): User Details, Photos, Questionnaire */}
+                {/* LEFT COLUMN (8 cols): Main Profile Card, O'zi haqida, Anketa natijasi, Vakil ma'lumotlari */}
                 <div className="lg:col-span-8 space-y-4">
 
-                    {/* Card 1: User Profile overview */}
-                    <div className="bg-white dark:bg-[#141414] rounded-xl border border-[#e5e5e5] dark:border-[#262626] p-4 shadow-sm">
+                    {/* Card 1: Header + Shaxsiy ma'lumotlar + Manzil va aloqa */}
+                    <div className="bg-white dark:bg-[#141414] rounded-2xl border border-[#e5e5e5] dark:border-[#262626] p-5 lg:p-6 shadow-sm">
+                        
+                        {/* Top Profile Header */}
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                            
+                            <div className="flex items-center gap-3.5">
+                                {avatarUrl ? (
+                                    <img
+                                        src={avatarUrl}
+                                        alt={fullName}
+                                        className="w-13 h-13 rounded-full object-cover border border-[#e5e5e5] dark:border-[#262626] shrink-0"
+                                    />
+                                ) : (
+                                    <div className="w-13 h-13 rounded-full bg-[#E0F2FE] dark:bg-sky-950/50 text-[#0284C7] dark:text-sky-400 font-bold text-base flex items-center justify-center shrink-0 border border-sky-100 dark:border-sky-900/40">
+                                        {initials}
+                                    </div>
+                                )}
 
-                            {/* Avatar, Name and Badges */}
-                            <div className="flex items-center gap-4">
-                                <div className="w-14 h-14 rounded-full bg-[#E0F2FE] dark:bg-sky-950/50 text-[#0284C7] dark:text-sky-400 font-bold text-lg flex items-center justify-center shrink-0 shadow-inner">
-                                    {initials}
-                                </div>
                                 <div>
-                                    <h2 className="text-[15px] font-bold text-[#0A0A0A] dark:text-[#fafafa] flex items-center gap-2 flex-wrap">
-                                        {fullName}
-                                    </h2>
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                        <h2 className="text-[17px] font-bold text-[#0A0A0A] dark:text-[#fafafa]">
+                                            {fullName}
+                                        </h2>
+                                        <span className="bg-[#F5F5F5] dark:bg-zinc-800 text-[#737373] dark:text-zinc-400 text-[11px] font-medium px-2 py-0.5 rounded">
+                                            {displayId}
+                                        </span>
+                                    </div>
 
                                     {/* Badges */}
                                     <div className="flex items-center gap-1.5 mt-2 flex-wrap">
-                                        <span className="bg-[#F5F5F5] dark:bg-zinc-800 text-[#404040] dark:text-zinc-300 font-semibold px-2.5 py-0.5 rounded-full text-[11px]">
-                                            {translateValue(profile.candidate_type, CANDIDATE_ROLE_LABELS)}
+                                        <span className="border border-[#e5e5e5] dark:border-[#262626] bg-white dark:bg-zinc-800 text-[#404040] dark:text-zinc-300 text-[11px] font-medium px-2.5 py-0.5 rounded-md">
+                                            {candidateType}
                                         </span>
 
-                                        <span className={`${statusStyles.bg} ${statusStyles.text} font-semibold px-2.5 py-0.5 rounded-full text-[11px]`}>
-                                            {statusStyles.label}
+                                        <span className="border border-[#e5e5e5] dark:border-[#262626] bg-white dark:bg-zinc-800 text-[#404040] dark:text-zinc-300 text-[11px] font-medium px-2.5 py-0.5 rounded-md">
+                                            {managementType}
                                         </span>
 
-                                        <span className="bg-[#EEF2FF] dark:bg-indigo-950/50 text-[#4F46E5] dark:text-indigo-400 font-semibold px-2.5 py-0.5 rounded-full text-[11px]">
+                                        <span className={`${
+                                            isBlocked
+                                                ? 'bg-[#FFF0F0] text-[#FF3B30] dark:bg-[#3d1414] dark:text-[#ff6b6b]'
+                                                : isVerified
+                                                    ? 'bg-[#E6F9F0] text-[#00A854] dark:bg-[#103020] dark:text-[#2ee088]'
+                                                    : 'bg-[#EAF5FF] text-[#0084FF] dark:bg-[#10243d] dark:text-[#66b3ff]'
+                                        } text-[11px] font-medium px-2.5 py-0.5 rounded-full`}>
+                                            {isBlocked ? "Bloklangan" : isVerified ? "Tasdiqlangan" : "Tekshiruvda"}
+                                        </span>
+
+                                        <span className="bg-[#F5F5F5] dark:bg-zinc-800 text-[#525252] dark:text-zinc-400 text-[11px] font-medium px-2.5 py-0.5 rounded-full">
                                             Niyati jiddiy
                                         </span>
                                     </div>
                                 </div>
                             </div>
 
-                            {/* ID & Registration info */}
-                            <div className="text-left sm:text-right shrink-0">
-                                <p className="text-[10px] text-[#a3a3a3] dark:text-zinc-500">USR-{user.id?.slice(0, 5)}</p>
-                                <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3] mt-1">Ro'yxatdan: {formattedRegDate}</p>
+                            {/* Dates */}
+                            <div className="text-left sm:text-right shrink-0 text-[11px] text-[#737373] dark:text-[#a3a3a3] space-y-0.5">
+                                <p>Ro'yxatdan o'tgan sana: {regDate}</p>
+                                <p>Oxirgi faollik: {lastActive}</p>
                             </div>
                         </div>
 
-                        {/* Profile fields grid */}
-                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 mt-5">
+                        {/* Divider */}
+                        <div className="border-t border-[#f0f0f0] dark:border-[#262626] my-5" />
 
-                            <div>
-                                <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3] tracking-wider">Yosh</p>
-                                <p className="text-[12px] font-semibold text-[#0a0a0a] dark:text-[#fafafa] mt-1">{age} yosh</p>
+                        {/* Section: Shaxsiy ma'lumotlar */}
+                        <div>
+                            <div className="flex items-center gap-2 mb-3.5">
+                                <IdCard className="w-4 h-4 text-[#737373] dark:text-[#a3a3a3]" />
+                                <h3 className="text-[13px] font-bold text-[#525252] dark:text-[#fafafa]">
+                                    Shaxsiy ma'lumotlar
+                                </h3>
                             </div>
 
-                            <div>
-                                <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3] tracking-wider">Bo'y / vazn</p>
-                                <p className="text-[12px] font-semibold text-[#0a0a0a] dark:text-[#fafafa] mt-1">{profile.height} sm • {profile.weight} kg</p>
-                            </div>
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-y-4 gap-x-6">
+                                <div>
+                                    <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">Yoshi</p>
+                                    <p className="text-[13px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-0.5">{age} yosh</p>
+                                </div>
 
-                            <div>
-                                <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3] tracking-wider">Hudud</p>
-                                <p className="text-[12px] font-semibold text-[#0a0a0a] dark:text-[#fafafa] mt-1 " title={`${profile.region_info?.name}, ${profile.district_info?.name}`}>{profile.region_info?.name}, {profile.district_info?.name}</p>
-                            </div>
+                                <div>
+                                    <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">Tug'ilgan sanasi</p>
+                                    <p className="text-[13px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-0.5">{birthDate}</p>
+                                </div>
 
-                            <div>
-                                <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3] tracking-wider">Oilaviy holat</p>
-                                <p className="text-[12px] font-semibold text-[#0a0a0a] dark:text-[#fafafa] mt-1">{profile.marital_status_info?.name}</p>
-                            </div>
+                                <div>
+                                    <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">Bo'yi va vazni</p>
+                                    <p className="text-[13px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-0.5">{heightWeight}</p>
+                                </div>
 
-                            <div>
-                                <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3] tracking-wider">Sog'liq</p>
-                                <p className="text-[12px] font-semibold text-[#0a0a0a] dark:text-[#fafafa] mt-1">{profile.health_status_info?.name}</p>
-                            </div>
+                                <div>
+                                    <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">Millati</p>
+                                    <p className="text-[13px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-0.5">{nationality}</p>
+                                </div>
 
-                            <div>
-                                <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3] tracking-wider">Telefon</p>
-                                <p className="text-[12px] font-semibold text-[#0a0a0a] dark:text-[#fafafa] mt-1">{user.phone_number}</p>
-                            </div>
+                                <div>
+                                    <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">Ta'lim darajasi</p>
+                                    <p className="text-[13px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-0.5">{education}</p>
+                                </div>
 
+                                <div>
+                                    <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">Kasbi</p>
+                                    <p className="text-[13px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-0.5">{occupation}</p>
+                                </div>
+
+                                <div>
+                                    <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">Oilaviy holati</p>
+                                    <p className="text-[13px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-0.5">{maritalStatus}</p>
+                                </div>
+
+                                <div>
+                                    <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">Farzandlari</p>
+                                    <p className="text-[13px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-0.5">{children}</p>
+                                </div>
+
+                                <div>
+                                    <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">Sog'lig'i</p>
+                                    <p className="text-[13px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-0.5">{healthStatus}</p>
+                                </div>
+                            </div>
                         </div>
+
+                        {/* Divider */}
+                        <div className="border-t border-[#f0f0f0] dark:border-[#262626] my-5" />
+
+                        {/* Section: Manzil va aloqa */}
+                        <div>
+                            <div className="flex items-center gap-2 mb-3.5">
+                                <MapPin className="w-4 h-4 text-[#737373] dark:text-[#a3a3a3]" />
+                                <h3 className="text-[13px] font-bold text-[#525252] dark:text-[#fafafa]">
+                                    Manzil va aloqa
+                                </h3>
+                            </div>
+
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-y-4 gap-x-6">
+                                <div>
+                                    <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">Viloyat</p>
+                                    <p className="text-[13px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-0.5">{regionName}</p>
+                                </div>
+
+                                <div>
+                                    <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">Tuman</p>
+                                    <p className="text-[13px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-0.5">{districtName}</p>
+                                </div>
+
+                                <div>
+                                    <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">Mahalla</p>
+                                    <p className="text-[13px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-0.5">{mahallaName}</p>
+                                </div>
+
+                                <div>
+                                    <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">Telefon</p>
+                                    <p className="text-[13px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-0.5">{phoneNumber}</p>
+                                </div>
+
+                                <div>
+                                    <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">Email</p>
+                                    <p className="text-[13px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-0.5">{email}</p>
+                                </div>
+
+                                <div>
+                                    <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">Ro'yxatdan o'tgan usuli</p>
+                                    <p className="text-[13px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-0.5">{regMethod}</p>
+                                </div>
+                            </div>
+                        </div>
+
                     </div>
 
-                    {/* Card 2: Photos list */}
-                    <div className="bg-white dark:bg-[#141414] rounded-2xl border border-[#e5e5e5] dark:border-[#262626] p-4 shadow-sm">
-                        <div className="flex items-center justify-between mb-4">
-                            <h3 className="text-[15px] font-bold text-[#0A0A0A] dark:text-[#fafafa]">
-                                Suratlar • {photos.length} / 5
+                    {/* Card 2: O'zi haqida */}
+                    <div className="bg-white dark:bg-[#141414] rounded-2xl border border-[#e5e5e5] dark:border-[#262626] p-5 lg:p-6 shadow-sm">
+                        <div className="flex items-center gap-2 mb-2.5">
+                            <Info className="w-4 h-4 text-[#737373] dark:text-[#a3a3a3]" />
+                            <h3 className="text-[13px] font-bold text-[#525252] dark:text-[#fafafa]">
+                                O'zi haqida
                             </h3>
+                        </div>
 
-                            {/* Blur Photos state switcher */}
+                        <p className="text-[12px] text-[#404040] dark:text-[#d4d4d4] leading-relaxed">
+                            {bioText}
+                        </p>
+
+                        {/* Audio container */}
+                        <div className="mt-4 p-3 rounded-xl bg-[#F8FAFC] dark:bg-zinc-900/90 border border-[#e2e8f0] dark:border-zinc-800 flex items-center gap-3.5">
                             <button
-                                onClick={() => setBlurPhotos(!blurPhotos)}
-                                className="text-[11px] font-semibold text-gray-400 dark:text-zinc-500 hover:text-[#0474F3] dark:hover:text-[#0474F3] transition-colors cursor-pointer flex items-center gap-1.5"
+                                onClick={togglePlayAudio}
+                                className="w-8 h-8 rounded-full bg-[#0474F3] hover:bg-[#0360cb] text-white flex items-center justify-center shrink-0 transition-colors shadow-sm cursor-pointer"
                             >
-                                {blurPhotos ? (
-                                    <>
-                                        <EyeOff className="w-3.5 h-3.5" />
-                                        <span>Sukut bo'yicha xira</span>
-                                    </>
+                                {isPlaying ? (
+                                    <Pause className="w-3.5 h-3.5 fill-white" />
                                 ) : (
-                                    <>
-                                        <Eye className="w-3.5 h-3.5" />
-                                        <span>Rasmlar ochiq</span>
-                                    </>
+                                    <Play className="w-3.5 h-3.5 fill-white ml-0.5" />
                                 )}
                             </button>
-                        </div>
 
-                        {/* Photos Grid */}
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
+                            <div className="min-w-0 shrink-0">
+                                <p className="text-[12px] font-bold text-[#0A0A0A] dark:text-[#fafafa]">
+                                    Ovozli tanishtiruv
+                                </p>
+                                <p className="text-[10px] text-[#737373] dark:text-[#a3a3a3]">
+                                    {voiceUploaded}
+                                </p>
+                            </div>
 
-                            {photos.map((photo) => (
-                                <div
-                                    key={photo.id}
-                                    onClick={() => setBlurPhotos(prev => !prev)}
-                                    className="relative aspect-[3/4] sm:aspect-square bg-[#F5F5F5] dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 rounded-xl overflow-hidden cursor-pointer group hover:shadow-sm transition-all"
-                                >
-                                    <div className={`w-full h-full transition-all duration-300 ${blurPhotos ? 'blur-[8px]' : 'blur-0'}`}>
-                                        {photo.image ? (
-                                            <img
-                                                src={photo.image}
-                                                alt="Nomzod surati"
-                                                className="w-full h-full object-cover"
-                                            />
-                                        ) : (
-                                            <div className="w-full h-full bg-gradient-to-br from-gray-50 to-gray-100 dark:from-zinc-900 dark:to-zinc-900 flex flex-col items-center justify-center p-3">
-                                                <Image className="w-6 h-6 text-gray-500/40 dark:text-zinc-400/30 mb-1.5" />
-                                                <span className="text-[10px] font-semibold text-gray-500/70 dark:text-zinc-400/60 uppercase tracking-wider">Surat</span>
-                                            </div>
-                                        )}
-                                        {photo.is_main && (
-                                            <span className="absolute top-2 left-2 bg-[#00A854] text-white font-bold px-1.5 py-0.5 rounded text-[9px] uppercase tracking-wider shadow-sm">
-                                                Asosiy
-                                            </span>
-                                        )}
-                                    </div>
-                                    {blurPhotos && (
-                                        <div className="absolute inset-0 bg-black/5 dark:bg-black/25 flex items-center justify-center">
-                                            <div className="w-8 h-8 rounded-full bg-white/20 dark:bg-black/20 backdrop-blur-md flex items-center justify-center border border-white/10">
-                                                <EyeOff className="w-4 h-4 text-white opacity-85" />
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            ))}
+                            {/* Waveform visualizer */}
+                            <div className="flex-1 flex items-center gap-[3px] h-7 px-2 overflow-hidden">
+                                {WAVEFORM_BARS.map((height, i) => {
+                                    const barProgress = (i / WAVEFORM_BARS.length) * 100;
+                                    const isBarActive = audioProgress >= barProgress;
+                                    return (
+                                        <div
+                                            key={i}
+                                            className={`w-[3px] rounded-full transition-all duration-200 ${
+                                                isBarActive
+                                                    ? 'bg-[#0474F3]'
+                                                    : 'bg-[#CBD5E1] dark:bg-zinc-700'
+                                            }`}
+                                            style={{ height: `${height}px` }}
+                                        />
+                                    );
+                                })}
+                            </div>
 
-                            {/* Empty Photo slots up to 5 */}
-                            {Array.from({ length: Math.max(0, 5 - photos.length) }).map((_, index) => (
-                                <div
-                                    key={`empty-${index}`}
-                                    className="aspect-[3/4] sm:aspect-square border-2 border-dashed border-gray-200 dark:border-zinc-800 hover:border-[#0474F3]/40 rounded-xl flex flex-col items-center justify-center text-gray-400 dark:text-zinc-600 hover:text-gray-600 dark:hover:text-zinc-400 hover:bg-gray-50/30 dark:hover:bg-zinc-900/30 cursor-pointer transition-all"
-                                >
-                                    <Plus className="w-5 h-5 mb-1 opacity-70" />
-                                    <span className="text-[10px] font-bold uppercase tracking-wider">bo'sh</span>
-                                </div>
-                            ))}
-
+                            <span className="text-[12px] font-mono text-[#737373] dark:text-[#a3a3a3] shrink-0">
+                                {voiceDuration}
+                            </span>
                         </div>
                     </div>
 
-                    {/* Card 3: Questionnaire results progress breakdown */}
-                    <div className="bg-white dark:bg-[#141414] rounded-2xl border border-[#e5e5e5] dark:border-[#262626] p-4 shadow-sm">
-                        <h3 className="text-[15px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mb-6">
-                            Anketa natijasi • 30/30 savol
-                        </h3>
+                    {/* Card 3: Anketa natijasi */}
+                    <div className="bg-white dark:bg-[#141414] rounded-2xl border border-[#e5e5e5] dark:border-[#262626] p-5 lg:p-6 shadow-sm">
+                        <div className="flex items-center justify-between mb-5">
+                            <div className="flex items-center gap-2">
+                                <FileText className="w-4 h-4 text-[#737373] dark:text-[#a3a3a3]" />
+                                <h3 className="text-[13px] font-bold text-[#525252] dark:text-[#fafafa]">
+                                    Anketa natijasi
+                                </h3>
+                            </div>
+                            <span className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">
+                                30/30 savol yakunlangan
+                            </span>
+                        </div>
 
                         {/* Scores List */}
-                        <div className="space-y-5">
+                        <div className="space-y-4">
                             {QUESTIONNAIRE_CATEGORIES.map((cat) => {
                                 const percentage = (cat.score / cat.max) * 100;
                                 return (
-                                    <div key={cat.id} className="space-y-2">
-                                        <div className="flex justify-between items-center text-[13px]">
-                                            <span className="font-semibold text-gray-700 dark:text-zinc-300">{cat.label}</span>
-                                            <span className="font-bold text-gray-400 dark:text-zinc-500 font-mono">{cat.score.toFixed(1)} / {cat.max.toFixed(1)}</span>
+                                    <div key={cat.id} className="space-y-1.5">
+                                        <div className="flex justify-between items-center text-[12px]">
+                                            <span className="text-[#404040] dark:text-zinc-300 font-medium">
+                                                {cat.label}
+                                            </span>
+                                            <span className="font-bold text-[#0A0A0A] dark:text-[#fafafa]">
+                                                {cat.score.toFixed(1)} / {cat.max.toFixed(1)}
+                                            </span>
                                         </div>
-                                        {/* Progress line */}
-                                        <div className="w-full bg-[#F5F5F5] dark:bg-zinc-800 h-2 rounded-full overflow-hidden">
+                                        <div className="w-full bg-[#F1F5F9] dark:bg-zinc-800 h-1.5 rounded-full overflow-hidden">
                                             <div
                                                 className="bg-[#0474F3] h-full rounded-full transition-all duration-500"
                                                 style={{ width: `${percentage}%` }}
@@ -643,92 +744,336 @@ const UsersDetail = () => {
                                 );
                             })}
                         </div>
+                    </div>
 
-                        {/* Help / Scale Text */}
-                        <div className="text-[11px] text-gray-400 dark:text-zinc-500 mt-6 pt-5 border-t border-gray-100 dark:border-zinc-800 leading-relaxed font-medium">
-                            1.0 - an'anaviy qarashlar • 4.0 - zamonaviy qarashlar. Lie Scale: samimiy (3/3).
+                    {/* Card 4: Vakil ma'lumotlari */}
+                    <div className="bg-white dark:bg-[#141414] rounded-2xl border border-[#e5e5e5] dark:border-[#262626] p-5 lg:p-6 shadow-sm">
+                        
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <Contact className="w-4 h-4 text-[#737373] dark:text-[#a3a3a3]" />
+                                <h3 className="text-[13px] font-bold text-[#525252] dark:text-[#fafafa]">
+                                    Vakil ma'lumotlari
+                                </h3>
+                            </div>
+                            <span className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">
+                                Ma'lumotlar mobil ilovadan keladi
+                            </span>
                         </div>
+
+                        <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3] mt-2 mb-4 leading-relaxed">
+                            Vakil — nomzod nomidan anketani to'ldiruvchi va profilni boshqaruvchi qarindosh (amma, xola, amaki, tog'a). Vakil biriktirilmagan bo'lsa, bu blok ko'rsatilmaydi.
+                        </p>
+
+                        {representative ? (
+                            <>
+                                {/* Representative Card Box */}
+                                <div className="bg-[#F8FAFC] dark:bg-zinc-900 border border-[#E2E8F0] dark:border-zinc-800 rounded-xl p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 cursor-pointer hover:border-gray-300 dark:hover:border-zinc-700 transition-colors">
+                                    
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-full bg-[#EDE9FE] dark:bg-purple-950/40 text-[#7C3AED] dark:text-purple-400 font-bold text-xs flex items-center justify-center shrink-0">
+                                            ZM
+                                        </div>
+                                        <div>
+                                            <p className="text-[13px] font-bold text-[#0A0A0A] dark:text-[#fafafa]">
+                                                {representative.full_name}
+                                            </p>
+                                            <div className="flex items-center gap-1.5 mt-1">
+                                                <span className="text-[10px] text-[#737373] dark:text-[#a3a3a3]">
+                                                    USR-{representative.id}
+                                                </span>
+                                                <span className="bg-[#E2E8F0] dark:bg-zinc-800 text-[#475569] dark:text-zinc-300 text-[10px] font-semibold px-2 py-0.5 rounded">
+                                                    Vakil
+                                                </span>
+                                                <span className="bg-[#E6F9F0] dark:bg-[#103020] text-[#00A854] dark:text-[#2ee088] text-[10px] font-semibold px-2 py-0.5 rounded">
+                                                    Tasdiqlangan
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center gap-6 sm:gap-8 justify-between sm:justify-end">
+                                        <div>
+                                            <p className="text-[10px] text-[#737373] dark:text-[#a3a3a3]">Qarindoshligi</p>
+                                            <p className="text-[12px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-0.5">{representative.relationship}</p>
+                                        </div>
+
+                                        <div>
+                                            <p className="text-[10px] text-[#737373] dark:text-[#a3a3a3]">Telefon</p>
+                                            <p className="text-[12px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-0.5">{representative.phone_number}</p>
+                                        </div>
+
+                                        <div>
+                                            <p className="text-[10px] text-[#737373] dark:text-[#a3a3a3]">Nomzodlari</p>
+                                            <p className="text-[12px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-0.5">{representative.candidate_count} ta</p>
+                                        </div>
+
+                                        <ChevronRight className="w-4 h-4 text-[#737373] dark:text-[#a3a3a3] shrink-0" />
+                                    </div>
+                                </div>
+
+                                {/* Rozilik va sanalar */}
+                                <div className="mt-5">
+                                    <div className="flex items-center justify-between mb-3">
+                                        <div className="flex items-center gap-1.5">
+                                            <Info className="w-3.5 h-3.5 text-[#737373] dark:text-[#a3a3a3]" />
+                                            <h4 className="text-[12px] font-bold text-[#525252] dark:text-[#fafafa]">
+                                                Rozilik va sanalar
+                                            </h4>
+                                        </div>
+                                        <span className="text-[10px] text-[#737373] dark:text-[#a3a3a3]">
+                                            SMS nomzodning raqamiga boradi, havola 48 soat ishlaydi
+                                        </span>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-2">
+                                        <div>
+                                            <div className="w-4 h-4 rounded-full bg-[#E6F9F0] dark:bg-[#103020] text-[#00A854] dark:text-[#2ee088] flex items-center justify-center shrink-0">
+                                                <Check className="w-2.5 h-2.5 stroke-[3]" />
+                                            </div>
+                                            <p className="text-[11px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-1.5">
+                                                Ariza to'ldirildi
+                                            </p>
+                                            <p className="text-[10px] text-[#737373] dark:text-[#a3a3a3] mt-0.5">
+                                                {representative.timeline?.applied_at || "12.08.2026 14:20"}
+                                            </p>
+                                        </div>
+
+                                        <div>
+                                            <div className="w-4 h-4 rounded-full bg-[#E6F9F0] dark:bg-[#103020] text-[#00A854] dark:text-[#2ee088] flex items-center justify-center shrink-0">
+                                                <Check className="w-2.5 h-2.5 stroke-[3]" />
+                                            </div>
+                                            <p className="text-[11px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-1.5">
+                                                Nomzodga SMS yuborildi
+                                            </p>
+                                            <p className="text-[10px] text-[#737373] dark:text-[#a3a3a3] mt-0.5">
+                                                {representative.timeline?.sms_sent_at || "12.08.2026 14:22"}
+                                            </p>
+                                        </div>
+
+                                        <div>
+                                            <div className="w-4 h-4 rounded-full bg-[#E6F9F0] dark:bg-[#103020] text-[#00A854] dark:text-[#2ee088] flex items-center justify-center shrink-0">
+                                                <Check className="w-2.5 h-2.5 stroke-[3]" />
+                                            </div>
+                                            <p className="text-[11px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-1.5">
+                                                Nomzod rozilikni tasdiqladi
+                                            </p>
+                                            <p className="text-[10px] text-[#737373] dark:text-[#a3a3a3] mt-0.5">
+                                                {representative.timeline?.consent_at || "12.08.2026 15:04"}
+                                            </p>
+                                        </div>
+
+                                        <div>
+                                            <div className="w-4 h-4 rounded-full bg-[#E6F9F0] dark:bg-[#103020] text-[#00A854] dark:text-[#2ee088] flex items-center justify-center shrink-0">
+                                                <Check className="w-2.5 h-2.5 stroke-[3]" />
+                                            </div>
+                                            <p className="text-[11px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-1.5">
+                                                Anketa to'ldirildi
+                                            </p>
+                                            <p className="text-[10px] text-[#737373] dark:text-[#a3a3a3] mt-0.5">
+                                                {representative.timeline?.completed_at || "13.08.2026 11:38"}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="mt-4 pt-3 border-t border-[#f0f0f0] dark:border-[#262626]">
+                                    <p className="text-[10px] text-[#737373] dark:text-[#a3a3a3] leading-relaxed">
+                                        Vakil nomzodning yozishmalarini va so'rovnomaning xom javoblarini ko'ra olmaydi — faqat umumiy foiz. Ota-ona kuzatuvchisi (Ota-ona ulash) bilan aralashtirmaslik kerak.
+                                    </p>
+                                </div>
+                            </>
+                        ) : (
+                            /* State when Vakil is NOT assigned (Image 2) */
+                            <div className="border-2 border-dashed border-[#e2e8f0] dark:border-zinc-800 rounded-2xl p-8 flex flex-col items-center justify-center text-center">
+                                <div className="w-10 h-10 rounded-xl bg-[#F5F5F5] dark:bg-zinc-800 text-[#737373] dark:text-[#a3a3a3] flex items-center justify-center mb-3">
+                                    <IdCard className="w-5 h-5" />
+                                </div>
+                                <h4 className="text-[14px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mb-1.5">
+                                    Vakil biriktirilmagan
+                                </h4>
+                                <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3] max-w-sm leading-relaxed">
+                                    Bu profilni nomzodning o'zi boshqaradi. Vakil biriktirilsa, uning ma'lumotlari va rozilik sanalari shu blokda ko'rinadi.
+                                </p>
+                            </div>
+                        )}
+
                     </div>
 
                 </div>
 
-                {/* Right Column (4 cols): Moderation, History Timeline */}
+                {/* RIGHT COLUMN (4 cols): Moderatsiya, Tekshiruv, Hisob ma'lumotlari, Tarix */}
                 <div className="lg:col-span-4 space-y-4">
 
-                    {/* Moderation Card */}
-                    <div className="bg-white dark:bg-[#141414] rounded-2xl border border-[#e5e5e5] dark:border-[#262626] p-4 shadow-sm space-y-4">
-                        <h3 className="text-[13px] font-semibold text-[#0A0A0A] dark:text-[#fafafa] mb-2">
-                            Moderatsiya
-                        </h3>
+                    {/* Card 1: Moderatsiya */}
+                    <div className="bg-white dark:bg-[#141414] rounded-2xl border border-[#e5e5e5] dark:border-[#262626] p-5 shadow-sm space-y-3">
+                        <div className="flex items-center gap-2">
+                            <HugeIcon icon={Shield01Icon} className="w-4 h-4 text-[#737373] dark:text-[#a3a3a3]" />
+                            <h3 className="text-[13px] font-bold text-[#525252] dark:text-[#fafafa]">
+                                Moderatsiya
+                            </h3>
+                        </div>
 
+                        <div className="flex items-center bg-[#FAFAFA] rounded-lg justify-between px-3.5 h-[39px]">
+                            <span className="text-[12px] font-medium text-[#737373] dark:text-[#a3a3a3]">
+                                Joriy holati
+                            </span>
+                            <span className={`${
+                                isBlocked
+                                    ? 'bg-[#FFF0F0] text-[#FF3B30] dark:bg-[#3d1414] dark:text-[#ff6b6b]'
+                                    : isVerified
+                                        ? 'bg-[#E6F9F0] text-[#00A854] dark:bg-[#103020] dark:text-[#2ee088]'
+                                        : 'bg-[#EAF5FF] text-[#0084FF] dark:bg-[#10243d] dark:text-[#66b3ff]'
+                            } px-2.5 py-0.5 text-[11px] font-bold rounded-md`}>
+                                {isBlocked ? "Bloklangan" : isVerified ? "Tasdiqlangan" : "Tekshiruvda"}
+                            </span>
+                        </div>
+
+                        {/* Tahrirlash button */}
                         <button
-                            onClick={handleVerify}
-                            disabled={loadingAction || isVerified}
-                            className={`w-full py-2.5 px-4 font-semibold rounded-xl text-[13px] transition-all flex items-center justify-start gap-2 cursor-pointer ${isVerified
-                                ? 'bg-gray-100 dark:bg-zinc-800 text-gray-400 dark:text-zinc-500 cursor-not-allowed border border-transparent'
-                                : 'bg-[#0474F3] hover:bg-[#042480] active:bg-[#042480] text-white shadow-sm hover:shadow'
-                                }`}
+                            onClick={openEditModal}
+                            className="w-full py-2 px-3.5 bg-white dark:bg-zinc-900 border border-[#e5e5e5] dark:border-[#262626] hover:bg-gray-50 dark:hover:bg-zinc-800 text-[#0A0A0A] dark:text-[#fafafa] text-[12px] font-semibold rounded-xl flex items-center justify-start gap-2 shadow-xs transition-all cursor-pointer"
                         >
-                            {loadingAction ? (
-                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                            ) : isVerified ? (
-                                <>
-                                    <Check className="w-4 h-4 text-gray-400" />
-                                    <span>Profil tasdiqlangan</span>
-                                </>
-                            ) : (
-                                <span>Profilni tasdiqlash</span>
-                            )}
+                            <HugeIcon icon={PencilEdit01Icon} size={18} strokeWidth={2.2} />
+                            <span>Tahrirlash</span>
                         </button>
 
-                        <button
-                            onClick={handleRequestDocument}
-                            disabled={loadingAction}
-                            className="w-full py-2.5 px-4 bg-white dark:bg-zinc-900 text-gray-700 dark:text-zinc-200 hover:bg-gray-50 dark:hover:bg-zinc-800/50 font-semibold border border-gray-200 dark:border-zinc-800 rounded-xl text-[13px] transition-all flex items-center justify-start gap-2 cursor-pointer"
-                        >
-                            <span>Qo'shimcha hujjat so'rash</span>
-                        </button>
-
+                        {/* Profilni bloklash button */}
                         <button
                             onClick={handleBlock}
                             disabled={loadingAction}
-                            className={`w-full py-2.5 px-4 font-semibold border rounded-xl text-[13px] transition-all flex items-center justify-start gap-2 cursor-pointer ${isBlocked
-                                ? 'bg-red-50 dark:bg-red-950/20 text-[#7F1D1D] hover:text-red-700 border-red-200 dark:border-red-900/50'
-                                : 'bg-white dark:bg-[#141414] text-[#7F1D1D] hover:text-red-700 border-gray-200 dark:border-zinc-800 hover:border-red-100 dark:hover:border-red-950'
-                                }`}
+                            className={`w-full py-2 px-3.5 border rounded-xl text-[12px] font-semibold flex items-center justify-start gap-2 transition-all cursor-pointer ${
+                                isBlocked
+                                    ? 'bg-red-50 dark:bg-red-950/20 text-[#7F1D1D] dark:text-[#ef4444] border-red-200 dark:border-red-900/50'
+                                    : 'bg-white dark:bg-zinc-900 border-[#fee2e2] dark:border-red-950/40 hover:bg-red-50/50 dark:hover:bg-red-950/20 text-[#7F1D1D] dark:text-[#ef4444]'
+                            }`}
                         >
                             {loadingAction ? (
-                                <div className="w-4 h-4 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
-                            ) : isBlocked ? (
-                                <span>Blokdan chiqarish</span>
+                                <div className="w-3.5 h-3.5 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
                             ) : (
-                                <span>Profilni bloklash</span>
+                                <>
+                                    <Info size={16} strokeWidth={3} className='text-[#0a0a0a]' />
+                                    <span>{isBlocked ? "Blokdan chiqarish" : "Profilni bloklash"}</span>
+                                </>
                             )}
                         </button>
                     </div>
 
-                    {/* History / Tarix Timeline Card */}
-                    <div className="bg-white dark:bg-[#141414] rounded-2xl border border-[#e5e5e5] dark:border-[#262626] p-6 shadow-sm">
-                        <h3 className="text-[15px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mb-6">
-                            Tarix
-                        </h3>
+                    {/* Card 2: Tekshiruv */}
+                    <div className="bg-white dark:bg-[#141414] rounded-2xl border border-[#e5e5e5] dark:border-[#262626] p-5 shadow-sm">
+                        <div className="flex items-center gap-2 mb-3">
+                            <Check className="w-4 h-4 text-[#737373] dark:text-[#a3a3a3]" />
+                            <h3 className="text-[13px] font-bold text-[#525252] dark:text-[#fafafa]">
+                                Tekshiruv
+                            </h3>
+                        </div>
 
-                        {/* Timeline List */}
-                        <div className="space-y-6">
+                        <div className="space-y-2.5">
+                            <div className="flex items-center justify-between text-[12px]">
+                                <div className="flex items-center gap-2">
+                                    <Check className="w-3.5 h-3.5 text-[#00A854] dark:text-[#2ee088] stroke-[2.5]" />
+                                    <span className="text-[#404040] dark:text-zinc-300">Telefon raqami</span>
+                                </div>
+                                <span className="text-[#0A0A0A] dark:text-[#fafafa] font-medium">Tasdiqlangan</span>
+                            </div>
+
+                            <div className="flex items-center justify-between text-[12px]">
+                                <div className="flex items-center gap-2">
+                                    <Check className="w-3.5 h-3.5 text-[#00A854] dark:text-[#2ee088] stroke-[2.5]" />
+                                    <span className="text-[#404040] dark:text-zinc-300">Selfi</span>
+                                </div>
+                                <span className="text-[#0A0A0A] dark:text-[#fafafa] font-medium">Tasdiqlangan</span>
+                            </div>
+
+                            <div className="flex items-center justify-between text-[12px]">
+                                <div className="flex items-center gap-2">
+                                    <Check className="w-3.5 h-3.5 text-[#00A854] dark:text-[#2ee088] stroke-[2.5]" />
+                                    <span className="text-[#404040] dark:text-zinc-300">Anketa</span>
+                                </div>
+                                <span className="text-[#0A0A0A] dark:text-[#fafafa] font-medium">30/30 savol</span>
+                            </div>
+
+                            <div className="flex items-center justify-between text-[12px]">
+                                <div className="flex items-center gap-2">
+                                    <Check className="w-3.5 h-3.5 text-[#00A854] dark:text-[#2ee088] stroke-[2.5]" />
+                                    <span className="text-[#404040] dark:text-zinc-300">Halollik qasami</span>
+                                </div>
+                                <span className="text-[#0A0A0A] dark:text-[#fafafa] font-medium">Qabul qilingan</span>
+                            </div>
+
+                            <div className="flex items-center justify-between text-[12px]">
+                                <div className="flex items-center gap-2">
+                                    <Check className="w-3.5 h-3.5 text-[#00A854] dark:text-[#2ee088] stroke-[2.5]" />
+                                    <span className="text-[#404040] dark:text-zinc-300">Vakil</span>
+                                </div>
+                                <span className="text-[#0A0A0A] dark:text-[#fafafa] font-medium">
+                                    {representative ? "Tasdiqlangan" : "Biriktirilmagan"}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Card 3: Hisob ma'lumotlari */}
+                    <div className="bg-white dark:bg-[#141414] rounded-2xl border border-[#e5e5e5] dark:border-[#262626] p-5 shadow-sm">
+                        <div className="flex items-center gap-2 mb-3">
+                            <HugeIcon icon={IdIcon} className="w-4 h-4 text-[#737373] dark:text-[#a3a3a3]" />
+                            <h3 className="text-[13px] font-bold text-[#525252] dark:text-[#fafafa]">
+                                Hisob ma'lumotlari
+                            </h3>
+                        </div>
+
+                        <div className="space-y-2.5 text-[12px]">
+                            <div className="flex items-center justify-between">
+                                <span className="text-[#737373] dark:text-[#a3a3a3]">Foydalanuvchi ID</span>
+                                <span className="font-bold text-[#0A0A0A] dark:text-[#fafafa]">{displayId}</span>
+                            </div>
+
+                            <div className="flex items-center justify-between">
+                                <span className="text-[#737373] dark:text-[#a3a3a3]">Roli</span>
+                                <span className="font-bold text-[#0A0A0A] dark:text-[#fafafa]">Nomzod</span>
+                            </div>
+
+                            <div className="flex items-center justify-between">
+                                <span className="text-[#737373] dark:text-[#a3a3a3]">Boshqaruv</span>
+                                <span className="font-bold text-[#0A0A0A] dark:text-[#fafafa]">{managementType}</span>
+                            </div>
+
+                            <div className="flex items-center justify-between">
+                                <span className="text-[#737373] dark:text-[#a3a3a3]">Turi</span>
+                                <span className="font-bold text-[#0A0A0A] dark:text-[#fafafa]">{candidateType}</span>
+                            </div>
+
+                            <div className="flex items-center justify-between">
+                                <span className="text-[#737373] dark:text-[#a3a3a3]">Yaratilgan</span>
+                                <span className="text-[#0A0A0A] dark:text-[#fafafa] font-medium">12.03.2026 09:14</span>
+                            </div>
+
+                            <div className="flex items-center justify-between">
+                                <span className="text-[#737373] dark:text-[#a3a3a3]">Yangilangan</span>
+                                <span className="text-[#0A0A0A] dark:text-[#fafafa] font-medium">28.08.2026 19:14</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Card 4: Tarix */}
+                    <div className="bg-white dark:bg-[#141414] rounded-2xl border border-[#e5e5e5] dark:border-[#262626] p-5 shadow-sm">
+                        <div className="flex items-center gap-2 mb-4">
+                            <Clock className="w-4 h-4 text-[#737373] dark:text-[#a3a3a3]" />
+                            <h3 className="text-[13px] font-bold text-[#525252] dark:text-[#fafafa]">
+                                Tarix
+                            </h3>
+                        </div>
+
+                        <div className="space-y-3.5">
                             {historyList.map((event) => (
-                                <div key={event.id} className="flex gap-3 items-start">
-
-                                    {/* Green Checkmark Badge */}
-                                    <span className="flex items-center justify-center w-5 h-5 rounded-full bg-[#E6F9F0] dark:bg-[#103020]/40 text-[#00A854] dark:text-[#2ee088] border border-[#00A854]/10 shrink-0 mt-0.5">
-                                        <Check className="w-3 h-3 stroke-[3]" />
-                                    </span>
-
-                                    <div className="min-w-0">
-                                        <h4 className="text-[13px] font-bold text-gray-800 dark:text-zinc-200 leading-tight">
+                                <div key={event.id} className="flex gap-2.5 items-start">
+                                    <Check className="w-3.5 h-3.5 text-[#00A854] dark:text-[#2ee088] stroke-[2.5] shrink-0 mt-0.5" />
+                                    <div>
+                                        <h4 className="text-[12px] font-bold text-[#0A0A0A] dark:text-[#fafafa] leading-tight">
                                             {event.title}
                                         </h4>
-                                        <p className="text-[11px] text-gray-400 dark:text-zinc-500 mt-1 font-medium">
-                                            {event.actor} • {event.date}
+                                        <p className="text-[10px] text-[#737373] dark:text-[#a3a3a3] mt-0.5">
+                                            {event.subtitle}
                                         </p>
                                     </div>
                                 </div>
@@ -740,32 +1085,27 @@ const UsersDetail = () => {
 
             </div>
 
-            {/* Block Modal Overlay */}
+            {/* Block Modal */}
             {showBlockModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
                     <div className="w-full max-w-[480px] bg-white dark:bg-[#141414] rounded-[24px] border border-[#e5e5e5] dark:border-[#262626] p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
-
-                        {/* Red avatar/icon wrapper */}
-                        <div className="w-12 h-12 rounded-full bg-[#FFF0F0] dark:bg-red-950/30 text-[#991B1B] dark:text-red-400 flex items-center justify-center">
+                        
+                        <div className="w-12 h-12 rounded-full bg-[#FFF0F0] dark:bg-red-950/30 text-[#DC2626] dark:text-red-400 flex items-center justify-center">
                             <UserMinus className="w-6 h-6" />
                         </div>
 
-                        {/* Title */}
                         <h3 className="text-[16px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-4">
                             Profilni bloklashni tasdiqlaysizmi?
                         </h3>
 
-                        {/* Description */}
                         <p className="text-[13px] text-[#525252] dark:text-[#a3a3a3] leading-relaxed mt-2">
-                            {firstName} {lastName} (USR-{user.id?.slice(0, 5)}) tizimga kira olmaydi, aktiv suhbatlari yopiladi va nomzodlar ro'yxatidan olib tashlanadi.
+                            {fullName} ({displayId}) tizimga kira olmaydi, aktiv suhbatlari yopiladi va nomzodlar ro'yxatidan olib tashlanadi.
                         </p>
 
-                        {/* Dropdown label */}
                         <label className="text-[12px] font-semibold text-[#404040] dark:text-zinc-300 mt-5 block">
                             Bloklash sababi
                         </label>
 
-                        {/* Dropdown container */}
                         <Select
                             value={blockReason}
                             onChange={setBlockReason}
@@ -779,15 +1119,15 @@ const UsersDetail = () => {
                             className="mt-2"
                         />
 
-                        {/* Custom checkbox */}
                         <div
                             onClick={() => setSendNotification(!sendNotification)}
                             className="flex items-center gap-3 mt-5 select-none cursor-pointer group"
                         >
-                            <div className={`w-5 h-5 rounded flex items-center justify-center transition-all border ${sendNotification
-                                ? 'bg-[#0474F3] border-[#0474F3] text-white shadow-sm shadow-[#0474F3]/20'
-                                : 'border-[#e5e5e5] dark:border-[#262626] bg-white dark:bg-zinc-900 group-hover:border-gray-300 dark:group-hover:border-zinc-700'
-                                }`}>
+                            <div className={`w-5 h-5 rounded flex items-center justify-center transition-all border ${
+                                sendNotification
+                                    ? 'bg-[#0474F3] border-[#0474F3] text-white shadow-xs'
+                                    : 'border-[#e5e5e5] dark:border-[#262626] bg-white dark:bg-zinc-900 group-hover:border-gray-300'
+                            }`}>
                                 {sendNotification && <Check className="w-3.5 h-3.5 stroke-[3]" />}
                             </div>
                             <span className="text-[13px] font-medium text-[#404040] dark:text-zinc-300">
@@ -795,7 +1135,6 @@ const UsersDetail = () => {
                             </span>
                         </div>
 
-                        {/* Action buttons */}
                         <div className="flex items-center justify-end gap-3 mt-6">
                             <button
                                 onClick={() => setShowBlockModal(false)}
@@ -805,7 +1144,7 @@ const UsersDetail = () => {
                             </button>
                             <button
                                 onClick={handleBlockSubmit}
-                                className="px-5 py-2.5 bg-[#7F1D1D] hover:bg-[#991B1B] active:bg-[#7F1D1D] text-white rounded-xl text-[13px] font-semibold transition-colors cursor-pointer shadow-sm shadow-red-900/10"
+                                className="px-5 py-2.5 bg-[#7F1D1D] hover:bg-[#b91c1c] text-white rounded-xl text-[13px] font-semibold transition-colors cursor-pointer shadow-xs"
                             >
                                 Profilni bloklash
                             </button>
@@ -815,70 +1154,152 @@ const UsersDetail = () => {
                 </div>
             )}
 
-            {/* Request Document Modal Overlay */}
-            {showDocModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-                    <div className="w-full max-w-[480px] bg-white dark:bg-[#141414] rounded-[24px] border border-[#e5e5e5] dark:border-[#262626] p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
-
-                        {/* Orange avatar/icon wrapper */}
-                        <div className="w-12 h-12 rounded-full bg-orange-50 dark:bg-orange-950/20 text-[#0474F3] flex items-center justify-center">
-                            <FileText className="w-6 h-6" />
-                        </div>
-
-                        {/* Title */}
-                        <h3 className="text-[16px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-4">
-                            Qo'shimcha hujjat so'rash
-                        </h3>
-
-                        {/* Description */}
-                        <p className="text-[13px] text-[#525252] dark:text-[#a3a3a3] leading-relaxed mt-2">
-                            Foydalanuvchidan shaxsini yoki ma'lumotlarini tasdiqlash uchun qo'shimcha hujjat yuklashni so'rang.
-                        </p>
-
-                        {/* Dropdown label */}
-                        <label className="text-[12px] font-semibold text-[#404040] dark:text-zinc-300 mt-5 block">
-                            Hujjat turi / nomi
-                        </label>
-
-                        {/* Custom Select dropdown */}
-                        <Select
-                            value={docType}
-                            onChange={setDocType}
-                            options={[
-                                { value: "Passport nusxasi", label: "Passport nusxasi" },
-                                { value: "Diplom nusxasi", label: "Diplom nusxasi" },
-                                { value: "Selfi (Passport bilan)", label: "Selfi (Passport bilan)" },
-                                { value: "Boshqa", label: "Boshqa hujjat..." }
-                            ]}
-                            className="mt-2"
-                        />
-
-                        {/* Custom document name input */}
-                        {docType === "Boshqa" && (
-                            <input
-                                type="text"
-                                value={customDocName}
-                                onChange={(e) => setCustomDocName(e.target.value)}
-                                placeholder="Hujjat nomini yozing (masalan: Oylik maosh ma'lumotnomasi)..."
-                                className="w-full mt-3 px-3.5 py-2.5 bg-white dark:bg-zinc-900 border border-[#e5e5e5] dark:border-[#262626] rounded-xl text-[13px] text-[#0a0a0a] dark:text-[#fafafa] outline-none focus:border-[#0474F3] transition-colors"
-                            />
-                        )}
-
-                        {/* Action buttons */}
-                        <div className="flex items-center justify-end gap-3 mt-6">
+            {/* Edit Profile Modal */}
+            {showEditModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
+                    <div className="w-full max-w-[540px] bg-white dark:bg-[#141414] rounded-[24px] border border-[#e5e5e5] dark:border-[#262626] p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
+                        
+                        <div className="flex items-center justify-between pb-4 border-b border-[#e5e5e5] dark:border-[#262626]">
+                            <div className="flex items-center gap-2.5">
+                                <div className="w-10 h-10 rounded-full bg-blue-50 dark:bg-blue-950/40 text-[#0474F3] flex items-center justify-center">
+                                    <Pencil className="w-5 h-5" />
+                                </div>
+                                <div>
+                                    <h3 className="text-[16px] font-bold text-[#0A0A0A] dark:text-[#fafafa]">
+                                        Profilni tahrirlash
+                                    </h3>
+                                    <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">
+                                        {displayId}
+                                    </p>
+                                </div>
+                            </div>
                             <button
-                                onClick={() => setShowDocModal(false)}
-                                className="px-5 py-2.5 bg-white dark:bg-zinc-900 border border-[#e5e5e5] dark:border-[#262626] rounded-xl text-[13px] font-semibold text-[#404040] dark:text-[#e5e5e5] hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                                onClick={() => setShowEditModal(false)}
+                                className="text-gray-400 hover:text-gray-600 dark:hover:text-zinc-200 cursor-pointer"
                             >
-                                Bekor qilish
-                            </button>
-                            <button
-                                onClick={handleDocSubmit}
-                                className="px-5 py-2.5 bg-[#0474F3] hover:bg-[#042480] active:bg-[#042480] text-white rounded-xl text-[13px] font-semibold transition-colors cursor-pointer shadow-sm shadow-[#0474F3]/10"
-                            >
-                                So'rov yuborish
+                                <X className="w-5 h-5" />
                             </button>
                         </div>
+
+                        <form onSubmit={handleEditSubmit} className="space-y-4 mt-5">
+                            <div>
+                                <label className="text-[12px] font-semibold text-[#404040] dark:text-zinc-300 block mb-1">
+                                    F.I.SH
+                                </label>
+                                <input
+                                    type="text"
+                                    value={editForm.full_name}
+                                    onChange={(e) => setEditForm(prev => ({ ...prev, full_name: e.target.value }))}
+                                    className="w-full px-3.5 py-2.5 bg-white dark:bg-zinc-900 border border-[#e5e5e5] dark:border-[#262626] rounded-xl text-[13px] text-[#0a0a0a] dark:text-[#fafafa] outline-none focus:border-[#0474F3] transition-colors"
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label className="text-[12px] font-semibold text-[#404040] dark:text-zinc-300 block mb-1">
+                                        Telefon raqam
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={editForm.phone_number}
+                                        onChange={(e) => setEditForm(prev => ({ ...prev, phone_number: e.target.value }))}
+                                        className="w-full px-3.5 py-2.5 bg-white dark:bg-zinc-900 border border-[#e5e5e5] dark:border-[#262626] rounded-xl text-[13px] text-[#0a0a0a] dark:text-[#fafafa] outline-none focus:border-[#0474F3] transition-colors"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="text-[12px] font-semibold text-[#404040] dark:text-zinc-300 block mb-1">
+                                        Email
+                                    </label>
+                                    <input
+                                        type="email"
+                                        value={editForm.email}
+                                        onChange={(e) => setEditForm(prev => ({ ...prev, email: e.target.value }))}
+                                        className="w-full px-3.5 py-2.5 bg-white dark:bg-zinc-900 border border-[#e5e5e5] dark:border-[#262626] rounded-xl text-[13px] text-[#0a0a0a] dark:text-[#fafafa] outline-none focus:border-[#0474F3] transition-colors"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label className="text-[12px] font-semibold text-[#404040] dark:text-zinc-300 block mb-1">
+                                        Kasbi
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={editForm.occupation}
+                                        onChange={(e) => setEditForm(prev => ({ ...prev, occupation: e.target.value }))}
+                                        className="w-full px-3.5 py-2.5 bg-white dark:bg-zinc-900 border border-[#e5e5e5] dark:border-[#262626] rounded-xl text-[13px] text-[#0a0a0a] dark:text-[#fafafa] outline-none focus:border-[#0474F3] transition-colors"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="text-[12px] font-semibold text-[#404040] dark:text-zinc-300 block mb-1">
+                                        Ta'lim darajasi
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={editForm.education}
+                                        onChange={(e) => setEditForm(prev => ({ ...prev, education: e.target.value }))}
+                                        className="w-full px-3.5 py-2.5 bg-white dark:bg-zinc-900 border border-[#e5e5e5] dark:border-[#262626] rounded-xl text-[13px] text-[#0a0a0a] dark:text-[#fafafa] outline-none focus:border-[#0474F3] transition-colors"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-3 gap-3">
+                                <div>
+                                    <label className="text-[12px] font-semibold text-[#404040] dark:text-zinc-300 block mb-1">
+                                        Viloyat
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={editForm.region}
+                                        onChange={(e) => setEditForm(prev => ({ ...prev, region: e.target.value }))}
+                                        className="w-full px-3.5 py-2.5 bg-white dark:bg-zinc-900 border border-[#e5e5e5] dark:border-[#262626] rounded-xl text-[13px] text-[#0a0a0a] dark:text-[#fafafa] outline-none focus:border-[#0474F3] transition-colors"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="text-[12px] font-semibold text-[#404040] dark:text-zinc-300 block mb-1">
+                                        Tuman
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={editForm.district}
+                                        onChange={(e) => setEditForm(prev => ({ ...prev, district: e.target.value }))}
+                                        className="w-full px-3.5 py-2.5 bg-white dark:bg-zinc-900 border border-[#e5e5e5] dark:border-[#262626] rounded-xl text-[13px] text-[#0a0a0a] dark:text-[#fafafa] outline-none focus:border-[#0474F3] transition-colors"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="text-[12px] font-semibold text-[#404040] dark:text-zinc-300 block mb-1">
+                                        Mahalla
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={editForm.mahalla}
+                                        onChange={(e) => setEditForm(prev => ({ ...prev, mahalla: e.target.value }))}
+                                        className="w-full px-3.5 py-2.5 bg-white dark:bg-zinc-900 border border-[#e5e5e5] dark:border-[#262626] rounded-xl text-[13px] text-[#0a0a0a] dark:text-[#fafafa] outline-none focus:border-[#0474F3] transition-colors"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#e5e5e5] dark:border-[#262626]">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowEditModal(false)}
+                                    className="px-5 py-2.5 bg-white dark:bg-zinc-900 border border-[#e5e5e5] dark:border-[#262626] rounded-xl text-[13px] font-semibold text-[#404040] dark:text-[#e5e5e5] hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                                >
+                                    Bekor qilish
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="px-5 py-2.5 bg-[#0474F3] hover:bg-[#0360cb] text-white rounded-xl text-[13px] font-semibold transition-colors cursor-pointer shadow-xs"
+                                >
+                                    Saqlash
+                                </button>
+                            </div>
+                        </form>
 
                     </div>
                 </div>

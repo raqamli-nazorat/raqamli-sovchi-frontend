@@ -1,136 +1,215 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
-import { ChevronRight, Check } from "lucide-react";
-import type { Appeal, TagTone } from "../../store/slices/appealsSlice";
+import { Search, ChevronRight, SlidersHorizontal } from "lucide-react";
+import type { Appeal } from "../../store/slices/appealsSlice";
+import AppealFilterModal, { type AppealFilters } from "./AppealFilterModal";
 
-type Tab = "new" | "seen" | "closed";
-
-// Ko'rilgan/yopilgan tab'lardagi bazaviy sonlar — ro'yxatdagi mock'lardan tashqari
-// arxivdagi shikoyatlar soni (API ulangach paginated ro'yxatdan keladi).
-const SEEN_BASE = 12;
-const CLOSED_BASE = 87;
-
-const tagStyles: Record<TagTone, string> = {
-  red: "bg-[#FEF2F2] dark:bg-[#3a1414] text-[#DC2626]",
-  yellow: "bg-[#FEFCE8] dark:bg-[#332b0d] text-[#A16207]",
-  gray: "bg-[#F5F5F5] dark:bg-[#262626] text-[#525252] dark:text-[#A3A3A3]",
+const getStatusBadge = (status: string) => {
+  if (status === "in_review") {
+    return (
+      <span className="bg-[#FEF9EC] dark:bg-amber-950/40 text-[#B45309] dark:text-amber-400 font-medium text-[12px] px-3 py-1 rounded-full inline-block">
+        Ko'rib chiqilmoqda
+      </span>
+    );
+  }
+  if (status === "approved") {
+    return (
+      <span className="bg-[#E6F9F0] dark:bg-[#103020] text-[#00A854] dark:text-[#2ee088] font-medium text-[12px] px-3 py-1 rounded-full inline-block">
+        Tasdiqlandi
+      </span>
+    );
+  }
+  if (status === "rejected") {
+    return (
+      <span className="bg-[#FFF0F0] dark:bg-red-950/40 text-[#E11D48] dark:text-red-400 font-medium text-[12px] px-3 py-1 rounded-full inline-block">
+        Bekor qilindi
+      </span>
+    );
+  }
+  return (
+    <span className="bg-[#F5F5F5] dark:bg-zinc-800 text-[#737373] dark:text-zinc-400 font-medium text-[12px] px-3 py-1 rounded-full inline-block">
+      {status}
+    </span>
+  );
 };
 
 const AppealsPage = () => {
   const navigate = useNavigate();
-  const [tab, setTab] = useState<Tab>("new");
   const appeals: Appeal[] = useSelector((state: any) => state.appeals.items);
 
-  const newCount = appeals.filter((a) => a.status === "new").length;
-  const reviewedCount = appeals.filter((a) => a.status === "reviewed").length;
-  const closedCount = appeals.filter((a) => a.status === "closed").length;
+  const [searchTerm, setSearchTerm] = useState("");
+  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+  const [filters, setFilters] = useState<AppealFilters>({});
 
-  const seenTotal = SEEN_BASE + reviewedCount;
-  const closedTotal = CLOSED_BASE + closedCount;
+  const filteredAppeals = useMemo(() => {
+    return appeals.filter((item) => {
+      // Search term filter
+      if (searchTerm.trim()) {
+        const query = searchTerm.toLowerCase();
+        const matchSearch =
+          item.fromName.toLowerCase().includes(query) ||
+          item.fromUser.toLowerCase().includes(query) ||
+          item.toName.toLowerCase().includes(query) ||
+          item.toUser.toLowerCase().includes(query) ||
+          item.tag.toLowerCase().includes(query) ||
+          item.description.toLowerCase().includes(query);
+        if (!matchSearch) return false;
+      }
 
-  // "Yangi" tabida ko'rilganlar ham (yashil holatda) ko'rinib turadi —
-  // moderator sessiya davomida nima qilganini ko'rishi uchun.
-  const visible = appeals.filter((a) => {
-    if (tab === "new") return a.status === "new" || a.status === "reviewed";
-    if (tab === "seen") return a.status === "reviewed";
-    return a.status === "closed";
-  });
+      // Reason filter
+      if (filters.reason && filters.reason !== "Barchasi") {
+        if (item.tag.toLowerCase() !== filters.reason.toLowerCase()) {
+          return false;
+        }
+      }
 
-  const tabs: { key: Tab; label: string; count: number }[] = [
-    { key: "new", label: "Yangi", count: newCount },
-    { key: "seen", label: "Ko'rilgan", count: seenTotal },
-    { key: "closed", label: "Yopilgan", count: closedTotal },
-  ];
+      // Date range filter
+      if (filters.created_at_after || filters.created_at_before) {
+        const parts = item.time.split(" ");
+        if (parts.length === 2) {
+          const [d, m, y] = parts[0].split(".");
+          const [hh, mm] = parts[1].split(":");
+          const itemDate = new Date(Number(y), Number(m) - 1, Number(d), Number(hh), Number(mm));
+
+          if (filters.created_at_after && itemDate < filters.created_at_after) {
+            return false;
+          }
+          if (filters.created_at_before && itemDate > filters.created_at_before) {
+            return false;
+          }
+        }
+      }
+
+      return true;
+    });
+  }, [appeals, searchTerm, filters]);
+
+  const activeFiltersCount = Object.keys(filters).filter((k) => (filters as any)[k]).length;
 
   return (
-    <div className="p-6 space-y-5">
-      {/* ── Tab'lar + SLA eslatmasi ── */}
-      <div className="flex items-center justify-between gap-4 flex-wrap">
-        <div className="flex items-center gap-2.5">
-          {tabs.map((t) => (
-            <button
-              key={t.key}
-              onClick={() => setTab(t.key)}
-              className={`h-10 px-4 rounded-lg text-[13px] font-semibold transition-colors cursor-pointer ${tab === t.key
-                  ? "bg-[#171717] text-white dark:bg-white dark:text-[#0A0A0A]"
-                  : "bg-white dark:bg-[#141414] border border-[#E5E5E5] dark:border-[#262626] text-[#404040] dark:text-[#D4D4D4] hover:border-[#A3A3A3]"
-                }`}
-            >
-              {t.label} · {t.count}
-            </button>
-          ))}
+    <div className="p-4 space-y-4">
+      
+      {/* ── Top Bar: Search & Filter ── */}
+      <div className="flex items-center justify-between gap-4">
+        {/* Search input */}
+        <div className="relative w-full max-w-[320px]">
+          <Search className="w-4 h-4 text-[#737373] dark:text-[#a3a3a3] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Sabab yoki foydalanuvchi bo'yicha..."
+            className="w-full h-10 pl-10 pr-4 rounded-xl border border-[#e5e5e5] dark:border-[#262626] bg-white dark:bg-[#141414] text-[13px] text-[#0A0A0A] dark:text-[#fafafa] placeholder:text-[#a3a3a3] outline-none focus:border-[#0474F3] transition-colors"
+          />
         </div>
-        <span className="text-[13px] font-semibold text-[#C2410C]">
-          {reviewedCount > 0
-            ? `${reviewedCount} ta shikoyat ko'rib chiqildi · ${newCount} ta navbatda`
-            : "24 soat ichida ko'rilishi shart"}
-        </span>
+
+        {/* Filter button */}
+        <button
+          onClick={() => setIsFilterModalOpen(true)}
+          className={`h-10 px-4 rounded-xl border flex items-center gap-2 text-[13px] font-medium transition-colors cursor-pointer shrink-0 ${
+            activeFiltersCount > 0
+              ? "border-[#0474F3] text-[#0474F3] bg-blue-50/50 dark:bg-blue-950/20"
+              : "border-[#e5e5e5] dark:border-[#262626] bg-white dark:bg-[#141414] text-[#404040] dark:text-[#d4d4d4] hover:bg-gray-50 dark:hover:bg-zinc-800"
+          }`}
+        >
+          <SlidersHorizontal className="w-4 h-4" />
+          <span>Filter</span>
+          {activeFiltersCount > 0 && (
+            <span className="w-5 h-5 rounded-full bg-[#0474F3] text-white text-[10px] flex items-center justify-center font-bold">
+              {activeFiltersCount}
+            </span>
+          )}
+        </button>
       </div>
 
-      {/* ── Ro'yxat ── */}
-      <div className="space-y-4">
-        {visible.length === 0 && (
-          <div className="bg-white dark:bg-[#141414] border border-[#E5E5E5] dark:border-[#262626] rounded-2xl p-10 text-center">
-            <p className="text-[14px] font-semibold text-[#0A0A0A] dark:text-white">Bu bo'limda shikoyat yo'q</p>
-            <p className="text-[13px] text-[#737373] dark:text-[#A3A3A3] mt-1">
-              {tab === "closed"
-                ? "Yopilgan shikoyatlar arxivi API ulangach shu yerda ko'rinadi."
-                : "Yangi shikoyat kelganda shu yerda paydo bo'ladi."}
-            </p>
-          </div>
-        )}
+      {/* ── Appeals Table ── */}
+      <div className="bg-white dark:bg-[#141414] overflow-auto h-[calc(100vh-150px)]">
+          <table className="w-full text-left border-collapse">
+            <thead className="sticky top-0 z-10 bg-[#fafafa]">
+              <tr className="border-b border-[#f0f0f0] dark:border-[#262626] text-[12px] font-semibold text-[#737373] dark:text-[#a3a3a3]">
+                <th className="py-3 px-4 w-12 text-center">#</th>
+                <th className="py-3 px-4">Kimdan</th>
+                <th className="py-3 px-4">Kimga</th>
+                <th className="py-3 px-4">Sababi</th>
+                <th className="py-3 px-4">Yaratilgan</th>
+                <th className="py-3 px-4">Holati</th>
+                <th className="py-3 px-4 w-10"></th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#f0f0f0] dark:divide-[#262626]">
+              {filteredAppeals.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="py-12 text-center text-[#737373] dark:text-[#a3a3a3] text-[13px]">
+                    Shikoyatlar topilmadi
+                  </td>
+                </tr>
+              ) : (
+                filteredAppeals.map((item, idx) => (
+                  <tr
+                    key={item.id}
+                    onClick={() => navigate(`/appeals/${item.id}`)}
+                    className="hover:bg-[#fafafa] dark:hover:bg-zinc-900/60 cursor-pointer transition-colors group"
+                  >
+                    {/* Index */}
+                    <td className="py-4 px-4 text-center text-[13px] text-[#737373] dark:text-[#a3a3a3]">
+                      {idx + 1}
+                    </td>
 
-        {visible.map((appeal) => {
-          const reviewed = appeal.status === "reviewed";
-          return (
-            <div
-              key={appeal.id}
-              className={`bg-white dark:bg-[#141414] border rounded-2xl px-6 py-5 flex items-center justify-between gap-6 transition-colors ${reviewed
-                  ? "border-[#86EFAC] dark:border-[#166534]"
-                  : "border-[#E5E5E5] dark:border-[#262626]"
-                }`}
-            >
-              <div className="min-w-0 space-y-1.5">
-                <div className="flex items-center gap-2.5 flex-wrap">
-                  <span className="text-[15px] font-bold text-[#0A0A0A] dark:text-white tabular-nums">
-                    {appeal.fromUser}
-                  </span>
-                  <ChevronRight className="w-4 h-4 text-[#A3A3A3]" strokeWidth={2.2} />
-                  <span className="text-[15px] font-bold text-[#0A0A0A] dark:text-white tabular-nums">
-                    {appeal.toUser}
-                  </span>
-                  <span
-                    className={`px-2.5 py-0.5 rounded-full text-[12px] font-semibold ${tagStyles[appeal.tagTone]}`}
-                  >
-                    {appeal.tag}
-                  </span>
-                </div>
-                <p className="text-[14px] text-[#525252] dark:text-[#A3A3A3]">{appeal.description}</p>
-              </div>
+                    {/* Kimdan */}
+                    <td className="py-4 px-4">
+                      <p className="text-[13px] font-bold text-[#0A0A0A] dark:text-[#fafafa]">
+                        {item.fromName}
+                      </p>
+                      <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">
+                        {item.fromUser}
+                      </p>
+                    </td>
 
-              <div className="flex items-center gap-4 shrink-0">
-                <span className="text-[12px] text-[#A3A3A3]">{appeal.time}</span>
-                {reviewed ? (
-                  <button
-                    onClick={() => navigate(`/appeals/${appeal.id}`)}
-                    className="h-10 px-4 flex items-center gap-1.5 bg-[#ECFDF5] dark:bg-[#0d2b1d] border border-[#BBF7D0] dark:border-[#166534] text-[#15803D] text-[13px] font-semibold rounded-lg transition-colors cursor-pointer hover:bg-[#DCFCE7]"
-                  >
-                    <Check className="w-4 h-4" strokeWidth={2.5} /> Ko'rildi
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => navigate(`/appeals/${appeal.id}`)}
-                    className="h-10 px-4 bg-[#0474F3] hover:bg-[#042480] active:scale-[0.99] text-white text-[13px] font-semibold rounded-lg transition-all cursor-pointer"
-                  >
-                    Ko'rib chiqish
-                  </button>
-                )}
-              </div>
-            </div>
-          );
-        })}
+                    {/* Kimga */}
+                    <td className="py-4 px-4">
+                      <p className="text-[13px] font-bold text-[#0A0A0A] dark:text-[#fafafa]">
+                        {item.toName}
+                      </p>
+                      <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">
+                        {item.toUser}
+                      </p>
+                    </td>
+
+                    {/* Sababi */}
+                    <td className="py-4 px-4 text-[13px] text-[#404040] dark:text-[#d4d4d4]">
+                      {item.tag}
+                    </td>
+
+                    {/* Yaratilgan */}
+                    <td className="py-4 px-4 text-[13px] text-[#737373] dark:text-[#a3a3a3] whitespace-nowrap">
+                      {item.time}
+                    </td>
+
+                    {/* Holati */}
+                    <td className="py-4 px-4 whitespace-nowrap">
+                      {getStatusBadge(item.status)}
+                    </td>
+
+                    {/* Arrow */}
+                    <td className="py-4 px-4 text-right">
+                      <ChevronRight className="w-4 h-4 text-[#A3A3A3] group-hover:text-[#0A0A0A] dark:group-hover:text-white transition-colors" />
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
       </div>
+
+      {/* ── Filter Modal ── */}
+      <AppealFilterModal
+        isOpen={isFilterModalOpen}
+        onClose={() => setIsFilterModalOpen(false)}
+        onApply={(newFilters) => setFilters(newFilters)}
+        initialFilters={filters}
+      />
+
     </div>
   );
 };

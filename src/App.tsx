@@ -12,7 +12,8 @@ import {
   ReferenceListPage,
   AQuestions,
   SettingPage,
-  NotificationPage
+  NotificationPage,
+  PsychologistsPage
 } from "./pages";
 import Layout from "./components/Layout/Layout";
 
@@ -92,7 +93,7 @@ const router = createBrowserRouter([
       { path: "/appeals/:id", element: <AppealDetailPage /> },
       { path: "/references/:entity", element: <ReferenceListPage /> },
       { path: "/questions", element: <AQuestions /> },
-      { path: "/psychologists", element: <UsersPage /> },
+      { path: "/psychologists", element: <PsychologistsPage /> },
       { path: "/settings", element: <SettingPage /> },
       { path: "/notification", element: <NotificationPage /> },
     ],

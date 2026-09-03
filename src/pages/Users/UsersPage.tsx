@@ -273,18 +273,44 @@ const UsersPage = () => {
             );
           }
           if (appliedFilters.region) {
+            const reg = appliedFilters.region.toLowerCase();
             filtered = filtered.filter(
-              (u) => u.region_name?.toLowerCase() === appliedFilters.region?.toLowerCase()
+              (u) =>
+                u.region_name?.toLowerCase() === reg ||
+                String(u.profile_info?.region_info?.id) === appliedFilters.region ||
+                u.profile_info?.region_info?.name?.toLowerCase() === reg
             );
           }
           if (appliedFilters.district) {
+            const dist = appliedFilters.district.toLowerCase();
             filtered = filtered.filter(
-              (u) => u.district_name?.toLowerCase() === appliedFilters.district?.toLowerCase()
+              (u) =>
+                u.district_name?.toLowerCase() === dist ||
+                String(u.profile_info?.district_info?.id) === appliedFilters.district ||
+                u.profile_info?.district_info?.name?.toLowerCase() === dist
             );
           }
           if (appliedFilters.candidate_type) {
             filtered = filtered.filter(
-              (u) => u.candidate_type?.toLowerCase() === appliedFilters.candidate_type?.toLowerCase()
+              (u) =>
+                (u.candidate_type || u.profile_info?.candidate_type)?.toLowerCase() ===
+                appliedFilters.candidate_type?.toLowerCase()
+            );
+          }
+          if (appliedFilters.auth_provider) {
+            filtered = filtered.filter((u) =>
+              (u.auth_provider || u.registered_method || "")
+                .toLowerCase()
+                .includes(appliedFilters.auth_provider!.toLowerCase())
+            );
+          }
+          if (appliedFilters.role) {
+            const roleVal = appliedFilters.role.toLowerCase();
+            filtered = filtered.filter(
+              (u) =>
+                u.role_name?.toLowerCase() === roleVal ||
+                String(u.role_info?.id) === appliedFilters.role ||
+                u.role_info?.name?.toLowerCase() === roleVal
             );
           }
           if (appliedFilters.status) {
@@ -312,18 +338,44 @@ const UsersPage = () => {
         );
       }
       if (appliedFilters.region) {
+        const reg = appliedFilters.region.toLowerCase();
         filtered = filtered.filter(
-          (u) => u.region_name?.toLowerCase() === appliedFilters.region?.toLowerCase()
+          (u) =>
+            u.region_name?.toLowerCase() === reg ||
+            String(u.profile_info?.region_info?.id) === appliedFilters.region ||
+            u.profile_info?.region_info?.name?.toLowerCase() === reg
         );
       }
       if (appliedFilters.district) {
+        const dist = appliedFilters.district.toLowerCase();
         filtered = filtered.filter(
-          (u) => u.district_name?.toLowerCase() === appliedFilters.district?.toLowerCase()
+          (u) =>
+            u.district_name?.toLowerCase() === dist ||
+            String(u.profile_info?.district_info?.id) === appliedFilters.district ||
+            u.profile_info?.district_info?.name?.toLowerCase() === dist
         );
       }
       if (appliedFilters.candidate_type) {
         filtered = filtered.filter(
-          (u) => u.candidate_type?.toLowerCase() === appliedFilters.candidate_type?.toLowerCase()
+          (u) =>
+            (u.candidate_type || u.profile_info?.candidate_type)?.toLowerCase() ===
+            appliedFilters.candidate_type?.toLowerCase()
+        );
+      }
+      if (appliedFilters.auth_provider) {
+        filtered = filtered.filter((u) =>
+          (u.auth_provider || u.registered_method || "")
+            .toLowerCase()
+            .includes(appliedFilters.auth_provider!.toLowerCase())
+        );
+      }
+      if (appliedFilters.role) {
+        const roleVal = appliedFilters.role.toLowerCase();
+        filtered = filtered.filter(
+          (u) =>
+            u.role_name?.toLowerCase() === roleVal ||
+            String(u.role_info?.id) === appliedFilters.role ||
+            u.role_info?.name?.toLowerCase() === roleVal
         );
       }
       if (appliedFilters.status) {
@@ -500,7 +552,7 @@ const UsersPage = () => {
               });
             }}
             placeholder="Ism, ID yoki telefon bo'yicha qidirish..."
-            className="w-full h-11 pl-10 pr-10 bg-white dark:bg-[#141414] border border-[#e5e5e5] dark:border-[#262626] rounded-xl text-[13.5px] text-[#0A0A0A] dark:text-[#fafafa] placeholder:text-[#a3a3a3] outline-none focus:border-[#0474F3] transition-colors shadow-2xs"
+            className="w-full h-9 pl-10 pr-10 bg-white dark:bg-[#141414] border border-[#e5e5e5] dark:border-[#262626] rounded-lg text-[13.5px] text-[#0A0A0A] dark:text-[#fafafa] placeholder:text-[#a3a3a3] outline-none focus:border-[#0474F3] transition-colors shadow-2xs"
           />
           {search && (
             <button
@@ -520,7 +572,7 @@ const UsersPage = () => {
         {/* Filter Button */}
         <button
           onClick={() => setIsFilterModalOpen(true)}
-          className={`flex items-center gap-2 h-11 px-4 rounded-xl border text-[13.5px] font-medium transition-colors cursor-pointer shrink-0 shadow-2xs ${
+          className={`flex items-center gap-2 h-9 px-4 rounded-lg border text-[13.5px] font-medium transition-colors cursor-pointer shrink-0 shadow-2xs ${
             activeFiltersCount > 0
               ? "bg-[#0474F3]/10 border-[#0474F3] text-[#0474F3] dark:bg-[#0474F3]/20"
               : "bg-white dark:bg-[#141414] border-[#e5e5e5] dark:border-[#262626] text-[#0A0A0A] dark:text-[#fafafa] hover:bg-gray-50 dark:hover:bg-zinc-800"

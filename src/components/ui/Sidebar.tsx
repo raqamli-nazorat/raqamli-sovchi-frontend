@@ -18,7 +18,9 @@ import {
   StethoscopeIcon,
   UserGroupIcon,
   LibraryIcon,
+  SidebarLeft01Icon,
 } from "@hugeicons/core-free-icons";
+import { HugeIcon } from "./HugeIcon";
 
 interface MenuChild {
   label: string;
@@ -56,7 +58,7 @@ const MENU_GROUPS: { label: string; items: MenuItem[] }[] = [
   {
     label: "NAZORAT",
     items: [
-      { label: "Profil moderatsiyasi", path: "/profile-moderation", icon: UserCheck01Icon, badge: 4, end: false },
+      // { label: "Profil moderatsiyasi", path: "/profile-moderation", icon: UserCheck01Icon, badge: 4, end: false },
       { label: "AI moderator", path: "/ai-chat", icon: AiBrain01FreeIcons, badge: 18, end: false },
       { label: "Shikoyatlar", path: "/appeals", icon: Flag02Icon, badge: 4, end: false },
     ],
@@ -115,60 +117,26 @@ const Sidebar = ({ collapsed, onToggle }: SidebarProps) => {
       <style>{`
         /* Default color for all paths of active icons is blue */
         .active-icon path {
-          stroke: #FF5900 !important;
-        }
-
-        /* 1. Dashboard active icon styling: all paths orange */
-        .active-- path {
-          stroke: #0084FF !important;
-        }
-
-        /* 2. UserGroupIcon (/users): all paths orange */
-        .active--users path {
-          stroke: #0084FF !important;
-        }
-
-        /* 3. UserCheck01Icon (/profile-moderation): checkmark (path 3) is orange */
-        .active--profile-moderation path:nth-child(1) {
-          stroke: #0084FF !important;
-        }
-
-        /* 4. AiBrain01Icon (/ai-chat): left half (path 1) is orange */
-        .active--ai-chat path:nth-child(1) {
-          stroke: #0084FF !important;
-        }
-
-        /* 5. Flag02Icon (/appeals): flagpole (path 1) is orange */
-        .active--appeals path:nth-child(1) {
-          stroke: #0084FF !important;
-        }
-
-        /* 6. Task01Icon (/references-faq): clamp (path 1) is orange */
-        .active--questions path:nth-child(1) {
-          stroke: #0084FF !important;
-        }
-
-        /* 7. StethoscopeIcon (/psychologists): chestpiece & dot (paths 4 and 5) are orange */
-        .active--psychologists path:nth-child(1) {
-          stroke: #0084FF !important;
-        }
-
-        /* 8. Settings01Icon (/settings): inner circle (path 2) is orange */
-        .active--settings path:nth-child(1) {
           stroke: #0084FF !important;
         }
       `}</style>
 
       {/* ── Logo ── */}
-      <div className="flex items-center gap-3 px-4 py-3.25">
-        <img src="/Mark.svg" alt="Mark" className="object-contain h-8 w-8" />
+      <div className="flex items-center justify-between w-full px-4">
+        <div className="flex items-center gap-1.5 py-3.25">
+          <img src="/Mark.svg" alt="Mark" className="object-contain h-8 w-8" />
+          {!collapsed && (
+            <div className="overflow-hidden">
+              <p className="text-[16px] font-extrabold text-gray-900 dark:text-white leading-tight truncate">
+                <span className="font-medium! text-[#737373]!">Raqamli</span> Sovchi
+              </p>
+            </div>
+          )}
+        </div>
         {!collapsed && (
-          <div className="overflow-hidden">
-            <p className="text-[13px] font-bold text-gray-900 dark:text-white leading-tight truncate">
-              Raqamli Sovchi
-            </p>
-            <p className="text-[11px] text-gray-400 leading-tight">Admin panel</p>
-          </div>
+          <button onClick={onToggle} className="overflow-hidden cursor-pointer">
+            <HugeIcon icon={SidebarLeft01Icon} size={16} strokeWidth={2.5} className="shrink-0 text-[#a3a3a3]" />
+          </button>
         )}
       </div>
 
@@ -332,25 +300,6 @@ const Sidebar = ({ collapsed, onToggle }: SidebarProps) => {
             </>
           )}
         </div>
-
-        {/* Collapse button */}
-        <button
-          onClick={onToggle}
-          className={`
-            w-full flex items-center gap-2 rounded-xl py-2
-            text-[11px] font-medium text-gray-400
-            hover:text-gray-600 dark:hover:text-gray-300
-            hover:bg-gray-50 dark:hover:bg-gray-800/60 transition-colors
-            ${collapsed ? "justify-center" : "justify-center"}
-          `}
-        >
-          <HugeiconsIcon
-            icon={collapsed ? ArrowRight01FreeIcons : ArrowLeft01FreeIcons}
-            size={14}
-            strokeWidth={2}
-          />
-          {!collapsed && <span>Yig'ish</span>}
-        </button>
       </div>
     </aside>
   );
