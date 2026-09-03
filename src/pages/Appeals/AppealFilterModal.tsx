@@ -4,11 +4,13 @@ import Select from "../../components/ui/Select";
 import { DatePicker } from "../../components/ui/DatePicker";
 import { HugeIcon } from "@/components/ui/HugeIcon";
 import { CleanIcon } from "@hugeicons/core-free-icons";
+import { COMPLAINT_REASONS } from "../../lib/complaintsApi";
 
 export interface AppealFilters {
   reason?: string;
-  created_at_after?: Date | null;
-  created_at_before?: Date | null;
+  status?: string;
+  start_date?: Date | null;
+  end_date?: Date | null;
 }
 
 interface AppealFilterModalProps {
@@ -20,13 +22,14 @@ interface AppealFilterModalProps {
 
 const REASON_OPTIONS = [
   "Barchasi",
-  "Odobsiz so'z",
-  "Soxta profil",
-  "Nikoh niyati yo'q",
-  "Firibgarlik",
-  "Spam va reklama",
-  "Noto'g'ri ma'lumot",
-  "Haqorat va tahdid",
+  ...COMPLAINT_REASONS.map((r) => r.label),
+];
+
+const STATUS_OPTIONS = [
+  "Barchasi",
+  "Ko'rib chiqilmoqda",
+  "Tasdiqlandi",
+  "Bekor qilindi",
 ];
 
 const AppealFilterModal: React.FC<AppealFilterModalProps> = ({
@@ -36,14 +39,16 @@ const AppealFilterModal: React.FC<AppealFilterModalProps> = ({
   initialFilters,
 }) => {
   const [reason, setReason] = useState<string>(initialFilters.reason || "Barchasi");
-  const [createdAtAfter, setCreatedAtAfter] = useState<Date | null>(initialFilters.created_at_after || null);
-  const [createdAtBefore, setCreatedAtBefore] = useState<Date | null>(initialFilters.created_at_before || null);
+  const [status, setStatus] = useState<string>(initialFilters.status || "Barchasi");
+  const [startDate, setStartDate] = useState<Date | null>(initialFilters.start_date || null);
+  const [endDate, setEndDate] = useState<Date | null>(initialFilters.end_date || null);
 
   useEffect(() => {
     if (isOpen) {
       setReason(initialFilters.reason || "Barchasi");
-      setCreatedAtAfter(initialFilters.created_at_after || null);
-      setCreatedAtBefore(initialFilters.created_at_before || null);
+      setStatus(initialFilters.status || "Barchasi");
+      setStartDate(initialFilters.start_date || null);
+      setEndDate(initialFilters.end_date || null);
     }
   }, [isOpen, initialFilters]);
 
@@ -52,16 +57,18 @@ const AppealFilterModal: React.FC<AppealFilterModalProps> = ({
   const handleApply = () => {
     onApply({
       reason: reason === "Barchasi" ? undefined : reason,
-      created_at_after: createdAtAfter,
-      created_at_before: createdAtBefore,
+      status: status === "Barchasi" ? undefined : status,
+      start_date: startDate,
+      end_date: endDate,
     });
     onClose();
   };
 
   const handleReset = () => {
     setReason("Barchasi");
-    setCreatedAtAfter(null);
-    setCreatedAtBefore(null);
+    setStatus("Barchasi");
+    setStartDate(null);
+    setEndDate(null);
     onApply({});
     onClose();
   };
@@ -107,8 +114,8 @@ const AppealFilterModal: React.FC<AppealFilterModalProps> = ({
                 prefixLabel="dan"
                 showTime
                 defaultTime="start"
-                value={createdAtAfter}
-                onChange={(d) => setCreatedAtAfter(d)}
+                value={startDate}
+                onChange={(d) => setStartDate(d)}
                 widthClass="w-full"
                 placeholder="01.01.2026 00:00"
               />
@@ -116,8 +123,8 @@ const AppealFilterModal: React.FC<AppealFilterModalProps> = ({
                 prefixLabel="gacha"
                 showTime
                 defaultTime="end"
-                value={createdAtBefore}
-                onChange={(d) => setCreatedAtBefore(d)}
+                value={endDate}
+                onChange={(d) => setEndDate(d)}
                 widthClass="w-full"
                 placeholder="31.12.2026 23:59"
               />

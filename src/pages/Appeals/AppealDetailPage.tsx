@@ -1,8 +1,34 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { useDispatch, useSelector } from "react-redux";
-import { ChevronLeft, ChevronRight, Clock, Check, X } from "lucide-react";
-import { approveAppeal, rejectAppeal, type Appeal } from "../../store/slices/appealsSlice";
+import { useDispatch } from "react-redux";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Clock,
+  Check,
+  X,
+  AlertCircle,
+  Loader2,
+  ExternalLink,
+  MessageSquare,
+  FileText,
+  ShieldAlert,
+  User,
+} from "lucide-react";
+import {
+  complaintsApi,
+  type ComplaintDetail,
+  COMPLAINT_REASON_MAP,
+  parseConversationExcerpt,
+  parseAiAnalysis,
+  parseProfileSnapshot,
+  getInitials,
+} from "../../lib/complaintsApi";
+import {
+  upsertComplaintDetail,
+  approveAppeal,
+  rejectAppeal,
+} from "../../store/slices/appealsSlice";
 import dayjs from "dayjs";
 
 const AppealDetailPage = () => {
@@ -10,99 +36,258 @@ const AppealDetailPage = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
-  const appeals: Appeal[] = useSelector((state: any) => state.appeals.items);
-  const appeal = appeals.find((a) => String(a.id) === String(id)) || appeals[0];
+  const [complaint, setComplaint] = useState<ComplaintDetail | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
+  // Decision actions
+  const [decisionLoading, setDecisionLoading] = useState(false);
+  const [decisionError, setDecisionError] = useState<string | null>(null);
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [rejectReasonText, setRejectReasonText] = useState("");
 
-  if (!appeal) {
+  const fetchComplaintDetail = useCallback(async () => {
+    if (!id) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await complaintsApi.get(id);
+      setComplaint(data);
+      dispatch(upsertComplaintDetail(data));
+    } catch (err: any) {
+      const apiErr =
+        err.response?.data?.error?.errorMsg ||
+        err.response?.data?.detail ||
+        err.message;
+      setError(apiErr || "Shikoyat tafsilotini yuklashda xatolik yuz berdi.");
+    } finally {
+      setLoading(false);
+    }
+  }, [id, dispatch]);
+
+  useEffect(() => {
+    fetchComplaintDetail();
+  }, [fetchComplaintDetail]);
+
+  // Handle Approve
+  const handleApprove = async () => {
+    if (!id || decisionLoading) return;
+    setDecisionLoading(true);
+    setDecisionError(null);
+    try {
+      const res = await complaintsApi.decision(id, { decision: "approved" });
+      setComplaint((prev) =>
+        prev
+          ? {
+            ...prev,
+            status: "approved",
+            status_label: "Tasdiqlandi",
+            resolved_at: res.resolved_at || new Date().toISOString(),
+            resolved_by_info: res.resolved_by_info || prev.resolved_by_info,
+            admin_note: res.admin_note ?? prev.admin_note,
+          }
+          : prev
+      );
+      dispatch(
+        approveAppeal({
+          id,
+          moderator: res.resolved_by_info?.full_name || "Admin",
+          resolvedAt: res.resolved_at
+            ? dayjs(res.resolved_at).format("DD.MM.YYYY HH:mm")
+            : dayjs().format("DD.MM.YYYY HH:mm"),
+        })
+      );
+    } catch (err: any) {
+      const apiErr =
+        err.response?.data?.error?.errorMsg ||
+        err.response?.data?.detail ||
+        err.message;
+      setDecisionError(apiErr || "Qarorni saqlashda xatolik yuz berdi.");
+    } finally {
+      setDecisionLoading(false);
+    }
+  };
+
+  // Handle Reject Modal Open
+  const handleOpenRejectModal = () => {
+    setRejectReasonText(complaint?.admin_note || "");
+    setShowRejectModal(true);
+  };
+
+  // Handle Reject Submit
+  const handleRejectSubmit = async () => {
+    if (!id || rejectReasonText.trim().length < 10 || decisionLoading) return;
+    setDecisionLoading(true);
+    setDecisionError(null);
+    try {
+      const res = await complaintsApi.decision(id, {
+        decision: "rejected",
+        admin_note: rejectReasonText.trim(),
+      });
+      setComplaint((prev) =>
+        prev
+          ? {
+            ...prev,
+            status: "rejected",
+            status_label: "Bekor qilindi",
+            admin_note: rejectReasonText.trim(),
+            resolved_at: res.resolved_at || new Date().toISOString(),
+            resolved_by_info: res.resolved_by_info || prev.resolved_by_info,
+          }
+          : prev
+      );
+      dispatch(
+        rejectAppeal({
+          id,
+          reason: rejectReasonText.trim(),
+          moderator: res.resolved_by_info?.full_name || "Admin",
+          resolvedAt: res.resolved_at
+            ? dayjs(res.resolved_at).format("DD.MM.YYYY HH:mm")
+            : dayjs().format("DD.MM.YYYY HH:mm"),
+        })
+      );
+      setShowRejectModal(false);
+    } catch (err: any) {
+      const apiErr =
+        err.response?.data?.error?.errorMsg ||
+        err.response?.data?.detail ||
+        err.message;
+      setDecisionError(apiErr || "Qarorni saqlashda xatolik yuz berdi.");
+    } finally {
+      setDecisionLoading(false);
+    }
+  };
+
+  // Loading State
+  if (loading) {
+    return (
+      <div className="p-6 flex flex-col items-center justify-center min-h-[400px]">
+        <Loader2 className="w-8 h-8 animate-spin text-[#0474F3] mb-3" />
+        <p className="text-[13px] text-[#737373] dark:text-[#a3a3a3]">
+          Shikoyat tafsilotlari yuklanmoqda...
+        </p>
+      </div>
+    );
+  }
+
+  // Error State
+  if (error || !complaint) {
     return (
       <div className="p-6">
-        <div className="bg-white dark:bg-[#141414] border border-[#E5E5E5] dark:border-[#262626] rounded-2xl p-10 text-center">
-          <p className="text-[14px] font-semibold text-[#0A0A0A] dark:text-white">Shikoyat topilmadi</p>
-          <button
-            onClick={() => navigate("/appeals")}
-            className="mt-4 h-10 px-4 bg-[#0474F3] hover:bg-[#0360cb] text-white text-[13px] font-semibold rounded-xl transition-colors cursor-pointer"
-          >
-            Shikoyatlar ro'yxatiga qaytish
-          </button>
+        <div className="bg-white dark:bg-[#141414] border border-[#E5E5E5] dark:border-[#262626] rounded-2xl p-10 text-center max-w-lg mx-auto">
+          <AlertCircle className="w-10 h-10 text-red-500 mx-auto mb-3" />
+          <h3 className="text-[16px] font-bold text-[#0A0A0A] dark:text-white">
+            {error || "Shikoyat topilmadi"}
+          </h3>
+          <p className="text-[12px] text-[#737373] dark:text-[#a3a3a3] mt-1.5">
+            So'ralgan shikoyat mavjud emas yoki o'chirilgan bo'lishi mumkin.
+          </p>
+          <div className="flex items-center justify-center gap-3 mt-6">
+            <button
+              onClick={fetchComplaintDetail}
+              className="h-10 px-4 bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 text-[#0A0A0A] dark:text-white text-[13px] font-semibold rounded-xl transition-colors cursor-pointer"
+            >
+              Qayta urinish
+            </button>
+            <button
+              onClick={() => navigate("/appeals")}
+              className="h-10 px-4 bg-[#0474F3] hover:bg-[#0360cb] text-white text-[13px] font-semibold rounded-xl transition-colors cursor-pointer"
+            >
+              Shikoyatlar ro'yxatiga qaytish
+            </button>
+          </div>
         </div>
       </div>
     );
   }
 
-  const fromInitials = appeal.fromName
-    .split(" ")
-    .map((w) => w[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase() || "MR";
+  // Extracted user details
+  const fromName =
+    complaint.from_user_info?.full_name ||
+    (complaint.from_user_info?.profile_info
+      ? `${complaint.from_user_info.profile_info.first_name || ""} ${complaint.from_user_info.profile_info.last_name || ""}`.trim()
+      : "") ||
+    complaint.from_user_info?.phone_number ||
+    "Shikoyatchi";
 
-  const toInitials = appeal.toName
-    .split(" ")
-    .map((w) => w[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase() || "BQ";
+  const fromUser =
+    complaint.from_user_info?.display_id ||
+    complaint.from_user_info?.phone_number ||
+    "-";
 
-  const chat = appeal.chat || [
-    { side: "left", text: "Assalomu alaykum. Taklifingiz uchun rahmat.", time: "09:02" },
-    { side: "right", text: "Va alaykum assalom. Vaqtingiz bo'lsa tanishsak.", time: "09:04" },
-    { side: "left", text: "Rasmingizni yuboring, hech kim ko'rmaydi.", time: "09:09", flagged: true },
-    { side: "right", text: "Bunday so'rovga javob bermayman.", time: "09:12" },
-  ];
+  const toName =
+    complaint.to_user_info?.full_name ||
+    (complaint.to_user_info?.profile_info
+      ? `${complaint.to_user_info.profile_info.first_name || ""} ${complaint.to_user_info.profile_info.last_name || ""}`.trim()
+      : "") ||
+    complaint.to_user_info?.phone_number ||
+    "Foydalanuvchi";
 
-  const analysis = appeal.analysis || {
-    level: "Yuqori",
-    warnings: "2 marta",
-    reports: "3 ta",
-    advice: "Profilni bloklash",
+  const toUser =
+    complaint.to_user_info?.display_id ||
+    complaint.to_user_info?.phone_number ||
+    "-";
+
+  const fromInitials = getInitials(fromName, "SH");
+  const toInitials = getInitials(toName, "FO");
+
+  const reasonLabel =
+    complaint.reason_label ||
+    COMPLAINT_REASON_MAP[complaint.reason] ||
+    complaint.reason ||
+    "Shikoyat";
+
+  const status = (complaint.status === "in_review" ? "pending" : complaint.status) as string;
+
+  // Parsed sub-structures
+  const chat = parseConversationExcerpt(
+    complaint.conversation_excerpt,
+    complaint.from_user_info,
+    complaint.to_user_info
+  );
+
+  const analysis = parseAiAnalysis(
+    complaint.ai_analysis,
+    complaint.previous_complaints_count
+  );
+
+  const profile = parseProfileSnapshot(
+    complaint.profile_snapshot,
+    complaint.to_user_info
+  );
+
+  // SLA Calculation (24 hours from created_at)
+  const calculateSlaRemaining = () => {
+    if (!complaint.created_at) return "24 soatlik SLA";
+    const createdTime = dayjs(complaint.created_at);
+    const deadline = createdTime.add(24, "hour");
+    const diffMinutes = deadline.diff(dayjs(), "minute");
+
+    if (diffMinutes <= 0) {
+      return "SLA muddati tugagan (24 soatlik SLA)";
+    }
+    const hours = Math.floor(diffMinutes / 60);
+    const mins = diffMinutes % 60;
+    return `${hours} soat ${mins} daqiqa qoldi (24 soatlik SLA)`;
   };
 
-  const profile = appeal.profile || {
-    status: "Bloklangan",
-    registered: "02.02.2026",
-    questionnaire: "30/30 · 100%",
-    aiSignals: "4 ta",
-  };
+  const moderatorName =
+    complaint.resolved_by_info?.full_name ||
+    (complaint.resolved_by_info?.profile_info
+      ? `${complaint.resolved_by_info.profile_info.first_name || ""} ${complaint.resolved_by_info.profile_info.last_name || ""}`.trim()
+      : "") ||
+    "A. Muxtorov";
 
-  const handleApprove = () => {
-    dispatch(
-      approveAppeal({
-        id: appeal.id,
-        moderator: "A. Muxtorov",
-        resolvedAt: dayjs().format("DD.MM.YYYY HH:mm"),
-      })
-    );
-  };
-
-  const handleOpenRejectModal = () => {
-    setRejectReasonText(
-      appeal.rejectReason ||
-        "Shikoyat asossiz: suhbat tarixida haqoratli ibora topilmadi, keltirilgan skrinshot boshqa foydalanuvchiga tegishli."
-    );
-    setShowRejectModal(true);
-  };
-
-  const handleRejectSubmit = () => {
-    if (rejectReasonText.trim().length < 10) return;
-    dispatch(
-      rejectAppeal({
-        id: appeal.id,
-        reason: rejectReasonText.trim(),
-        moderator: "A. Muxtorov",
-        resolvedAt: dayjs().format("DD.MM.YYYY HH:mm"),
-      })
-    );
-    setShowRejectModal(false);
-  };
+  const resolvedDate = complaint.resolved_at
+    ? dayjs(complaint.resolved_at).format("DD.MM.YYYY HH:mm")
+    : complaint.updated_at
+      ? dayjs(complaint.updated_at).format("DD.MM.YYYY HH:mm")
+      : "12.03.2026 10:02";
 
   return (
     <div className="p-4 space-y-4">
-      
       {/* ── Orqaga qaytish ── */}
-      <div>
+      <div className="flex items-center justify-between">
         <button
           onClick={() => navigate("/appeals")}
           className="flex items-center gap-1.5 text-[12px] font-medium text-[#737373] hover:text-[#0A0A0A] dark:text-[#a3a3a3] dark:hover:text-white transition-colors cursor-pointer"
@@ -110,30 +295,44 @@ const AppealDetailPage = () => {
           <ChevronLeft className="w-4 h-4" />
           <span>Shikoyatlar ro'yxatiga qaytish</span>
         </button>
+
+        {/* Action Error message */}
+        {decisionError && (
+          <div className="flex items-center gap-2 text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40 px-3 py-1.5 rounded-lg">
+            <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+            <span>{decisionError}</span>
+          </div>
+        )}
       </div>
 
       {/* ── Main 2-Column Grid ── */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-        
         {/* ── CHAP USTUN (8 cols) ── */}
         <div className="lg:col-span-8 space-y-4">
-          
           {/* Card 1: Taraflar & Sabab */}
           <div className="bg-white dark:bg-[#141414] rounded-xl border border-[#e5e5e5] dark:border-[#262626] p-5 shadow-xs">
             <div className="flex items-center justify-between gap-4 flex-wrap">
-              
               <div className="flex items-center gap-4 flex-wrap">
                 {/* Shikoyatchi */}
-                <div className="flex items-center gap-3">
+                <div
+                  onClick={() =>
+                    complaint.from_user_info?.id &&
+                    navigate(`/users/details/${complaint.from_user_info.id}`)
+                  }
+                  className="flex items-center gap-3 cursor-pointer group"
+                >
                   <div className="w-10 h-10 rounded-full bg-[#EDE9FE] dark:bg-purple-950/40 text-[#7C3AED] dark:text-purple-400 font-bold text-xs flex items-center justify-center shrink-0">
                     {fromInitials}
                   </div>
                   <div>
-                    <h3 className="text-[14px] font-bold text-[#0A0A0A] dark:text-[#fafafa]">
-                      {appeal.fromName}
+                    <h3 className="text-[14px] font-bold text-[#0A0A0A] dark:text-[#fafafa] group-hover:text-[#0474F3] transition-colors flex items-center gap-1">
+                      <span>{fromName}</span>
+                      {complaint.from_user_info?.id && (
+                        <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity text-[#0474F3]" />
+                      )}
                     </h3>
                     <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">
-                      {appeal.fromUser} · shikoyatchi
+                      {fromUser} · shikoyatchi
                     </p>
                   </div>
                 </div>
@@ -141,16 +340,25 @@ const AppealDetailPage = () => {
                 <ChevronRight className="w-4 h-4 text-[#A3A3A3] shrink-0" />
 
                 {/* Shikoyat qilingan */}
-                <div className="flex items-center gap-3">
+                <div
+                  onClick={() =>
+                    complaint.to_user_info?.id &&
+                    navigate(`/users/details/${complaint.to_user_info.id}`)
+                  }
+                  className="flex items-center gap-3 cursor-pointer group"
+                >
                   <div className="w-10 h-10 rounded-full bg-[#E0F2FE] dark:bg-sky-950/40 text-[#0284C7] dark:text-sky-400 font-bold text-xs flex items-center justify-center shrink-0">
                     {toInitials}
                   </div>
                   <div>
-                    <h3 className="text-[14px] font-bold text-[#0A0A0A] dark:text-[#fafafa]">
-                      {appeal.toName}
+                    <h3 className="text-[14px] font-bold text-[#0A0A0A] dark:text-[#fafafa] group-hover:text-[#0474F3] transition-colors flex items-center gap-1">
+                      <span>{toName}</span>
+                      {complaint.to_user_info?.id && (
+                        <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity text-[#0474F3]" />
+                      )}
                     </h3>
                     <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">
-                      {appeal.toUser} · shikoyat qilingan
+                      {toUser} · shikoyat qilingan
                     </p>
                   </div>
                 </div>
@@ -158,12 +366,12 @@ const AppealDetailPage = () => {
 
               {/* Sababi Badge */}
               <span className="bg-[#FEF2F2] dark:bg-red-950/40 text-[#7F1D1D] dark:text-red-400 font-semibold text-[11px] px-3 py-1 rounded-full">
-                {appeal.tag}
+                {reasonLabel}
               </span>
             </div>
 
             <p className="text-[12px] text-[#404040] dark:text-[#d4d4d4] mt-4 leading-relaxed">
-              {appeal.description}
+              {complaint.message}
             </p>
           </div>
 
@@ -173,43 +381,47 @@ const AppealDetailPage = () => {
               Suhbat tarixi · dalil
             </h3>
 
-            <div className="space-y-3.5">
-              {chat.map((msg, idx) => {
-                const isRight = msg.side === "right";
-                return (
-                  <div
-                    key={idx}
-                    className={`flex ${isRight ? "justify-end" : "justify-start"}`}
-                  >
+            {chat.length === 0 ? (
+              <p className="text-xs text-center py-8 text-[#737373] dark:text-[#a3a3a3]">
+                Ushbu shikoyat uchun suhbat tarixi mavjud emas.
+              </p>
+            ) : (
+              <div className="space-y-3.5 max-h-[460px] overflow-y-auto pr-1">
+                {chat.map((msg, idx) => {
+                  const isRight = msg.side === "right";
+                  return (
                     <div
-                      className={`max-w-[85%] sm:max-w-[65%] rounded-2xl px-4 py-3 ${
-                        msg.flagged
-                          ? "bg-[#FEF2F2] dark:bg-red-950/20 border border-[#FCA5A5] dark:border-red-900/40"
-                          : "bg-[#F5F5F5] dark:bg-zinc-900"
-                      }`}
+                      key={idx}
+                      className={`flex ${isRight ? "justify-end" : "justify-start"}`}
                     >
-                      <p
-                        className={`text-[12px] ${
-                          msg.flagged
-                            ? "text-[#7F1D1D] dark:text-red-300 font-medium"
-                            : "text-[#0A0A0A] dark:text-[#fafafa]"
-                        }`}
+                      <div
+                        className={`max-w-[85%] sm:max-w-[70%] rounded-2xl px-4 py-3 ${msg.flagged
+                            ? "bg-[#FEF2F2] dark:bg-red-950/20 border border-[#FCA5A5] dark:border-red-900/40"
+                            : "bg-[#F5F5F5] dark:bg-zinc-900"
+                          }`}
                       >
-                        {msg.text}
-                      </p>
-                      <p className="text-[10px] text-[#6B6B6B] mt-1.5 flex items-center gap-2">
-                        <span>{msg.time}</span>
-                        {msg.flagged && (
-                          <span className="font-semibold text-[#7F1D1D] dark:text-red-400">
-                            AI: qoidabuzarlik aniqlandi
-                          </span>
-                        )}
-                      </p>
+                        <p
+                          className={`text-[12px] leading-relaxed ${msg.flagged
+                              ? "text-[#7F1D1D] dark:text-red-300 font-medium"
+                              : "text-[#0A0A0A] dark:text-[#fafafa]"
+                            }`}
+                        >
+                          {msg.text}
+                        </p>
+                        <p className="text-[10px] text-[#6B6B6B] mt-1.5 flex items-center justify-between gap-2">
+                          <span>{msg.time}</span>
+                          {msg.flagged && (
+                            <span className="font-semibold text-[#7F1D1D] dark:text-red-400">
+                              AI: qoidabuzarlik aniqlandi
+                            </span>
+                          )}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           {/* Card 3: AI tahlili */}
@@ -256,27 +468,25 @@ const AppealDetailPage = () => {
               </div>
             </div>
           </div>
-
         </div>
 
         {/* ── O'NG USTUN (4 cols) ── */}
         <div className="lg:col-span-4 space-y-4">
-          
           {/* Card 1: Qaror */}
           <div className="bg-white dark:bg-[#141414] rounded-xl border border-[#e5e5e5] dark:border-[#262626] p-5 shadow-xs">
             <h3 className="text-[13px] font-semibold text-[#0A0A0A] dark:text-[#fafafa] mb-3">
               Qaror
             </h3>
 
-            {appeal.status === "in_review" ? (
-              /* State: In Review (Image 3) */
+            {status === "pending" ? (
+              /* State: Pending / In Review */
               <div>
                 <div className="flex items-center justify-between">
                   <span className="text-[12px] font-medium text-[#737373] dark:text-[#a3a3a3]">
                     Holati
                   </span>
                   <span className="bg-[#FEF9EC] dark:bg-amber-950/40 text-[#B45309] dark:text-amber-400 font-medium text-[12px] px-3 py-1 rounded-full">
-                    Ko'rib chiqilmoqda
+                    {complaint.status_label}
                   </span>
                 </div>
 
@@ -286,7 +496,11 @@ const AppealDetailPage = () => {
                     onClick={handleApprove}
                     className="w-full py-2.5 px-4 bg-[#0474F3] hover:bg-[#0360cb] active:scale-[0.99] text-white text-[13px] font-semibold rounded-lg flex items-center gap-2 transition-all cursor-pointer shadow-xs"
                   >
-                    <Check className="w-4 h-4 stroke-[2.5]" />
+                    {decisionLoading ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Check className="w-4 h-4 stroke-[2.5]" />
+                    )}
                     <span>Tasdiqlash</span>
                   </button>
 
@@ -301,35 +515,35 @@ const AppealDetailPage = () => {
 
                 {/* SLA Timer */}
                 <div className="flex items-center gap-2 mt-4 px-3.5 py-2.5 bg-[#FFFBEB] dark:bg-amber-950/20 text-[#92400E] dark:text-amber-400 rounded-xl">
-                  <Clock className="w-4 h-4 text-[#92400E] shrink-0" strokeWidth={3} />
+                  <Clock className="w-4 h-4 text-[#92400E] shrink-0" strokeWidth={2.5} />
                   <span className="text-[12px] font-medium">
-                    14 soat 46 daqiqa qoldi (24 soatlik SLA)
+                    {calculateSlaRemaining()}
                   </span>
                 </div>
               </div>
-            ) : appeal.status === "rejected" ? (
-              /* State: Cancelled / Rejected (Image 5) */
+            ) : status === "rejected" ? (
+              /* State: Cancelled / Rejected */
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-[12px] font-medium text-[#737373] dark:text-[#a3a3a3]">
                     Holati
                   </span>
                   <span className="bg-[#FFF0F0] dark:bg-red-950/40 text-[#E11D48] dark:text-red-400 font-medium text-[12px] px-3 py-1 rounded-full">
-                    Bekor qilindi
+                    {complaint.status_label || "Bekor qilindi"}
                   </span>
                 </div>
 
                 <div className="flex items-center justify-between text-[12px]">
                   <span className="text-[#737373] dark:text-[#a3a3a3]">Moderator</span>
                   <span className="font-bold text-[#0A0A0A] dark:text-[#fafafa]">
-                    {appeal.moderator || "A. Muxtorov"}
+                    {moderatorName}
                   </span>
                 </div>
 
                 <div className="flex items-center justify-between text-[12px]">
                   <span className="text-[#737373] dark:text-[#a3a3a3]">Sana</span>
                   <span className="font-bold text-[#0A0A0A] dark:text-[#fafafa]">
-                    {appeal.resolvedAt || "12.03.2026 10:02"}
+                    {resolvedDate}
                   </span>
                 </div>
 
@@ -338,8 +552,7 @@ const AppealDetailPage = () => {
                     Bekor qilish sababi
                   </p>
                   <p className="text-[12px] text-[#404040] dark:text-[#d4d4d4] leading-relaxed mt-1">
-                    {appeal.rejectReason ||
-                      "Shikoyat asossiz: suhbat tarixida haqoratli ibora topilmadi, keltirilgan skrinshot boshqa foydalanuvchiga tegishli."}
+                    {complaint.admin_note || "Shikoyat rad etildi."}
                   </p>
                 </div>
               </div>
@@ -351,27 +564,28 @@ const AppealDetailPage = () => {
                     Holati
                   </span>
                   <span className="bg-[#E6F9F0] dark:bg-[#103020] text-[#00A854] dark:text-[#2ee088] font-medium text-[12px] px-3 py-1 rounded-full">
-                    Tasdiqlandi
+                    {complaint.status_label || "Tasdiqlandi"}
                   </span>
                 </div>
 
                 <div className="flex items-center justify-between text-[12px]">
                   <span className="text-[#737373] dark:text-[#a3a3a3]">Moderator</span>
                   <span className="font-bold text-[#0A0A0A] dark:text-[#fafafa]">
-                    {appeal.moderator || "A. Muxtorov"}
+                    {moderatorName}
                   </span>
                 </div>
 
                 <div className="flex items-center justify-between text-[12px]">
                   <span className="text-[#737373] dark:text-[#a3a3a3]">Sana</span>
                   <span className="font-bold text-[#0A0A0A] dark:text-[#fafafa]">
-                    {appeal.resolvedAt || "12.03.2026 10:02"}
+                    {resolvedDate}
                   </span>
                 </div>
 
                 <div className="pt-2 border-t border-[#f0f0f0] dark:border-[#262626]">
                   <p className="text-[12px] text-[#00A854] dark:text-[#2ee088] leading-relaxed font-medium">
-                    Shikoyat tasdiqlandi va profilga nisbatan qoidabuzarlik choralari qo'llanildi.
+                    {complaint.admin_note ||
+                      "Shikoyat tasdiqlandi va profilga nisbatan qoidabuzarlik choralari qo'llanildi."}
                   </p>
                 </div>
               </div>
@@ -380,8 +594,17 @@ const AppealDetailPage = () => {
 
           {/* Card 2: Shikoyat qilingan profil */}
           <div className="bg-white dark:bg-[#141414] rounded-xl border border-[#e5e5e5] dark:border-[#262626] p-5 shadow-xs">
-            <h3 className="text-[13px] font-semibold text-[#0A0A0A] dark:text-[#fafafa] mb-3.5">
-              Shikoyat qilingan profil
+            <h3 className="text-[13px] font-semibold text-[#0A0A0A] dark:text-[#fafafa] mb-3.5 flex items-center justify-between">
+              <span>Shikoyat qilingan profil</span>
+              {complaint.to_user_info?.id && (
+                <button
+                  onClick={() => navigate(`/users/details/${complaint.to_user_info?.id}`)}
+                  className="text-xs text-[#0474F3] hover:underline flex items-center gap-1 cursor-pointer"
+                >
+                  <span>Profilga o'tish</span>
+                  <ChevronRight className="w-3 h-3" />
+                </button>
+              )}
             </h3>
 
             <div className="space-y-2.5 text-[12px]">
@@ -414,16 +637,13 @@ const AppealDetailPage = () => {
               </div>
             </div>
           </div>
-
         </div>
-
       </div>
 
-      {/* ── Shikoyatni bekor qilish Modali (Image 4) ── */}
+      {/* ── Shikoyatni bekor qilish Modali ── */}
       {showRejectModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
           <div className="w-full max-w-[500px] bg-white dark:bg-[#141414] rounded-2xl border border-[#e5e5e5] dark:border-[#262626] p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
-            
             {/* Header */}
             <div className="flex items-center justify-between">
               <h3 className="text-[18px] font-bold text-[#0A0A0A] dark:text-[#fafafa]">
@@ -464,6 +684,7 @@ const AppealDetailPage = () => {
               <button
                 type="button"
                 onClick={() => setShowRejectModal(false)}
+                disabled={decisionLoading}
                 className="px-4 py-2.5 bg-white dark:bg-zinc-900 border border-[#e5e5e5] dark:border-[#262626] rounded-lg text-[13px] font-medium text-[#404040] dark:text-[#e5e5e5] hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer flex items-center gap-1.5"
               >
                 <X className="w-3.5 h-3.5" />
@@ -473,18 +694,20 @@ const AppealDetailPage = () => {
               <button
                 type="button"
                 onClick={handleRejectSubmit}
-                disabled={rejectReasonText.trim().length < 10}
+                disabled={rejectReasonText.trim().length < 10 || decisionLoading}
                 className="px-4 py-2.5 not-disabled:bg-[#DC2626] text-white disabled:border disabled:border-[#e5e5e5] dark:disabled:border-[#262626] rounded-lg text-[13px] font-medium disabled:text-[#404040] dark:disabled:text-[#e5e5e5] hover:disabled:bg-gray-50 dark:disabled:hover:bg-zinc-800 transition-colors cursor-pointer flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <X className="w-3.5 h-3.5 " />
+                {decisionLoading ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <X className="w-3.5 h-3.5" />
+                )}
                 <span>Bekor qilish</span>
               </button>
             </div>
-
           </div>
         </div>
       )}
-
     </div>
   );
 };
