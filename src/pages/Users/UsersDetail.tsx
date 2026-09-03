@@ -30,15 +30,21 @@ import { IdIcon, PencilEdit01Icon, Shield01Icon } from '@hugeicons/core-free-ico
 export type UserResult = {
     id: string;
     display_id?: string;
+    full_name?: string;
+    main_photo?: string | null;
     phone_number?: string;
     email?: string | null;
+    telegram_id?: string | null;
+    candidate_type?: string;
+    age?: number | null;
+    region_name?: string | null;
+    district_name?: string | null;
+    completion_percentage?: number | null;
+    status?: string;
     auth_provider?: string;
     is_verified?: boolean;
     is_blocked?: boolean;
-    status?: string;
-    full_name?: string;
     role_name?: string;
-    candidate_type?: string;
     role_info?: {
         id: string;
         name: string;
@@ -50,14 +56,29 @@ export type UserResult = {
         middle_name?: string | null;
         gender?: string;
         candidate_type?: string;
-        birth_year?: number;
-        birth_date?: string;
-        height?: number;
-        weight?: number;
-        nationality?: string;
-        education?: string;
-        occupation?: string;
-        children_count?: number | string;
+        birth_year?: number | null;
+        birth_date?: string | null;
+        height?: number | null;
+        weight?: number | null;
+        has_children?: boolean;
+        children_count?: number | null;
+        expectations?: string | null;
+        bio?: string | null;
+        voice_intro?: string | null;
+        voice_duration?: string;
+        voice_uploaded_at?: string;
+        latitude?: string | number | null;
+        longitude?: string | number | null;
+        location?: string | null;
+        blur_photos?: boolean;
+        education?: string | null;
+        education_level?: string | null;
+        education_level_info?: { id?: string; name?: string } | null;
+        nationality?: string | null;
+        nationality_info?: { id?: string; name?: string } | null;
+        occupation?: string | null;
+        profession?: string | null;
+        profession_info?: { id?: string; name?: string } | null;
         health_status_info?: {
             id: string;
             name: string;
@@ -66,13 +87,6 @@ export type UserResult = {
             id: string;
             name: string;
         } | null;
-        bio?: string;
-        voice_intro?: string | null;
-        voice_duration?: string;
-        voice_uploaded_at?: string;
-        latitude?: number | null;
-        longitude?: number | null;
-        blur_photos?: boolean;
         user?: string;
         photos_info?: {
             id?: string;
@@ -95,13 +109,13 @@ export type UserResult = {
         } | null;
         mahalla?: string;
         representative_info?: {
-            id: string;
-            full_name: string;
-            age: number;
-            relationship: string;
-            phone_number: string;
-            candidate_count: number;
-            is_verified: boolean;
+            id?: string;
+            full_name?: string;
+            age?: number;
+            relationship?: string;
+            phone_number?: string;
+            candidate_count?: number;
+            is_verified?: boolean;
             timeline?: {
                 applied_at?: string;
                 sms_sent_at?: string;
@@ -113,13 +127,13 @@ export type UserResult = {
         updated_at?: string;
     } | null;
     representative_info?: {
-        id: string;
-        full_name: string;
-        age: number;
-        relationship: string;
-        phone_number: string;
-        candidate_count: number;
-        is_verified: boolean;
+        id?: string;
+        full_name?: string;
+        age?: number;
+        relationship?: string;
+        phone_number?: string;
+        candidate_count?: number;
+        is_verified?: boolean;
         timeline?: {
             applied_at?: string;
             sms_sent_at?: string;
@@ -190,11 +204,6 @@ const UsersDetail = () => {
     const [historyList, setHistoryList] = useState(DEFAULT_HISTORY);
     const [notification, setNotification] = useState<{ type: 'success' | 'error' | 'info'; message: string } | null>(null);
 
-    // Audio player simulation
-    const [isPlaying, setIsPlaying] = useState(false);
-    const [audioProgress, setAudioProgress] = useState(0);
-    const audioIntervalRef = useRef<any>(null);
-
     // Modals
     const [showBlockModal, setShowBlockModal] = useState(false);
     const [blockReason, setBlockReason] = useState("Firibgarlik belgilari");
@@ -238,48 +247,135 @@ const UsersDetail = () => {
         }
     }, [userData]);
 
-    // Audio player toggle
-    const togglePlayAudio = () => {
-        if (isPlaying) {
+    // Profile data resolution
+    const profile = userData?.profile_info;
+    const userId = userData?.id || id || "";
+    const displayId = userData?.display_id || (userData?.id ? `USR-${userData.id.slice(0, 5).toUpperCase()}` : "-");
+
+    const fullName = userData?.full_name || ([profile?.first_name, profile?.last_name].filter(Boolean).join(" ") || "-");
+    const avatarUrl = userData?.main_photo || profile?.photos_info?.find(p => p.is_main)?.image || profile?.photos_info?.[0]?.image || null;
+    const initials = fullName && fullName !== "-"
+        ? fullName
+            .split(" ")
+            .filter(Boolean)
+            .map((n) => n[0])
+            .join("")
+            .toUpperCase()
+            .slice(0, 2) || "US"
+        : "US";
+
+    const bioText = profile?.bio || null;
+    const voiceIntro = profile?.voice_intro || null;
+
+    // Real Audio Player state
+    const [isPlaying, setIsPlaying] = useState(false);
+    const [audioCurrentTime, setAudioCurrentTime] = useState(0);
+    const [audioDuration, setAudioDuration] = useState<number | null>(null);
+    const audioRef = useRef<HTMLAudioElement | null>(null);
+
+    // Audio setup when voiceIntro changes
+    useEffect(() => {
+        if (!voiceIntro) {
             setIsPlaying(false);
-            if (audioIntervalRef.current) clearInterval(audioIntervalRef.current);
+            setAudioCurrentTime(0);
+            setAudioDuration(null);
+            if (audioRef.current) {
+                audioRef.current.pause();
+                audioRef.current = null;
+            }
+            return;
+        }
+
+        const audio = new Audio(voiceIntro);
+        audioRef.current = audio;
+
+        const handleLoadedMetadata = () => {
+            if (audio.duration && !isNaN(audio.duration) && isFinite(audio.duration)) {
+                setAudioDuration(audio.duration);
+            }
+        };
+
+        const handleTimeUpdate = () => {
+            setAudioCurrentTime(audio.currentTime);
+            if (audio.duration && !isNaN(audio.duration) && isFinite(audio.duration)) {
+                setAudioDuration(audio.duration);
+            }
+        };
+
+        const handleEnded = () => {
+            setIsPlaying(false);
+            setAudioCurrentTime(0);
+        };
+
+        const handleError = (e: any) => {
+            console.error("Audio playback error:", e);
+            setIsPlaying(false);
+        };
+
+        audio.addEventListener("loadedmetadata", handleLoadedMetadata);
+        audio.addEventListener("timeupdate", handleTimeUpdate);
+        audio.addEventListener("ended", handleEnded);
+        audio.addEventListener("error", handleError);
+
+        return () => {
+            audio.pause();
+            audio.removeEventListener("loadedmetadata", handleLoadedMetadata);
+            audio.removeEventListener("timeupdate", handleTimeUpdate);
+            audio.removeEventListener("ended", handleEnded);
+            audio.removeEventListener("error", handleError);
+            audioRef.current = null;
+        };
+    }, [voiceIntro]);
+
+    const togglePlayAudio = () => {
+        if (!audioRef.current) return;
+        if (isPlaying) {
+            audioRef.current.pause();
+            setIsPlaying(false);
         } else {
-            setIsPlaying(true);
-            audioIntervalRef.current = setInterval(() => {
-                setAudioProgress((prev) => {
-                    if (prev >= 100) {
-                        setIsPlaying(false);
-                        clearInterval(audioIntervalRef.current);
-                        return 0;
-                    }
-                    return prev + 3;
+            audioRef.current.play()
+                .then(() => {
+                    setIsPlaying(true);
+                })
+                .catch((err) => {
+                    console.error("Audio play failed:", err);
+                    setIsPlaying(false);
                 });
-            }, 300);
         }
     };
 
-    useEffect(() => {
-        return () => {
-            if (audioIntervalRef.current) clearInterval(audioIntervalRef.current);
-        };
-    }, []);
+    const handleSeekAudio = (percent: number) => {
+        if (!audioRef.current || !audioDuration) return;
+        const newTime = (percent / 100) * audioDuration;
+        audioRef.current.currentTime = newTime;
+        setAudioCurrentTime(newTime);
+    };
 
-    // Resolved profile info
-    const profile = userData?.profile_info;
-    const userId = userData?.id || id || "10241";
-    const displayId = userData?.display_id || `USR-${userId}`;
+    const formatAudioTime = (seconds: number | null) => {
+        if (seconds === null || isNaN(seconds) || !isFinite(seconds) || seconds < 0) return "0:00";
+        const mins = Math.floor(seconds / 60);
+        const secs = Math.floor(seconds % 60);
+        return `${mins}:${secs < 10 ? "0" : ""}${secs}`;
+    };
 
-    const fullName = userData?.full_name || (profile?.first_name ? `${profile.first_name} ${profile.last_name || ''}`.trim() : "Safarali Muxtorov");
-    const avatarUrl = profile?.photos_info?.find(p => p.is_main)?.image || profile?.photos_info?.[0]?.image;
-    const initials = fullName
-        .split(" ")
-        .map((n) => n[0])
-        .join("")
-        .toUpperCase()
-        .slice(0, 2) || "SM";
+    const audioProgress = audioDuration && audioDuration > 0
+        ? Math.min(100, (audioCurrentTime / audioDuration) * 100)
+        : 0;
+
+    const voiceDurationDisplay = audioDuration
+        ? formatAudioTime(audioDuration)
+        : (profile?.voice_duration || "0:00");
+
+    const voiceUploaded = profile?.voice_uploaded_at
+        ? dayjs(profile.voice_uploaded_at).format("DD.MM.YYYY [kuni yuklangan]")
+        : (profile?.updated_at
+            ? dayjs(profile.updated_at).format("DD.MM.YYYY [kuni yuklangan]")
+            : (profile?.created_at
+                ? dayjs(profile.created_at).format("DD.MM.YYYY [kuni yuklangan]")
+                : (userData?.created_at ? dayjs(userData.created_at).format("DD.MM.YYYY [kuni yuklangan]") : "-")));
 
     const formatAuthProvider = (provider?: string | null) => {
-        if (!provider) return "Telefon raqami";
+        if (!provider) return "-";
         const p = provider.toLowerCase();
         if (p === "phone" || p === "phone_number" || p.includes("telefon")) return "Telefon raqami";
         if (p === "telegram") return "Telegram bot";
@@ -289,7 +385,7 @@ const UsersDetail = () => {
     };
 
     const formatCandidateType = (type?: string | null) => {
-        if (!type) return "Kuyov";
+        if (!type) return "-";
         const t = type.toLowerCase();
         if (t === "kuyov" || t === "groom" || t === "male") return "Kuyov";
         if (t === "kelin" || t === "bride" || t === "female") return "Kelin";
@@ -297,54 +393,47 @@ const UsersDetail = () => {
         return type.charAt(0).toUpperCase() + type.slice(1);
     };
 
-    const candidateType = formatCandidateType(profile?.candidate_type || userData?.candidate_type);
-    const managementType = userData?.auth_provider === "Vakil orqali" || profile?.representative_info || userData?.representative_info ? "Vakil orqali" : "O'zi";
+    const candidateType = formatCandidateType(userData?.candidate_type || profile?.candidate_type);
+    const managementType = userData?.candidate_type === "Vakil" || profile?.candidate_type === "representative" || profile?.representative_info || userData?.representative_info ? "Vakil orqali" : "O'zi";
 
-    const regDate = userData?.created_at ? dayjs(userData.created_at).format("DD.MM.YYYY") : "12.03.2026";
-    const lastActive = userData?.last_active ? dayjs(userData.last_active).format("DD.MM.YYYY HH:mm") : "28.08.2026 19:14";
+    const regDate = userData?.created_at ? dayjs(userData.created_at).format("DD.MM.YYYY") : "-";
+    const lastActive = userData?.last_active
+        ? dayjs(userData.last_active).format("DD.MM.YYYY HH:mm")
+        : (userData?.updated_at ? dayjs(userData.updated_at).format("DD.MM.YYYY HH:mm") : "-");
+    const createdAtFormatted = userData?.created_at ? dayjs(userData.created_at).format("DD.MM.YYYY HH:mm") : "-";
+    const updatedAtFormatted = userData?.updated_at ? dayjs(userData.updated_at).format("DD.MM.YYYY HH:mm") : "-";
 
-    const age = profile?.birth_year ? new Date().getFullYear() - profile.birth_year : 27;
-    const birthDate = profile?.birth_date || "01.01.1999";
-    const heightWeight = `${profile?.height || 178} sm, ${profile?.weight || 74} kg`;
-    const nationality = profile?.nationality || "O'zbek";
-    const education = profile?.education || "Oliy";
-    const occupation = profile?.occupation || "Dasturchi";
-    const maritalStatus = profile?.marital_status_info?.name || "Bo'ydoq";
-    const children = profile?.children_count ? `${profile.children_count} ta` : "Yo'q";
-    const healthStatus = profile?.health_status_info?.name || "Sog'lom";
+    const calculatedAge = userData?.age ?? (profile?.birth_year ? new Date().getFullYear() - profile.birth_year : (profile?.birth_date ? dayjs().diff(dayjs(profile.birth_date), 'year') : null));
+    const ageText = calculatedAge ? `${calculatedAge} yosh` : "-";
+    const birthDate = profile?.birth_date ? dayjs(profile.birth_date).format("DD.MM.YYYY") : "-";
 
-    const regionName = profile?.region_info?.name || "Toshkent shahri";
-    const districtName = profile?.district_info?.name || "Yunusobod";
-    const mahallaName = profile?.mahalla || profile?.mahalla_info?.name || "Bog'ishamol MFY";
-    const phoneNumber = userData?.phone_number || "+998 90 *** 41 22";
-    const email = userData?.email || "s.muxtorov@mail.uz";
+    const heightText = profile?.height ? `${profile.height} sm` : null;
+    const weightText = profile?.weight ? `${profile.weight} kg` : null;
+    const heightWeight = heightText && weightText ? `${heightText}, ${weightText}` : (heightText || weightText || "-");
+
+    const nationality = profile?.nationality || profile?.nationality_info?.name || "-";
+    const education = profile?.education || profile?.education_level_info?.name || "-";
+    const occupation = profile?.occupation || profile?.profession_info?.name || "-";
+    const maritalStatus = profile?.marital_status_info?.name || "-";
+    const children = profile?.children_count !== undefined && profile?.children_count !== null
+        ? (profile.children_count > 0 ? `${profile.children_count} ta` : "Yo'q")
+        : (profile?.has_children !== undefined ? (profile.has_children ? "Bor" : "Yo'q") : "-");
+    const healthStatus = profile?.health_status_info?.name || "-";
+
+    const regionName = profile?.region_info?.name || userData?.region_name || "-";
+    const districtName = profile?.district_info?.name || userData?.district_name || "-";
+    const mahallaName = profile?.mahalla || profile?.mahalla_info?.name || "-";
+    const phoneNumber = userData?.phone_number || "-";
+    const email = userData?.email || "-";
     const regMethod = formatAuthProvider(userData?.auth_provider);
 
-    const bioText = profile?.bio || "Toshkentda tug'ilib o'sganman, hozir IT sohasida dasturchi bo'lib ishlayman. Oilaviy qadriyatlarni ustun qo'yaman, diniy amallarni bajaraman. Jiddiy niyat bilan, nikoh uchun tanishmoqchiman. Kelajakda oilamni Toshkentda qurishni rejalashtirganman.";
-    const voiceDuration = profile?.voice_duration || "0:42";
-    const voiceUploaded = profile?.voice_uploaded_at || "12.03.2026 kuni yuklangan";
-
     // Representative (Vakil) details
-    const representative = profile?.representative_info || userData?.representative_info || {
-        id: "10318",
-        full_name: "Zulfiya Muxtorova, 52",
-        age: 52,
-        relationship: "Xola",
-        phone_number: "+998 90 987 65 43",
-        candidate_count: 2,
-        is_verified: true,
-        timeline: {
-            applied_at: "12.08.2026 14:20",
-            sms_sent_at: "12.08.2026 14:22",
-            consent_at: "12.08.2026 15:04",
-            completed_at: "13.08.2026 11:38",
-        }
-    };
+    const representative = profile?.representative_info || userData?.representative_info || null;
 
     // Synchronize Header Title and Subtitle
     useEffect(() => {
         setHeaderTitle("Foydalanuvchi kartasi");
-        setHeaderSubtitle(`${fullName}, ${displayId}`);
+        setHeaderSubtitle(fullName !== "-" ? `${fullName}, ${displayId}` : displayId);
     }, [fullName, displayId, setHeaderTitle, setHeaderSubtitle]);
 
     // History event addition
@@ -419,15 +508,15 @@ const UsersDetail = () => {
 
     const openEditModal = () => {
         setEditForm({
-            full_name: fullName,
-            phone_number: phoneNumber,
-            email: email,
-            occupation: occupation,
-            education: education,
-            marital_status: maritalStatus,
-            region: regionName,
-            district: districtName,
-            mahalla: mahallaName,
+            full_name: fullName !== "-" ? fullName : "",
+            phone_number: phoneNumber !== "-" ? phoneNumber : "",
+            email: email !== "-" ? email : "",
+            occupation: occupation !== "-" ? occupation : "",
+            education: education !== "-" ? education : "",
+            marital_status: maritalStatus !== "-" ? maritalStatus : "",
+            region: regionName !== "-" ? regionName : "",
+            district: districtName !== "-" ? districtName : "",
+            mahalla: mahallaName !== "-" ? mahallaName : "",
         });
         setShowEditModal(true);
     };
@@ -555,7 +644,7 @@ const UsersDetail = () => {
                             <div className="grid grid-cols-2 sm:grid-cols-3 gap-y-4 gap-x-6">
                                 <div>
                                     <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">Yoshi</p>
-                                    <p className="text-[13px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-0.5">{age} yosh</p>
+                                    <p className="text-[13px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-0.5">{ageText}</p>
                                 </div>
 
                                 <div>
@@ -656,55 +745,81 @@ const UsersDetail = () => {
                             </h3>
                         </div>
 
-                        <p className="text-[12px] text-[#404040] dark:text-[#d4d4d4] leading-relaxed">
-                            {bioText}
-                        </p>
+                        {bioText ? (
+                            <p className="text-[12px] text-[#404040] dark:text-[#d4d4d4] leading-relaxed">
+                                {bioText}
+                            </p>
+                        ) : (
+                            <p className="text-[12px] text-[#737373] dark:text-[#a3a3a3] italic">
+                                Ma'lumot kiritilmagan
+                            </p>
+                        )}
+
+                        {profile?.expectations && (
+                            <div className="mt-3 pt-3 border-t border-[#f0f0f0] dark:border-[#262626]">
+                                <p className="text-[11px] font-semibold text-[#737373] dark:text-[#a3a3a3] mb-1">Kutilmalar:</p>
+                                <p className="text-[12px] text-[#404040] dark:text-[#d4d4d4] leading-relaxed">{profile.expectations}</p>
+                            </div>
+                        )}
 
                         {/* Audio container */}
-                        <div className="mt-4 p-3 rounded-xl bg-[#F8FAFC] dark:bg-zinc-900/90 border border-[#e2e8f0] dark:border-zinc-800 flex items-center gap-3.5">
-                            <button
-                                onClick={togglePlayAudio}
-                                className="w-8 h-8 rounded-full bg-[#0474F3] hover:bg-[#0360cb] text-white flex items-center justify-center shrink-0 transition-colors shadow-sm cursor-pointer"
-                            >
-                                {isPlaying ? (
-                                    <Pause className="w-3.5 h-3.5 fill-white" />
-                                ) : (
-                                    <Play className="w-3.5 h-3.5 fill-white ml-0.5" />
-                                )}
-                            </button>
+                        {voiceIntro && (
+                            <div className="mt-4 p-3 rounded-xl bg-[#F8FAFC] dark:bg-zinc-900/90 border border-[#e2e8f0] dark:border-zinc-800 flex items-center gap-3.5">
+                                <button
+                                    onClick={togglePlayAudio}
+                                    className="w-8 h-8 rounded-full bg-[#0474F3] hover:bg-[#0360cb] text-white flex items-center justify-center shrink-0 transition-colors shadow-sm cursor-pointer"
+                                >
+                                    {isPlaying ? (
+                                        <Pause className="w-3.5 h-3.5 fill-white" />
+                                    ) : (
+                                        <Play className="w-3.5 h-3.5 fill-white ml-0.5" />
+                                    )}
+                                </button>
 
-                            <div className="min-w-0 shrink-0">
-                                <p className="text-[12px] font-bold text-[#0A0A0A] dark:text-[#fafafa]">
-                                    Ovozli tanishtiruv
-                                </p>
-                                <p className="text-[10px] text-[#737373] dark:text-[#a3a3a3]">
-                                    {voiceUploaded}
-                                </p>
+                                <div className="min-w-0 shrink-0">
+                                    <p className="text-[12px] font-bold text-[#0A0A0A] dark:text-[#fafafa]">
+                                        Ovozli tanishtiruv
+                                    </p>
+                                    <p className="text-[10px] text-[#737373] dark:text-[#a3a3a3]">
+                                        {voiceUploaded}
+                                    </p>
+                                </div>
+
+                                {/* Waveform visualizer */}
+                                <div
+                                    onClick={(e) => {
+                                        const rect = e.currentTarget.getBoundingClientRect();
+                                        const clickX = e.clientX - rect.left;
+                                        const percent = Math.max(0, Math.min(100, (clickX / rect.width) * 100));
+                                        handleSeekAudio(percent);
+                                    }}
+                                    className="flex-1 flex items-center gap-[3px] h-7 px-2 overflow-hidden cursor-pointer select-none"
+                                    title="O'tkazish uchun bosing"
+                                >
+                                    {WAVEFORM_BARS.map((height, i) => {
+                                        const barProgress = (i / WAVEFORM_BARS.length) * 100;
+                                        const isBarActive = audioProgress >= barProgress;
+                                        return (
+                                            <div
+                                                key={i}
+                                                className={`w-[3px] rounded-full transition-all duration-150 ${
+                                                    isBarActive
+                                                        ? 'bg-[#0474F3]'
+                                                        : 'bg-[#CBD5E1] dark:bg-zinc-700 hover:bg-blue-300'
+                                                }`}
+                                                style={{ height: `${height}px` }}
+                                            />
+                                        );
+                                    })}
+                                </div>
+
+                                <span className="text-[12px] font-mono text-[#737373] dark:text-[#a3a3a3] shrink-0">
+                                    {isPlaying && audioDuration
+                                        ? `${formatAudioTime(audioCurrentTime)} / ${formatAudioTime(audioDuration)}`
+                                        : voiceDurationDisplay}
+                                </span>
                             </div>
-
-                            {/* Waveform visualizer */}
-                            <div className="flex-1 flex items-center gap-[3px] h-7 px-2 overflow-hidden">
-                                {WAVEFORM_BARS.map((height, i) => {
-                                    const barProgress = (i / WAVEFORM_BARS.length) * 100;
-                                    const isBarActive = audioProgress >= barProgress;
-                                    return (
-                                        <div
-                                            key={i}
-                                            className={`w-[3px] rounded-full transition-all duration-200 ${
-                                                isBarActive
-                                                    ? 'bg-[#0474F3]'
-                                                    : 'bg-[#CBD5E1] dark:bg-zinc-700'
-                                            }`}
-                                            style={{ height: `${height}px` }}
-                                        />
-                                    );
-                                })}
-                            </div>
-
-                            <span className="text-[12px] font-mono text-[#737373] dark:text-[#a3a3a3] shrink-0">
-                                {voiceDuration}
-                            </span>
-                        </div>
+                        )}
                     </div>
 
                     {/* Card 3: Anketa natijasi */}
@@ -716,34 +831,31 @@ const UsersDetail = () => {
                                     Anketa natijasi
                                 </h3>
                             </div>
-                            <span className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">
-                                30/30 savol yakunlangan
+                            <span className="text-[11px] font-medium text-[#737373] dark:text-[#a3a3a3]">
+                                {userData?.completion_percentage !== undefined && userData?.completion_percentage !== null
+                                    ? `${userData.completion_percentage}% to'ldirilgan`
+                                    : "To'ldirilmagan"}
                             </span>
                         </div>
 
-                        {/* Scores List */}
+                        {/* Scores / Progress */}
                         <div className="space-y-4">
-                            {QUESTIONNAIRE_CATEGORIES.map((cat) => {
-                                const percentage = (cat.score / cat.max) * 100;
-                                return (
-                                    <div key={cat.id} className="space-y-1.5">
-                                        <div className="flex justify-between items-center text-[12px]">
-                                            <span className="text-[#404040] dark:text-zinc-300 font-medium">
-                                                {cat.label}
-                                            </span>
-                                            <span className="font-bold text-[#0A0A0A] dark:text-[#fafafa]">
-                                                {cat.score.toFixed(1)} / {cat.max.toFixed(1)}
-                                            </span>
-                                        </div>
-                                        <div className="w-full bg-[#F1F5F9] dark:bg-zinc-800 h-1.5 rounded-full overflow-hidden">
-                                            <div
-                                                className="bg-[#0474F3] h-full rounded-full transition-all duration-500"
-                                                style={{ width: `${percentage}%` }}
-                                            />
-                                        </div>
-                                    </div>
-                                );
-                            })}
+                            <div className="space-y-1.5">
+                                <div className="flex justify-between items-center text-[12px]">
+                                    <span className="text-[#404040] dark:text-zinc-300 font-medium">
+                                        Anketa to'liqligi
+                                    </span>
+                                    <span className="font-bold text-[#0A0A0A] dark:text-[#fafafa]">
+                                        {userData?.completion_percentage ?? 0}%
+                                    </span>
+                                </div>
+                                <div className="w-full bg-[#F1F5F9] dark:bg-zinc-800 h-2 rounded-full overflow-hidden">
+                                    <div
+                                        className="bg-[#0474F3] h-full rounded-full transition-all duration-500"
+                                        style={{ width: `${userData?.completion_percentage ?? 0}%` }}
+                                    />
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -773,21 +885,31 @@ const UsersDetail = () => {
                                     
                                     <div className="flex items-center gap-3">
                                         <div className="w-10 h-10 rounded-full bg-[#EDE9FE] dark:bg-purple-950/40 text-[#7C3AED] dark:text-purple-400 font-bold text-xs flex items-center justify-center shrink-0">
-                                            ZM
+                                            {representative?.full_name
+                                                ? representative.full_name
+                                                    .split(" ")
+                                                    .filter(Boolean)
+                                                    .map((n: string) => n[0])
+                                                    .join("")
+                                                    .toUpperCase()
+                                                    .slice(0, 2)
+                                                : "VK"}
                                         </div>
                                         <div>
                                             <p className="text-[13px] font-bold text-[#0A0A0A] dark:text-[#fafafa]">
-                                                {representative.full_name}
+                                                {representative.full_name || "-"}
                                             </p>
                                             <div className="flex items-center gap-1.5 mt-1">
-                                                <span className="text-[10px] text-[#737373] dark:text-[#a3a3a3]">
-                                                    USR-{representative.id}
-                                                </span>
+                                                {representative.id && (
+                                                    <span className="text-[10px] text-[#737373] dark:text-[#a3a3a3]">
+                                                        USR-{representative.id}
+                                                    </span>
+                                                )}
                                                 <span className="bg-[#E2E8F0] dark:bg-zinc-800 text-[#475569] dark:text-zinc-300 text-[10px] font-semibold px-2 py-0.5 rounded">
                                                     Vakil
                                                 </span>
                                                 <span className="bg-[#E6F9F0] dark:bg-[#103020] text-[#00A854] dark:text-[#2ee088] text-[10px] font-semibold px-2 py-0.5 rounded">
-                                                    Tasdiqlangan
+                                                    {representative.is_verified ? "Tasdiqlangan" : "Tekshirilmagan"}
                                                 </span>
                                             </div>
                                         </div>
@@ -796,17 +918,19 @@ const UsersDetail = () => {
                                     <div className="flex items-center gap-6 sm:gap-8 justify-between sm:justify-end">
                                         <div>
                                             <p className="text-[10px] text-[#737373] dark:text-[#a3a3a3]">Qarindoshligi</p>
-                                            <p className="text-[12px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-0.5">{representative.relationship}</p>
+                                            <p className="text-[12px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-0.5">{representative.relationship || "-"}</p>
                                         </div>
 
                                         <div>
                                             <p className="text-[10px] text-[#737373] dark:text-[#a3a3a3]">Telefon</p>
-                                            <p className="text-[12px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-0.5">{representative.phone_number}</p>
+                                            <p className="text-[12px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-0.5">{representative.phone_number || "-"}</p>
                                         </div>
 
                                         <div>
                                             <p className="text-[10px] text-[#737373] dark:text-[#a3a3a3]">Nomzodlari</p>
-                                            <p className="text-[12px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-0.5">{representative.candidate_count} ta</p>
+                                            <p className="text-[12px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-0.5">
+                                                {representative.candidate_count !== undefined ? `${representative.candidate_count} ta` : "-"}
+                                            </p>
                                         </div>
 
                                         <ChevronRight className="w-4 h-4 text-[#737373] dark:text-[#a3a3a3] shrink-0" />
@@ -836,7 +960,7 @@ const UsersDetail = () => {
                                                 Ariza to'ldirildi
                                             </p>
                                             <p className="text-[10px] text-[#737373] dark:text-[#a3a3a3] mt-0.5">
-                                                {representative.timeline?.applied_at || "12.08.2026 14:20"}
+                                                {representative.timeline?.applied_at ? dayjs(representative.timeline.applied_at).format("DD.MM.YYYY HH:mm") : "-"}
                                             </p>
                                         </div>
 
@@ -848,7 +972,7 @@ const UsersDetail = () => {
                                                 Nomzodga SMS yuborildi
                                             </p>
                                             <p className="text-[10px] text-[#737373] dark:text-[#a3a3a3] mt-0.5">
-                                                {representative.timeline?.sms_sent_at || "12.08.2026 14:22"}
+                                                {representative.timeline?.sms_sent_at ? dayjs(representative.timeline.sms_sent_at).format("DD.MM.YYYY HH:mm") : "-"}
                                             </p>
                                         </div>
 
@@ -860,7 +984,7 @@ const UsersDetail = () => {
                                                 Nomzod rozilikni tasdiqladi
                                             </p>
                                             <p className="text-[10px] text-[#737373] dark:text-[#a3a3a3] mt-0.5">
-                                                {representative.timeline?.consent_at || "12.08.2026 15:04"}
+                                                {representative.timeline?.consent_at ? dayjs(representative.timeline.consent_at).format("DD.MM.YYYY HH:mm") : "-"}
                                             </p>
                                         </div>
 
@@ -872,7 +996,7 @@ const UsersDetail = () => {
                                                 Anketa to'ldirildi
                                             </p>
                                             <p className="text-[10px] text-[#737373] dark:text-[#a3a3a3] mt-0.5">
-                                                {representative.timeline?.completed_at || "13.08.2026 11:38"}
+                                                {representative.timeline?.completed_at ? dayjs(representative.timeline.completed_at).format("DD.MM.YYYY HH:mm") : "-"}
                                             </p>
                                         </div>
                                     </div>
@@ -966,7 +1090,9 @@ const UsersDetail = () => {
                                     <Check className="w-3.5 h-3.5 text-[#00A854] dark:text-[#2ee088] stroke-[2.5]" />
                                     <span className="text-[#404040] dark:text-zinc-300">Telefon raqami</span>
                                 </div>
-                                <span className="text-[#0A0A0A] dark:text-[#fafafa] font-medium">Tasdiqlangan</span>
+                                <span className="text-[#0A0A0A] dark:text-[#fafafa] font-medium">
+                                    {userData?.phone_number ? "Tasdiqlangan" : "-"}
+                                </span>
                             </div>
 
                             <div className="flex items-center justify-between text-[12px]">
@@ -974,7 +1100,9 @@ const UsersDetail = () => {
                                     <Check className="w-3.5 h-3.5 text-[#00A854] dark:text-[#2ee088] stroke-[2.5]" />
                                     <span className="text-[#404040] dark:text-zinc-300">Selfi</span>
                                 </div>
-                                <span className="text-[#0A0A0A] dark:text-[#fafafa] font-medium">Tasdiqlangan</span>
+                                <span className="text-[#0A0A0A] dark:text-[#fafafa] font-medium">
+                                    {userData?.is_verified ? "Tasdiqlangan" : "Kutilmoqda"}
+                                </span>
                             </div>
 
                             <div className="flex items-center justify-between text-[12px]">
@@ -982,7 +1110,11 @@ const UsersDetail = () => {
                                     <Check className="w-3.5 h-3.5 text-[#00A854] dark:text-[#2ee088] stroke-[2.5]" />
                                     <span className="text-[#404040] dark:text-zinc-300">Anketa</span>
                                 </div>
-                                <span className="text-[#0A0A0A] dark:text-[#fafafa] font-medium">30/30 savol</span>
+                                <span className="text-[#0A0A0A] dark:text-[#fafafa] font-medium">
+                                    {userData?.completion_percentage !== undefined && userData?.completion_percentage !== null
+                                        ? `${userData.completion_percentage}%`
+                                        : "-"}
+                                </span>
                             </div>
 
                             <div className="flex items-center justify-between text-[12px]">
@@ -990,7 +1122,9 @@ const UsersDetail = () => {
                                     <Check className="w-3.5 h-3.5 text-[#00A854] dark:text-[#2ee088] stroke-[2.5]" />
                                     <span className="text-[#404040] dark:text-zinc-300">Halollik qasami</span>
                                 </div>
-                                <span className="text-[#0A0A0A] dark:text-[#fafafa] font-medium">Qabul qilingan</span>
+                                <span className="text-[#0A0A0A] dark:text-[#fafafa] font-medium">
+                                    {userData?.is_verified ? "Qabul qilingan" : "Kutilmoqda"}
+                                </span>
                             </div>
 
                             <div className="flex items-center justify-between text-[12px]">
@@ -1022,7 +1156,9 @@ const UsersDetail = () => {
 
                             <div className="flex items-center justify-between">
                                 <span className="text-[#737373] dark:text-[#a3a3a3]">Roli</span>
-                                <span className="font-bold text-[#0A0A0A] dark:text-[#fafafa]">Nomzod</span>
+                                <span className="font-bold text-[#0A0A0A] dark:text-[#fafafa]">
+                                    {userData?.role_info?.name || userData?.role_name || "Foydalanuvchi"}
+                                </span>
                             </div>
 
                             <div className="flex items-center justify-between">
@@ -1037,12 +1173,12 @@ const UsersDetail = () => {
 
                             <div className="flex items-center justify-between">
                                 <span className="text-[#737373] dark:text-[#a3a3a3]">Yaratilgan</span>
-                                <span className="text-[#0A0A0A] dark:text-[#fafafa] font-medium">12.03.2026 09:14</span>
+                                <span className="text-[#0A0A0A] dark:text-[#fafafa] font-medium">{createdAtFormatted}</span>
                             </div>
 
                             <div className="flex items-center justify-between">
                                 <span className="text-[#737373] dark:text-[#a3a3a3]">Yangilangan</span>
-                                <span className="text-[#0A0A0A] dark:text-[#fafafa] font-medium">28.08.2026 19:14</span>
+                                <span className="text-[#0A0A0A] dark:text-[#fafafa] font-medium">{updatedAtFormatted}</span>
                             </div>
                         </div>
                     </div>

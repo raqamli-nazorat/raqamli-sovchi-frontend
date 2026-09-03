@@ -75,7 +75,7 @@ const ProfilePage: React.FC = () => {
     phone: currentUser?.phone_number ? formatUzbekPhone(currentUser.phone_number) : "",
     joinedDate: currentUser?.created_at ? dayjs(currentUser.created_at).format("DD.MM.YYYY") : "01.01.2026",
     roleName: currentUser?.role_info?.name || currentUser?.role || "Super admin",
-    photoUrl: currentUser?.photo_url || null as string | null,
+    photoUrl: currentUser?.main_photo || currentUser?.photo_url || null as string | null,
   });
 
   // Sync if redux currentUser changes
@@ -93,7 +93,7 @@ const ProfilePage: React.FC = () => {
           ? dayjs(currentUser.created_at).format("DD.MM.YYYY")
           : prev.joinedDate,
         roleName: currentUser.role_info?.name || currentUser.role || prev.roleName,
-        photoUrl: currentUser.photo_url || prev.photoUrl,
+        photoUrl: currentUser.main_photo || currentUser.photo_url || prev.photoUrl,
       }));
     }
   }, [currentUser]);

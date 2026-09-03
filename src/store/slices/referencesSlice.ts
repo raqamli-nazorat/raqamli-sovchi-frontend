@@ -12,6 +12,7 @@ interface CurrentUser {
   district_name: string | null;
   districts: { id: number, name: string }[] | any;
   photo_url: string | null;
+  main_photo?: string | null;
   phone: string | null;
   permissions: string[];
   email: string;

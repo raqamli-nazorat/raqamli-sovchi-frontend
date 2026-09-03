@@ -285,9 +285,19 @@ const Sidebar = ({ collapsed, onToggle }: SidebarProps) => {
           onClick={() => navigate("/profile")}
           className={`flex items-center gap-2.5 rounded-xl px-2 py-2 hover:bg-gray-50 dark:hover:bg-gray-800/60 cursor-pointer transition-colors ${collapsed ? "justify-center" : ""}`}
         >
-          <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center shrink-0">
-            <span className="text-[11px] font-bold text-blue-600 dark:text-blue-400">{currentUser?.full_name?.split(" ").map((i: string) => i?.slice(0, 1)).join("") || "US"}</span>
-          </div>
+          {currentUser?.main_photo || currentUser?.photo_url || currentUser?.profile_info?.main_photo ? (
+            <img
+              src={currentUser?.main_photo || currentUser?.photo_url || currentUser?.profile_info?.main_photo}
+              alt={currentUser?.full_name || "User"}
+              className="w-8 h-8 rounded-full object-cover shrink-0"
+            />
+          ) : (
+            <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center shrink-0">
+              <span className="text-[11px] font-bold text-blue-600 dark:text-blue-400">
+                {currentUser?.full_name?.split(" ").map((i: string) => i?.slice(0, 1)).join("") || "US"}
+              </span>
+            </div>
+          )}
           {!collapsed && (
             <>
               <div className="flex-1 min-w-0">
