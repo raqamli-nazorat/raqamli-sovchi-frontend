@@ -1,93 +1,20 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { ChevronLeft, ChevronRight, Clock, Check } from "lucide-react";
-import { closeAppeal, markReviewed } from "../../store/slices/appealsSlice";
-import type { Appeal, TagTone } from "../../store/slices/appealsSlice";
-
-interface ChatMessage {
-  side: "left" | "right";
-  text: string;
-  time: string;
-  flagged?: boolean;
-}
-
-interface AppealDetail {
-  chat: ChatMessage[];
-  analysis: { level: string; warnings: string; reports: string; advice: string };
-  profile: { status: string; registered: string; questionnaire: string; aiSignals: string };
-}
-
-// ── Mock tafsilotlar — shikoyat tafsiloti endpointi tayyor bo'lgach API'ga ulanadi ──
-const DETAILS: Record<string, AppealDetail> = {
-  "REP-2291": {
-    chat: [
-      { side: "left", text: "Assalomu alaykum. Taklifingiz uchun rahmat.", time: "09:02" },
-      { side: "right", text: "Va alaykum assalom. Vaqtingiz bo'lsa tanishsak.", time: "09:04" },
-      { side: "left", text: "Rasmingizni yuboring, hech kim ko'rmaydi.", time: "09:09", flagged: true },
-      { side: "right", text: "Bunday so'rovga javob bermayman.", time: "09:12" },
-    ],
-    analysis: { level: "Yuqori", warnings: "2 marta", reports: "3 ta", advice: "Profilni bloklash" },
-    profile: { status: "Bloklangan", registered: "02.02.2026", questionnaire: "30/30 · 100%", aiSignals: "4 ta" },
-  },
-  "REP-2292": {
-    chat: [
-      { side: "left", text: "Salom! Profilingiz juda yoqdi.", time: "14:20" },
-      { side: "right", text: "Rahmat. Rasmlaringiz o'zingizga tegishlimi?", time: "14:25" },
-      { side: "left", text: "Albatta o'zimniki, shubha qilmang.", time: "14:31", flagged: true },
-    ],
-    analysis: { level: "O'rta", warnings: "1 marta", reports: "2 ta", advice: "Qo'shimcha tekshirish" },
-    profile: { status: "Faol", registered: "15.03.2026", questionnaire: "24/30 · 80%", aiSignals: "2 ta" },
-  },
-  "REP-2293": {
-    chat: [
-      { side: "left", text: "Assalomu alaykum, tanishsak bo'ladimi?", time: "11:05" },
-      { side: "right", text: "Men bu yerda shunchaki do'st izlayapman.", time: "11:12", flagged: true },
-    ],
-    analysis: { level: "Past", warnings: "0 marta", reports: "1 ta", advice: "Ogohlantirish yuborish" },
-    profile: { status: "Faol", registered: "28.04.2026", questionnaire: "30/30 · 100%", aiSignals: "1 ta" },
-  },
-  "REP-2294": {
-    chat: [
-      { side: "left", text: "Uchrashishdan oldin bitta iltimosim bor edi.", time: "18:40" },
-      { side: "right", text: "Qanday iltimos?", time: "18:42" },
-      { side: "left", text: "Kartamga ozgina pul tashlab tura olasizmi?", time: "18:45", flagged: true },
-    ],
-    analysis: { level: "Yuqori", warnings: "3 marta", reports: "5 ta", advice: "Profilni bloklash" },
-    profile: { status: "Kuzatuvda", registered: "09.01.2026", questionnaire: "27/30 · 90%", aiSignals: "6 ta" },
-  },
-};
-
-const tagStyles: Record<TagTone, string> = {
-  red: "bg-[#FEF2F2] dark:bg-[#3a1414] text-[#DC2626]",
-  yellow: "bg-[#FEFCE8] dark:bg-[#332b0d] text-[#A16207]",
-  gray: "bg-[#F5F5F5] dark:bg-[#262626] text-[#525252] dark:text-[#A3A3A3]",
-};
-
-const initialsOf = (name: string) =>
-  name
-    .split(" ")
-    .map((w) => w[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
+import { ChevronLeft, ChevronRight, Clock, Check, X } from "lucide-react";
+import { approveAppeal, rejectAppeal, type Appeal } from "../../store/slices/appealsSlice";
+import dayjs from "dayjs";
 
 const AppealDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const [decision, setDecision] = useState<"blocked" | "warned" | null>(null);
 
-  const appeal: Appeal | undefined = useSelector((state: any) =>
-    state.appeals.items.find((a: Appeal) => a.id === id)
-  );
+  const appeals: Appeal[] = useSelector((state: any) => state.appeals.items);
+  const appeal = appeals.find((a) => String(a.id) === String(id)) || appeals[0];
 
-  // Sahifa ochilishi shikoyatni "ko'rilgan" deb belgilaydi
-  useEffect(() => {
-    if (appeal && appeal.status === "new") {
-      dispatch(markReviewed(appeal.id));
-    }
-  }, [appeal, dispatch]);
+  const [showRejectModal, setShowRejectModal] = useState(false);
+  const [rejectReasonText, setRejectReasonText] = useState("");
 
   if (!appeal) {
     return (
@@ -96,7 +23,7 @@ const AppealDetailPage = () => {
           <p className="text-[14px] font-semibold text-[#0A0A0A] dark:text-white">Shikoyat topilmadi</p>
           <button
             onClick={() => navigate("/appeals")}
-            className="mt-4 h-10 px-4 bg-[#0474F3] hover:bg-[#042480] text-white text-[13px] font-semibold rounded-lg transition-colors cursor-pointer"
+            className="mt-4 h-10 px-4 bg-[#0474F3] hover:bg-[#0360cb] text-white text-[13px] font-semibold rounded-xl transition-colors cursor-pointer"
           >
             Shikoyatlar ro'yxatiga qaytish
           </button>
@@ -105,182 +32,459 @@ const AppealDetailPage = () => {
     );
   }
 
-  const detail = DETAILS[appeal.id] ?? DETAILS["REP-2291"];
+  const fromInitials = appeal.fromName
+    .split(" ")
+    .map((w) => w[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase() || "MR";
 
-  const handleClose = () => {
-    dispatch(closeAppeal(appeal.id));
-    navigate("/appeals");
+  const toInitials = appeal.toName
+    .split(" ")
+    .map((w) => w[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase() || "BQ";
+
+  const chat = appeal.chat || [
+    { side: "left", text: "Assalomu alaykum. Taklifingiz uchun rahmat.", time: "09:02" },
+    { side: "right", text: "Va alaykum assalom. Vaqtingiz bo'lsa tanishsak.", time: "09:04" },
+    { side: "left", text: "Rasmingizni yuboring, hech kim ko'rmaydi.", time: "09:09", flagged: true },
+    { side: "right", text: "Bunday so'rovga javob bermayman.", time: "09:12" },
+  ];
+
+  const analysis = appeal.analysis || {
+    level: "Yuqori",
+    warnings: "2 marta",
+    reports: "3 ta",
+    advice: "Profilni bloklash",
+  };
+
+  const profile = appeal.profile || {
+    status: "Bloklangan",
+    registered: "02.02.2026",
+    questionnaire: "30/30 · 100%",
+    aiSignals: "4 ta",
+  };
+
+  const handleApprove = () => {
+    dispatch(
+      approveAppeal({
+        id: appeal.id,
+        moderator: "A. Muxtorov",
+        resolvedAt: dayjs().format("DD.MM.YYYY HH:mm"),
+      })
+    );
+  };
+
+  const handleOpenRejectModal = () => {
+    setRejectReasonText(
+      appeal.rejectReason ||
+        "Shikoyat asossiz: suhbat tarixida haqoratli ibora topilmadi, keltirilgan skrinshot boshqa foydalanuvchiga tegishli."
+    );
+    setShowRejectModal(true);
+  };
+
+  const handleRejectSubmit = () => {
+    if (rejectReasonText.trim().length < 10) return;
+    dispatch(
+      rejectAppeal({
+        id: appeal.id,
+        reason: rejectReasonText.trim(),
+        moderator: "A. Muxtorov",
+        resolvedAt: dayjs().format("DD.MM.YYYY HH:mm"),
+      })
+    );
+    setShowRejectModal(false);
   };
 
   return (
-    <div className="p-6 space-y-5">
-      {/* ── Orqaga ── */}
-      <button
-        onClick={() => navigate("/appeals")}
-        className="flex items-center gap-1.5 text-[14px] font-medium text-[#525252] dark:text-[#A3A3A3] hover:text-[#0A0A0A] dark:hover:text-white transition-colors cursor-pointer"
-      >
-        <ChevronLeft className="w-4 h-4" strokeWidth={2.2} />
-        Shikoyatlar ro'yxatiga qaytish
-      </button>
+    <div className="p-4 space-y-4">
+      
+      {/* ── Orqaga qaytish ── */}
+      <div>
+        <button
+          onClick={() => navigate("/appeals")}
+          className="flex items-center gap-1.5 text-[12px] font-medium text-[#737373] hover:text-[#0A0A0A] dark:text-[#a3a3a3] dark:hover:text-white transition-colors cursor-pointer"
+        >
+          <ChevronLeft className="w-4 h-4" />
+          <span>Shikoyatlar ro'yxatiga qaytish</span>
+        </button>
+      </div>
 
-      <div className="flex gap-6 items-start">
-        {/* ── Chap ustun ── */}
-        <div className="flex-1 min-w-0 space-y-5">
-          {/* Taraflar */}
-          <div className="bg-white dark:bg-[#141414] border border-[#E5E5E5] dark:border-[#262626] rounded-2xl p-6">
+      {/* ── Main 2-Column Grid ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        
+        {/* ── CHAP USTUN (8 cols) ── */}
+        <div className="lg:col-span-8 space-y-4">
+          
+          {/* Card 1: Taraflar & Sabab */}
+          <div className="bg-white dark:bg-[#141414] rounded-2xl border border-[#e5e5e5] dark:border-[#262626] p-5 lg:p-6 shadow-xs">
             <div className="flex items-center justify-between gap-4 flex-wrap">
-              <div className="flex items-center gap-5">
+              
+              <div className="flex items-center gap-4 flex-wrap">
+                {/* Shikoyatchi */}
                 <div className="flex items-center gap-3">
-                  <span className="w-10 h-10 rounded-full bg-[#F1EDFF] dark:bg-[#251d3d] text-[#7C5CFC] flex items-center justify-center text-[12px] font-bold">
-                    {initialsOf(appeal.fromName)}
-                  </span>
+                  <div className="w-10 h-10 rounded-full bg-[#EDE9FE] dark:bg-purple-950/40 text-[#7C3AED] dark:text-purple-400 font-bold text-xs flex items-center justify-center shrink-0">
+                    {fromInitials}
+                  </div>
                   <div>
-                    <p className="text-[15px] font-bold text-[#0A0A0A] dark:text-white">{appeal.fromName}</p>
-                    <p className="text-[12px] text-[#A3A3A3]">{appeal.fromUser} · shikoyatchi</p>
+                    <h3 className="text-[14px] font-bold text-[#0A0A0A] dark:text-[#fafafa]">
+                      {appeal.fromName}
+                    </h3>
+                    <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">
+                      {appeal.fromUser} · shikoyatchi
+                    </p>
                   </div>
                 </div>
-                <ChevronRight className="w-4 h-4 text-[#A3A3A3]" strokeWidth={2.2} />
+
+                <ChevronRight className="w-4 h-4 text-[#A3A3A3] shrink-0" />
+
+                {/* Shikoyat qilingan */}
                 <div className="flex items-center gap-3">
-                  <span className="w-10 h-10 rounded-full bg-[#EAF3FF] dark:bg-[#16283d] text-[#0084FF] flex items-center justify-center text-[12px] font-bold">
-                    {initialsOf(appeal.toName)}
-                  </span>
+                  <div className="w-10 h-10 rounded-full bg-[#E0F2FE] dark:bg-sky-950/40 text-[#0284C7] dark:text-sky-400 font-bold text-xs flex items-center justify-center shrink-0">
+                    {toInitials}
+                  </div>
                   <div>
-                    <p className="text-[15px] font-bold text-[#0A0A0A] dark:text-white">{appeal.toName}</p>
-                    <p className="text-[12px] text-[#A3A3A3]">{appeal.toUser} · shikoyat qilingan</p>
+                    <h3 className="text-[14px] font-bold text-[#0A0A0A] dark:text-[#fafafa]">
+                      {appeal.toName}
+                    </h3>
+                    <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">
+                      {appeal.toUser} · shikoyat qilingan
+                    </p>
                   </div>
                 </div>
               </div>
-              <span className={`px-3 py-1 rounded-full text-[12px] font-semibold ${tagStyles[appeal.tagTone]}`}>
+
+              {/* Sababi Badge */}
+              <span className="bg-[#FFF0F0] dark:bg-red-950/40 text-[#E11D48] dark:text-red-400 font-medium text-[12px] px-3 py-1 rounded-full">
                 {appeal.tag}
               </span>
             </div>
-            <p className="text-[14px] text-[#404040] dark:text-[#D4D4D4] mt-4">{appeal.description}</p>
+
+            <p className="text-[13px] text-[#525252] dark:text-[#d4d4d4] mt-4 leading-relaxed">
+              {appeal.description}
+            </p>
           </div>
 
-          {/* Suhbat tarixi */}
-          <div className="bg-white dark:bg-[#141414] border border-[#E5E5E5] dark:border-[#262626] rounded-2xl p-6">
-            <h3 className="text-[16px] font-bold text-[#0A0A0A] dark:text-white mb-5">Suhbat tarixi · dalil</h3>
-            <div className="space-y-4">
-              {detail.chat.map((msg, idx) => (
-                <div key={idx} className={`flex ${msg.side === "right" ? "justify-end" : "justify-start"}`}>
+          {/* Card 2: Suhbat tarixi · dalil */}
+          <div className="bg-white dark:bg-[#141414] rounded-2xl border border-[#e5e5e5] dark:border-[#262626] p-5 lg:p-6 shadow-xs">
+            <h3 className="text-[15px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mb-4">
+              Suhbat tarixi · dalil
+            </h3>
+
+            <div className="space-y-3.5">
+              {chat.map((msg, idx) => {
+                const isRight = msg.side === "right";
+                return (
                   <div
-                    className={`max-w-[55%] rounded-xl px-4 py-3 ${
-                      msg.flagged
-                        ? "bg-[#FEF2F2] dark:bg-[#3a1414] border border-[#FECACA] dark:border-[#7F1D1D]"
-                        : "bg-[#F5F5F5] dark:bg-[#1c1c1c]"
-                    }`}
+                    key={idx}
+                    className={`flex ${isRight ? "justify-end" : "justify-start"}`}
                   >
-                    <p
-                      className={`text-[14px] ${
-                        msg.flagged ? "text-[#B91C1C] dark:text-[#F87171]" : "text-[#404040] dark:text-[#D4D4D4]"
+                    <div
+                      className={`max-w-[85%] sm:max-w-[65%] rounded-2xl px-4 py-3 ${
+                        msg.flagged
+                          ? "bg-[#FFF5F5] dark:bg-red-950/20 border border-[#FECACA] dark:border-red-900/40"
+                          : "bg-[#F8FAFC] dark:bg-zinc-900"
                       }`}
                     >
-                      {msg.text}
-                    </p>
-                    <p className="text-[11px] text-[#A3A3A3] mt-1.5">
-                      {msg.time}
-                      {msg.flagged && (
-                        <span className="ml-2 font-semibold text-[#DC2626]">AI: qoidabuzarlik aniqlandi</span>
-                      )}
-                    </p>
+                      <p
+                        className={`text-[13px] ${
+                          msg.flagged
+                            ? "text-[#B91C1C] dark:text-red-300 font-medium"
+                            : "text-[#0A0A0A] dark:text-[#fafafa]"
+                        }`}
+                      >
+                        {msg.text}
+                      </p>
+                      <p className="text-[10px] text-[#a3a3a3] mt-1.5 flex items-center gap-2">
+                        <span>{msg.time}</span>
+                        {msg.flagged && (
+                          <span className="font-bold text-[#DC2626] dark:text-red-400">
+                            AI: qoidabuzarlik aniqlandi
+                          </span>
+                        )}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 
-          {/* AI tahlili */}
-          <div className="bg-white dark:bg-[#141414] border border-[#E5E5E5] dark:border-[#262626] rounded-2xl p-6">
-            <h3 className="text-[16px] font-bold text-[#0A0A0A] dark:text-white mb-5">AI tahlili</h3>
-            <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
-              {[
-                { label: "Qoidabuzarlik darajasi", value: detail.analysis.level, danger: true },
-                { label: "Oldingi ogohlantirishlar", value: detail.analysis.warnings, danger: true },
-                { label: "Shikoyatlar soni", value: detail.analysis.reports, danger: false },
-                { label: "Tavsiya", value: detail.analysis.advice, danger: true },
-              ].map((box) => (
-                <div
-                  key={box.label}
-                  className="border border-[#F0F0F0] dark:border-[#262626] rounded-xl p-4"
-                >
-                  <p className="text-[12px] text-[#737373] dark:text-[#A3A3A3]">{box.label}</p>
-                  <p
-                    className={`text-[15px] font-bold mt-1.5 ${
-                      box.danger ? "text-[#B91C1C] dark:text-[#F87171]" : "text-[#0A0A0A] dark:text-white"
-                    }`}
-                  >
-                    {box.value}
-                  </p>
-                </div>
-              ))}
+          {/* Card 3: AI tahlili */}
+          <div className="bg-white dark:bg-[#141414] rounded-2xl border border-[#e5e5e5] dark:border-[#262626] p-5 lg:p-6 shadow-xs">
+            <h3 className="text-[15px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mb-4">
+              AI tahlili
+            </h3>
+
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
+              <div className="border border-[#f0f0f0] dark:border-[#262626] rounded-xl p-3.5">
+                <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">
+                  Qoidabuzarlik darajasi
+                </p>
+                <p className="text-[13px] font-bold text-[#DC2626] dark:text-red-400 mt-1">
+                  {analysis.level}
+                </p>
+              </div>
+
+              <div className="border border-[#f0f0f0] dark:border-[#262626] rounded-xl p-3.5">
+                <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">
+                  Oldingi ogohlantirishlar
+                </p>
+                <p className="text-[13px] font-bold text-[#B45309] dark:text-amber-400 mt-1">
+                  {analysis.warnings}
+                </p>
+              </div>
+
+              <div className="border border-[#f0f0f0] dark:border-[#262626] rounded-xl p-3.5">
+                <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">
+                  Shikoyatlar soni
+                </p>
+                <p className="text-[13px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-1">
+                  {analysis.reports}
+                </p>
+              </div>
+
+              <div className="border border-[#f0f0f0] dark:border-[#262626] rounded-xl p-3.5">
+                <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">
+                  Tavsiya
+                </p>
+                <p className="text-[13px] font-bold text-[#7F1D1D] dark:text-red-400 mt-1">
+                  {analysis.advice}
+                </p>
+              </div>
             </div>
           </div>
+
         </div>
 
-        {/* ── O'ng ustun ── */}
-        <aside className="w-[340px] xl:w-[400px] shrink-0 space-y-5">
-          {/* Qaror */}
-          <div className="bg-white dark:bg-[#141414] border border-[#E5E5E5] dark:border-[#262626] rounded-2xl p-6">
-            <h3 className="text-[16px] font-bold text-[#0A0A0A] dark:text-white mb-4">Qaror</h3>
-            <div className="space-y-3">
-              <button
-                onClick={() => setDecision("blocked")}
-                className={`w-full h-11 px-4 flex items-center justify-start gap-2 border text-[13px] font-semibold rounded-lg transition-colors cursor-pointer ${
-                  decision === "blocked"
-                    ? "border-[#FCA5A5] bg-[#FEF2F2] dark:bg-[#3a1414] text-[#B91C1C]"
-                    : "border-[#E5E5E5] dark:border-[#262626] text-[#D32F2F] hover:border-[#FCA5A5]"
-                }`}
-              >
-                {decision === "blocked" && <Check className="w-4 h-4" strokeWidth={2.5} />}
-                {decision === "blocked" ? "Profil bloklandi" : "Profilni bloklash"}
-              </button>
-              <button
-                onClick={() => setDecision("warned")}
-                className={`w-full h-11 px-4 flex items-center justify-start gap-2 border text-[13px] font-semibold rounded-lg transition-colors cursor-pointer ${
-                  decision === "warned"
-                    ? "border-[#FDE68A] bg-[#FEFCE8] dark:bg-[#332b0d] text-[#A16207]"
-                    : "border-[#E5E5E5] dark:border-[#262626] text-[#404040] dark:text-[#D4D4D4] hover:border-[#A3A3A3]"
-                }`}
-              >
-                {decision === "warned" && <Check className="w-4 h-4" strokeWidth={2.5} />}
-                {decision === "warned" ? "Ogohlantirish yuborildi" : "Ogohlantirish yuborish"}
-              </button>
-              <button
-                onClick={handleClose}
-                className="w-full h-11 px-4 bg-[#0474F3] hover:bg-[#042480] text-start active:scale-[0.99] text-white text-[13px] font-semibold rounded-lg transition-all cursor-pointer"
-              >
-                Shikoyatni yopish
-              </button>
-            </div>
-            <div className="flex items-center gap-2.5 mt-4 px-3.5 py-3 bg-[#FEF9EC] dark:bg-[#332b0d] rounded-lg">
-              <Clock className="w-4 h-4 text-[#B45309] shrink-0" strokeWidth={2.2} />
-              <span className="text-[12px] font-medium text-[#B45309]">
-                14 soat 46 daqiqa qoldi (24 soatlik SLA)
-              </span>
+        {/* ── O'NG USTUN (4 cols) ── */}
+        <div className="lg:col-span-4 space-y-4">
+          
+          {/* Card 1: Qaror */}
+          <div className="bg-white dark:bg-[#141414] rounded-2xl border border-[#e5e5e5] dark:border-[#262626] p-5 shadow-xs">
+            <h3 className="text-[15px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mb-3">
+              Qaror
+            </h3>
+
+            {appeal.status === "in_review" ? (
+              /* State: In Review (Image 3) */
+              <div>
+                <div className="flex items-center justify-between">
+                  <span className="text-[12px] font-medium text-[#737373] dark:text-[#a3a3a3]">
+                    Holati
+                  </span>
+                  <span className="bg-[#FEF9EC] dark:bg-amber-950/40 text-[#B45309] dark:text-amber-400 font-medium text-[12px] px-3 py-1 rounded-full">
+                    Ko'rib chiqilmoqda
+                  </span>
+                </div>
+
+                {/* Actions */}
+                <div className="space-y-2.5 mt-3.5">
+                  <button
+                    onClick={handleApprove}
+                    className="w-full py-2.5 px-4 bg-[#0474F3] hover:bg-[#0360cb] active:scale-[0.99] text-white text-[13px] font-semibold rounded-lg flex items-center gap-2 transition-all cursor-pointer shadow-xs"
+                  >
+                    <Check className="w-4 h-4 stroke-[2.5]" />
+                    <span>Tasdiqlash</span>
+                  </button>
+
+                  <button
+                    onClick={handleOpenRejectModal}
+                    className="w-full py-2.5 px-4 bg-white dark:bg-zinc-900 border border-[#e5e5e5] dark:border-[#262626] hover:bg-gray-50 dark:hover:bg-zinc-800 text-[#7F1D1D] dark:text-[#fafafa] text-[13px] font-semibold rounded-xl flex items-center gap-2 transition-colors cursor-pointer"
+                  >
+                    <X className="w-4 h-4 text-[#0a0a0a]" strokeWidth={3} />
+                    <span>Bekor qilish</span>
+                  </button>
+                </div>
+
+                {/* SLA Timer */}
+                <div className="flex items-center gap-2 mt-4 px-3.5 py-2.5 bg-[#FEF9EC] dark:bg-amber-950/20 text-[#92400E] dark:text-amber-400 rounded-xl">
+                  <Clock className="w-4 h-4 text-[#92400E] shrink-0" strokeWidth={3} />
+                  <span className="text-[12px] font-medium">
+                    14 soat 46 daqiqa qoldi (24 soatlik SLA)
+                  </span>
+                </div>
+              </div>
+            ) : appeal.status === "rejected" ? (
+              /* State: Cancelled / Rejected (Image 5) */
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-[12px] font-medium text-[#737373] dark:text-[#a3a3a3]">
+                    Holati
+                  </span>
+                  <span className="bg-[#FFF0F0] dark:bg-red-950/40 text-[#E11D48] dark:text-red-400 font-medium text-[12px] px-3 py-1 rounded-full">
+                    Bekor qilindi
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between text-[12px]">
+                  <span className="text-[#737373] dark:text-[#a3a3a3]">Moderator</span>
+                  <span className="font-bold text-[#0A0A0A] dark:text-[#fafafa]">
+                    {appeal.moderator || "A. Muxtorov"}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between text-[12px]">
+                  <span className="text-[#737373] dark:text-[#a3a3a3]">Sana</span>
+                  <span className="font-bold text-[#0A0A0A] dark:text-[#fafafa]">
+                    {appeal.resolvedAt || "12.03.2026 10:02"}
+                  </span>
+                </div>
+
+                <div className="pt-2 border-t border-[#f0f0f0] dark:border-[#262626]">
+                  <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">
+                    Bekor qilish sababi
+                  </p>
+                  <p className="text-[12px] text-[#404040] dark:text-[#d4d4d4] leading-relaxed mt-1">
+                    {appeal.rejectReason ||
+                      "Shikoyat asossiz: suhbat tarixida haqoratli ibora topilmadi, keltirilgan skrinshot boshqa foydalanuvchiga tegishli."}
+                  </p>
+                </div>
+              </div>
+            ) : (
+              /* State: Approved */
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-[12px] font-medium text-[#737373] dark:text-[#a3a3a3]">
+                    Holati
+                  </span>
+                  <span className="bg-[#E6F9F0] dark:bg-[#103020] text-[#00A854] dark:text-[#2ee088] font-medium text-[12px] px-3 py-1 rounded-full">
+                    Tasdiqlandi
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between text-[12px]">
+                  <span className="text-[#737373] dark:text-[#a3a3a3]">Moderator</span>
+                  <span className="font-bold text-[#0A0A0A] dark:text-[#fafafa]">
+                    {appeal.moderator || "A. Muxtorov"}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between text-[12px]">
+                  <span className="text-[#737373] dark:text-[#a3a3a3]">Sana</span>
+                  <span className="font-bold text-[#0A0A0A] dark:text-[#fafafa]">
+                    {appeal.resolvedAt || "12.03.2026 10:02"}
+                  </span>
+                </div>
+
+                <div className="pt-2 border-t border-[#f0f0f0] dark:border-[#262626]">
+                  <p className="text-[12px] text-[#00A854] dark:text-[#2ee088] leading-relaxed font-medium">
+                    Shikoyat tasdiqlandi va profilga nisbatan qoidabuzarlik choralari qo'llanildi.
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Card 2: Shikoyat qilingan profil */}
+          <div className="bg-white dark:bg-[#141414] rounded-2xl border border-[#e5e5e5] dark:border-[#262626] p-5 shadow-xs">
+            <h3 className="text-[15px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mb-3.5">
+              Shikoyat qilingan profil
+            </h3>
+
+            <div className="space-y-2.5 text-[12px]">
+              <div className="flex items-center justify-between">
+                <span className="text-[#737373] dark:text-[#a3a3a3]">Holati</span>
+                <span className="font-bold text-[#0A0A0A] dark:text-[#fafafa]">
+                  {profile.status}
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <span className="text-[#737373] dark:text-[#a3a3a3]">Ro'yxatdan</span>
+                <span className="font-bold text-[#0A0A0A] dark:text-[#fafafa]">
+                  {profile.registered}
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <span className="text-[#737373] dark:text-[#a3a3a3]">Anketa</span>
+                <span className="font-bold text-[#0A0A0A] dark:text-[#fafafa]">
+                  {profile.questionnaire}
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <span className="text-[#737373] dark:text-[#a3a3a3]">AI signallari</span>
+                <span className="font-bold text-[#0A0A0A] dark:text-[#fafafa]">
+                  {profile.aiSignals}
+                </span>
+              </div>
             </div>
           </div>
 
-          {/* Shikoyat qilingan profil */}
-          <div className="bg-white dark:bg-[#141414] border border-[#E5E5E5] dark:border-[#262626] rounded-2xl p-6">
-            <h3 className="text-[16px] font-bold text-[#0A0A0A] dark:text-white mb-4">Shikoyat qilingan profil</h3>
-            <div className="space-y-3.5">
-              {[
-                { label: "Holati", value: decision === "blocked" ? "Bloklangan" : detail.profile.status },
-                { label: "Ro'yxatdan", value: detail.profile.registered },
-                { label: "Anketa", value: detail.profile.questionnaire },
-                { label: "AI signallari", value: detail.profile.aiSignals },
-              ].map((row) => (
-                <div key={row.label} className="flex items-center justify-between gap-4">
-                  <span className="text-[13px] text-[#737373] dark:text-[#A3A3A3]">{row.label}</span>
-                  <span className="text-[14px] font-bold text-[#0A0A0A] dark:text-white tabular-nums">
-                    {row.value}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </aside>
+        </div>
+
       </div>
+
+      {/* ── Shikoyatni bekor qilish Modali (Image 4) ── */}
+      {showRejectModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
+          <div className="w-full max-w-[500px] bg-white dark:bg-[#141414] rounded-2xl border border-[#e5e5e5] dark:border-[#262626] p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+            
+            {/* Header */}
+            <div className="flex items-center justify-between">
+              <h3 className="text-[18px] font-bold text-[#0A0A0A] dark:text-[#fafafa]">
+                Shikoyatni bekor qilish
+              </h3>
+              <button
+                onClick={() => setShowRejectModal(false)}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-zinc-200 transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Description */}
+            <p className="text-[12px] text-[#737373] dark:text-[#a3a3a3] mt-2 leading-relaxed">
+              Shikoyat rad etilsa, sabab majburiy. U shikoyat kartasida saqlanadi va tekshiruv tarixida ko'rinadi.
+            </p>
+
+            {/* Form */}
+            <div className="mt-4">
+              <label className="text-[13px] font-medium text-[#404040] dark:text-zinc-300 block mb-1.5">
+                Bekor qilish sababi
+              </label>
+              <textarea
+                rows={4}
+                value={rejectReasonText}
+                onChange={(e) => setRejectReasonText(e.target.value)}
+                placeholder="Nima uchun shikoyat bekor qilinmoqda?"
+                className="w-full p-3.5 bg-white dark:bg-zinc-900 border border-[#e5e5e5] dark:border-[#262626] rounded-xl text-[13px] text-[#0A0A0A] dark:text-[#fafafa] outline-none focus:border-[#0474F3] transition-colors resize-none placeholder:text-[#a3a3a3]"
+              />
+              <p className="text-[11px] text-[#a3a3a3] mt-1">
+                Majburiy maydon. Kamida 10 ta belgi.
+              </p>
+            </div>
+
+            {/* Actions */}
+            <div className="flex items-center justify-end gap-2.5 mt-6">
+              <button
+                type="button"
+                onClick={() => setShowRejectModal(false)}
+                className="px-4 py-2.5 bg-white dark:bg-zinc-900 border border-[#e5e5e5] dark:border-[#262626] rounded-lg text-[13px] font-medium text-[#404040] dark:text-[#e5e5e5] hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer flex items-center gap-1.5"
+              >
+                <X className="w-3.5 h-3.5" />
+                <span>Ortga</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleRejectSubmit}
+                disabled={rejectReasonText.trim().length < 10}
+                className="px-4 py-2.5 not-disabled:bg-[#DC2626] text-white disabled:border disabled:border-[#e5e5e5] dark:disabled:border-[#262626] rounded-lg text-[13px] font-medium disabled:text-[#404040] dark:disabled:text-[#e5e5e5] hover:disabled:bg-gray-50 dark:disabled:hover:bg-zinc-800 transition-colors cursor-pointer flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <X className="w-3.5 h-3.5 " />
+                <span>Bekor qilish</span>
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };

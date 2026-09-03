@@ -194,31 +194,48 @@ export const DatePicker = ({
           }
      }
 
+     const [isFocused, setIsFocused] = useState(false)
+     const isFloated = isFocused || open || !!inputValue || !!date
+
      return (
           <Field className={cn(widthClass, className)}>
                {displayLabel && <FieldLabel className={labelClassName} htmlFor={fieldId}>{displayLabel}</FieldLabel>}
 
                <div className={cn(
                     "relative flex items-center rounded-xl border transition-colors bg-white dark:bg-zinc-900",
-                    prefixLabel ? "h-[52px] px-3.5" : "h-10 px-3.5",
+                    prefixLabel ? "h-[50px] px-3.5" : "h-10 px-3.5",
                     error ? "border-red-500" : "border-[#e5e5e5] dark:border-[#262626]",
                     "focus-within:border-[#0474F3]",
                     disabled && "opacity-50 cursor-not-allowed",
                     inputClassName
                )}>
                     {prefixLabel ? (
-                         <div className="flex-1 flex flex-col justify-center min-w-0 pr-2">
-                              <span className="text-[11px] text-[#737373] dark:text-[#a3a3a3] font-normal leading-tight select-none mb-0.5">
+                         <div className="relative flex-1 h-full flex flex-col justify-center min-w-0 pr-2">
+                              <label
+                                   htmlFor={fieldId}
+                                   className={cn(
+                                        "absolute left-0 pointer-events-none transition-all duration-200 ease-out select-none truncate max-w-full",
+                                        isFloated
+                                             ? "top-[7px] text-[11px] font-medium leading-none"
+                                             : "top-1/2 -translate-y-1/2 text-[13px] font-normal leading-none",
+                                        isFocused
+                                             ? "text-[#0474F3]"
+                                             : isFloated
+                                             ? "text-[#737373] dark:text-[#a3a3a3]"
+                                             : "text-[#a3a3a3] dark:text-[#737373]"
+                                   )}
+                              >
                                    {prefixLabel}
-                              </span>
+                              </label>
                               <input
                                    id={fieldId}
                                    value={inputValue}
-                                   placeholder={displayPlaceholder}
+                                   placeholder={isFloated ? displayPlaceholder : ""}
                                    maxLength={maxChars}
                                    onChange={handleChange}
-                                   className="w-full bg-transparent text-[13px] font-medium text-[#0a0a0a] dark:text-[#fafafa] placeholder:text-[#a3a3a3] dark:placeholder:text-[#525252] outline-none focus:ring-0 p-0 leading-tight"
+                                   onFocus={() => setIsFocused(true)}
                                    onBlur={() => {
+                                        setIsFocused(false)
                                         if (inputValue.length < maxChars || isNaN(dayjs(inputValue, currentFormat, true).toDate().getTime())) {
                                              setInputValue(formatDate(date))
                                         }
@@ -230,6 +247,12 @@ export const DatePicker = ({
                                         }
                                    }}
                                    disabled={disabled}
+                                   className={cn(
+                                        "w-full bg-transparent text-[13px] font-medium text-[#0a0a0a] dark:text-[#fafafa] placeholder:text-[#a3a3a3] dark:placeholder:text-[#525252] outline-none focus:ring-0 p-0 leading-tight transition-all duration-200",
+                                        isFloated
+                                             ? "translate-y-[8px] opacity-100"
+                                             : "translate-y-0 opacity-0 pointer-events-auto"
+                                   )}
                                    {...props}
                               />
                          </div>

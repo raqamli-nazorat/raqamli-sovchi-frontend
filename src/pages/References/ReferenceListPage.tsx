@@ -363,7 +363,7 @@ const ReferenceListPage = () => {
       {/* ── Jadval ── */}
       <div
         onScroll={handleScroll}
-        className="bg-white dark:bg-[#141414] rounded-xl border border-[#E5E5E5] dark:border-[#262626] overflow-y-auto max-h-[calc(100vh-150px)]"
+        className="bg-white dark:bg-[#141414] overflow-y-auto max-h-[calc(100vh-150px)]"
       >
         {/* Sarlavhalar */}
         <div className="hidden md:flex items-center bg-[#FAFAFA] dark:bg-[#202020] px-6 py-3.5 border-b border-[#F5F5F5] dark:border-[#262626] text-[11px] font-semibold text-[#737373] dark:text-[#A3A3A3] tracking-wider gap-4 sticky top-0 z-10">

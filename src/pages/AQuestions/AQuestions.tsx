@@ -449,7 +449,7 @@ const AQuestions = () => {
 
       {/* ── Savol qo'shish / tahrirlash modali ── */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-[1px] animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 animate-in fade-in duration-200">
           <div className="w-full max-w-[640px] bg-white dark:bg-[#141414] rounded-[24px] border border-[#e5e5e5] dark:border-[#262626] p-6 shadow-2xl animate-in zoom-in-95 duration-200">
             {/* Modal Header */}
             <div className="flex items-start justify-between">

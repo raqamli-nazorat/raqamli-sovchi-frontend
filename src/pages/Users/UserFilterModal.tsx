@@ -4,6 +4,8 @@ import Select from "../../components/ui/Select";
 import { DatePicker } from "../../components/ui/DatePicker";
 import { REF_APIS } from "../References/referencesApi";
 import dayjs from "dayjs";
+import { HugeIcon } from "@/components/ui/HugeIcon";
+import { CleanIcon } from "@hugeicons/core-free-icons";
 
 export interface UserFilters {
   region?: string;
@@ -76,8 +78,13 @@ const UserFilterModal = ({
 
   const [regionOptions, setRegionOptions] = useState<{ value: string; label: string }[]>([]);
   const [districtOptions, setDistrictOptions] = useState<{ value: string; label: string }[]>([]);
-  const [allDistricts, setAllDistricts] = useState<any[]>([]);
+  const [roleOptions, setRoleOptions] = useState<{ value: string; label: string }[]>([]);
   const [loadingLocations, setLoadingLocations] = useState(false);
+  const [loadingDistricts, setLoadingDistricts] = useState(false);
+  const [loadingRoles, setLoadingRoles] = useState(false);
+  const [loadingMoreRoles, setLoadingMoreRoles] = useState(false);
+  const [rolesPage, setRolesPage] = useState(1);
+  const [hasMoreRoles, setHasMoreRoles] = useState(false);
 
   // Sync state when modal opens
   useEffect(() => {
@@ -89,81 +96,108 @@ const UserFilterModal = ({
     }
   }, [isOpen, initialFilters]);
 
-  // Load regions & districts
+  // Fetch roles with pagination
+  const fetchRoles = async (pageNumber: number, isInitial: boolean = false) => {
+    if (isInitial) {
+      setLoadingRoles(true);
+    } else {
+      setLoadingMoreRoles(true);
+    }
+    try {
+      const res: any = await REF_APIS.roles.list({ page: pageNumber });
+      const newItems = Array.isArray(res) ? res : [];
+      const mapped = newItems.map((r: any) => ({
+        value: String(r.id || r.name),
+        label: r.name || String(r.id),
+      }));
+
+      if (isInitial) {
+        setRoleOptions(mapped.length > 0 ? mapped : ROLE_OPTIONS);
+      } else {
+        setRoleOptions((prev) => {
+          const existing = new Set(prev.map((o) => o.value));
+          const unique = mapped.filter((o: any) => !existing.has(o.value));
+          return [...prev, ...unique];
+        });
+      }
+
+      const hasNext = Boolean(res?.next !== null && res?.next !== undefined && newItems.length > 0);
+      setHasMoreRoles(hasNext);
+      setRolesPage(pageNumber);
+    } catch (err) {
+      console.error("Roles fetch error:", err);
+      if (isInitial) {
+        setRoleOptions(ROLE_OPTIONS);
+      }
+      setHasMoreRoles(false);
+    } finally {
+      setLoadingRoles(false);
+      setLoadingMoreRoles(false);
+    }
+  };
+
+  const handleLoadMoreRoles = () => {
+    if (!loadingRoles && !loadingMoreRoles && hasMoreRoles) {
+      fetchRoles(rolesPage + 1, false);
+    }
+  };
+
+  // Load regions & initial roles when modal opens
   useEffect(() => {
     if (!isOpen) return;
 
-    const fetchLocations = async () => {
+    const fetchInitialData = async () => {
       setLoadingLocations(true);
       try {
-        const [regionsRes, districtsRes] = await Promise.allSettled([
-          REF_APIS.regions.list(),
-          REF_APIS.districts.list(),
-        ]);
-
-        if (regionsRes.status === "fulfilled" && Array.isArray(regionsRes.value)) {
+        const regionsRes = await REF_APIS.regions.list();
+        if (Array.isArray(regionsRes)) {
           setRegionOptions(
-            regionsRes.value.map((r: any) => ({
-              value: String(r.id || r.name),
+            regionsRes.map((r: any) => ({
+              value: String(r.id),
               label: r.name || String(r.id),
             }))
           );
         }
-
-        if (districtsRes.status === "fulfilled" && Array.isArray(districtsRes.value)) {
-          setAllDistricts(districtsRes.value);
-          setDistrictOptions(
-            districtsRes.value.map((d: any) => ({
-              value: String(d.id || d.name),
-              label: d.name || String(d.id),
-            }))
-          );
-        }
       } catch (err) {
-        console.error("Locations fetch error:", err);
+        console.error("Regions fetch error:", err);
       } finally {
         setLoadingLocations(false);
       }
     };
 
-    fetchLocations();
+    fetchInitialData();
+    fetchRoles(1, true);
   }, [isOpen]);
 
-  // Filter districts when region changes
+  // Fetch districts from API with region query param whenever filters.region changes
   useEffect(() => {
-    if (!filters.region) {
-      setDistrictOptions(
-        allDistricts.map((d: any) => ({
-          value: String(d.id || d.name),
-          label: d.name || String(d.id),
-        }))
-      );
-      return;
-    }
+    if (!isOpen) return;
 
-    const filtered = allDistricts.filter(
-      (d: any) =>
-        String(d.region) === String(filters.region) ||
-        String(d.region_id) === String(filters.region) ||
-        d.region_name?.toLowerCase() === filters.region?.toLowerCase()
-    );
+    const fetchDistricts = async () => {
+      setLoadingDistricts(true);
+      try {
+        const params = filters.region ? { region: filters.region } : undefined;
+        const res = await REF_APIS.districts.list(params);
+        if (Array.isArray(res)) {
+          setDistrictOptions(
+            res.map((d: any) => ({
+              value: String(d.id || d.name),
+              label: d.name || String(d.id),
+            }))
+          );
+        } else {
+          setDistrictOptions([]);
+        }
+      } catch (err) {
+        console.error("Districts fetch error:", err);
+        setDistrictOptions([]);
+      } finally {
+        setLoadingDistricts(false);
+      }
+    };
 
-    if (filtered.length > 0) {
-      setDistrictOptions(
-        filtered.map((d: any) => ({
-          value: String(d.id || d.name),
-          label: d.name || String(d.id),
-        }))
-      );
-    } else {
-      setDistrictOptions(
-        allDistricts.map((d: any) => ({
-          value: String(d.id || d.name),
-          label: d.name || String(d.id),
-        }))
-      );
-    }
-  }, [filters.region, allDistricts]);
+    fetchDistricts();
+  }, [filters.region, isOpen]);
 
   if (!isOpen) return null;
 
@@ -197,7 +231,7 @@ const UserFilterModal = ({
         </div>
 
         {/* Body */}
-        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4.5 min-h-0">
+        <div className="flex-1 overflow-y-auto px-6 pb-4 space-y-4.5 min-h-0">
           {/* Row 1: Viloyat & Tuman */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
@@ -221,7 +255,15 @@ const UserFilterModal = ({
               <Select
                 value={filters.district || ""}
                 onChange={(v) => setVal("district", v)}
-                placeholder={loadingLocations ? "Yuklanmoqda..." : "Tuman tanlang"}
+                placeholder={
+                  loadingDistricts
+                    ? "Yuklanmoqda..."
+                    : !filters.region
+                    ? "Tuman tanlang"
+                    : districtOptions.length === 0
+                    ? "Tumanlar mavjud emas"
+                    : "Tuman tanlang"
+                }
                 options={districtOptions}
               />
             </div>
@@ -262,8 +304,11 @@ const UserFilterModal = ({
               <Select
                 value={filters.role || ""}
                 onChange={(v) => setVal("role", v)}
-                placeholder="Rolni tanlang"
-                options={ROLE_OPTIONS}
+                placeholder={loadingRoles ? "Yuklanmoqda..." : "Rolni tanlang"}
+                options={roleOptions.length > 0 ? roleOptions : ROLE_OPTIONS}
+                hasMore={hasMoreRoles}
+                loadingMore={loadingMoreRoles}
+                onLoadMore={handleLoadMoreRoles}
               />
             </div>
             <div>
@@ -339,9 +384,9 @@ const UserFilterModal = ({
           <button
             type="button"
             onClick={handleClear}
-            className="flex items-center gap-2 px-4 py-2.5 bg-white dark:bg-zinc-900 border border-[#e5e5e5] dark:border-[#262626] rounded-xl text-[13px] font-medium text-[#404040] dark:text-[#e5e5e5] hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+            className="flex items-center gap-2 px-4 py-2.5 bg-white dark:bg-zinc-900 border border-[#e5e5e5] dark:border-[#262626] rounded-lg text-[13px] font-medium text-[#404040] dark:text-[#e5e5e5] hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
           >
-            <BrushCleaning size={16} className="text-[#737373] dark:text-[#a3a3a3]" />
+            <HugeIcon icon={CleanIcon} size={16} className="text-[#737373] dark:text-[#a3a3a3]" />
             Tozalash
           </button>
 
@@ -349,7 +394,7 @@ const UserFilterModal = ({
             <button
               type="button"
               onClick={onClose}
-              className="flex items-center gap-1.5 px-4 py-2.5 bg-white dark:bg-zinc-900 border border-[#e5e5e5] dark:border-[#262626] rounded-xl text-[13px] font-medium text-[#404040] dark:text-[#e5e5e5] hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+              className="flex items-center gap-1.5 px-4 py-2.5 bg-white dark:bg-zinc-900 border border-[#e5e5e5] dark:border-[#262626] rounded-lg text-[13px] font-medium text-[#404040] dark:text-[#e5e5e5] hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
             >
               <X size={16} className="text-[#737373] dark:text-[#a3a3a3]" />
               Bekor qilish
@@ -357,7 +402,7 @@ const UserFilterModal = ({
             <button
               type="button"
               onClick={handleApply}
-              className="flex items-center gap-1.5 px-5 py-2.5 bg-[#0474F3] hover:bg-[#023399] active:bg-[#0474F3] text-white rounded-xl text-[13px] font-medium transition-colors cursor-pointer shadow-sm"
+              className="flex items-center gap-1.5 px-5 py-2.5 bg-[#0474F3] hover:bg-[#023399] active:bg-[#0474F3] text-white rounded-lg text-[13px] font-medium transition-colors cursor-pointer shadow-sm"
             >
               <Check size={16} strokeWidth={2.5} />
               Qo'llash
