@@ -93,12 +93,12 @@ interface SidebarProps {
 const Sidebar = ({ collapsed, onToggle }: SidebarProps) => {
   const location = useLocation();
   const [refsOpen, setRefsOpen] = useState(location.pathname.startsWith("/references"));
-  const appealsNewCount = useSelector(
-    (state: any) => state.appeals.items.filter((a: Appeal) => a.status === "new").length
+  const appealsInReviewCount = useSelector(
+    (state: any) => state.appeals.items.filter((a: Appeal) => a.status === "in_review").length
   );
 
   const badgeFor = (item: { path: string; badge: number | null }) => {
-    if (item.path === "/appeals") return appealsNewCount > 0 ? appealsNewCount : null;
+    if (item.path === "/appeals") return appealsInReviewCount > 0 ? appealsInReviewCount : null;
     return item.badge;
   };
 

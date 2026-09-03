@@ -38,6 +38,7 @@ export type UserResult = {
     status?: string;
     full_name?: string;
     role_name?: string;
+    candidate_type?: string;
     role_info?: {
         id: string;
         name: string;
