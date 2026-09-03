@@ -3,6 +3,8 @@ import { useSelector } from "react-redux";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Search01FreeIcons, Notification02Icon } from "@hugeicons/core-free-icons";
 import type { Appeal } from "../../store/slices/appealsSlice";
+import type { RootState } from "../../store";
+import { useNotificationsRealtime } from "../../hooks/useNotificationsRealtime";
 
 const PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {
   "/": { title: "Boshqaruv paneli", subtitle: "Umumiy holat va navbatdagi vazifalar" },
@@ -58,7 +60,13 @@ const Navbar = ({ collapsed: _collapsed, onToggle: _onToggle, title: customTitle
 
   const [searchParams, setSearchParams] = useSearchParams();
   const searchValue = searchParams.get("search") || "";
-  const notificationCount = 26;
+
+  // ── O'qilmagan bildirishnomalar soni + real-time ──
+  // Real-time WebSocket (ticket bilan) orqali yangi bildirishnomalar push qilinadi.
+  // count endpointi FAQAT: birinchi mount + WS o'lik holatda tab qayta faollashganda
+  // (60s throttle) chaqiriladi. Interval / polling YO'Q.
+  useNotificationsRealtime();
+  const notificationCount = useSelector((s: RootState) => s.notifications.unreadCount);
 
   return (
     <header className="h-15 shrink-0 flex items-center justify-between bg-white dark:bg-[#141414] border-b border-[#e5e5e5] dark:border-[#262626] px-6 gap-4">
@@ -112,9 +120,11 @@ const Navbar = ({ collapsed: _collapsed, onToggle: _onToggle, title: customTitle
             strokeWidth={2.5}
           />
           <span className="text-[12px] font-medium">Bildirishnomalar</span>
-          <span className="flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-[#0474F3] text-white text-[10px] font-bold">
-            {notificationCount}
-          </span>
+          {notificationCount > 0 && (
+            <span className="flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-[#0474F3] text-white text-[10px] font-bold">
+              {notificationCount > 99 ? "99+" : notificationCount}
+            </span>
+          )}
         </button>
       </div>
     </header>
