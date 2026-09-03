@@ -106,7 +106,7 @@ const Navbar = ({ collapsed: _collapsed, onToggle: _onToggle, title: customTitle
               });
             }}
             placeholder="Foydalanuvchi, ID, telefon..."
-            className="h-9 pl-9 pr-4 rounded-lg border border-[#e5e5e5] dark:border-[#262626] text-[13px] text-[#737373] dark:text-[#a3a3a3] placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#0474F3]/20 focus:border-[#0474F3] transition-all w-[220px]"
+            className="h-9 pl-9 pr-4 rounded-lg border border-[#e5e5e5] dark:border-[#262626] text-[13px] text-[#737373] dark:text-[#a3a3a3] placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#0474F3]/20 focus:border-[#0474F3] transition-all w-[260px]"
           />
         </div>
 

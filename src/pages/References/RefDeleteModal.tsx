@@ -26,7 +26,7 @@ const RefDeleteModal = ({
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50">
       <div className="w-full max-w-[440px] bg-white dark:bg-[#141414] rounded-[20px] border border-[#e5e5e5] dark:border-[#262626] p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
-        <Trash2 className="w-7 h-7 text-[#DC2626]" strokeWidth={2} />
+        <img src="/delete.svg" alt="trash" className="w-7 h-7 " />
 
         <h3 className="text-[16px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-4">
           «{name}» {noun} o'chirasizmi?

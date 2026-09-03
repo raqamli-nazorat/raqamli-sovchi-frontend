@@ -153,7 +153,7 @@ const PsychologistsPage = () => {
 
         <button
           onClick={handleOpenAddModal}
-          className="h-10 px-4 bg-[#0474F3] hover:bg-[#0360cb] active:scale-[0.99] text-white text-[13px] font-semibold rounded-lg flex items-center gap-1.5 transition-all cursor-pointer shadow-xs"
+          className="h-8.5 px-3.5 bg-[#0474F3] hover:bg-[#0360cb] active:scale-[0.99] text-white text-[12px] font-semibold rounded-lg flex items-center gap-1.5 transition-all cursor-pointer shadow-xs"
         >
           <Plus className="w-4 h-4" />
           <span>Psixolog qo'shish</span>

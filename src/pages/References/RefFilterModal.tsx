@@ -34,10 +34,6 @@ const HA_YOQ_SEGMENTED = [
   { value: "false", label: "Yo'q" },
 ];
 
-// Sana maydonlari uchun default oraliq — joriy yil boshidan oxirigacha
-const startOfYear = () => dayjs().startOf("year").toDate();
-const endOfYear = () => dayjs().endOf("year").toDate();
-
 // Barcha maydonlar bo'sh — "Tozalash" shu holatga keltiradi
 const emptyValues = (): Record<string, any> => ({
   created_at_after: null,
@@ -55,15 +51,13 @@ const emptyValues = (): Record<string, any> => ({
 const buildValues = (initial: Record<string, any>): Record<string, any> => ({
   ...emptyValues(),
   created_at_after:
-    parseDate(initial.start_date || initial.created_at_after || initial.created_at__gte) ||
-    startOfYear(),
+    parseDate(initial.start_date || initial.created_at_after || initial.created_at__gte) || null,
   created_at_before:
-    parseDate(initial.end_date || initial.created_at_before || initial.created_at__lte) ||
-    endOfYear(),
+    parseDate(initial.end_date || initial.created_at_before || initial.created_at__lte) || null,
   updated_at_after:
-    parseDate(initial.updated_at_after || initial.updated_at__gte) || startOfYear(),
+    parseDate(initial.updated_at_after || initial.updated_at__gte) || null,
   updated_at_before:
-    parseDate(initial.updated_at_before || initial.updated_at__lte) || endOfYear(),
+    parseDate(initial.updated_at_before || initial.updated_at__lte) || null,
   // districts
   region: normalizeMulti(initial.region),
   // sections

@@ -112,7 +112,7 @@ const Sidebar = ({ collapsed, onToggle }: SidebarProps) => {
         bg-white dark:bg-[#141414]
         border-r border-[#e5e5e5] dark:border-[#262626]
         transition-all duration-300 ease-in-out
-        ${collapsed ? "w-[72px]" : "w-[240px]"}
+        ${collapsed ? "w-[72px]" : "w-[248px]"}
       `}
     >
       <style>{`
@@ -125,7 +125,7 @@ const Sidebar = ({ collapsed, onToggle }: SidebarProps) => {
       {/* ── Logo ── */}
       <div className="flex items-center justify-between w-full px-4">
         <div className="flex items-center gap-1.5 py-3.25">
-          <img src="/Mark.svg" alt="Mark" className="object-contain h-8 w-8" />
+          <img src="/Mark.svg" alt="Mark" className="object-contain h-7.5 w-7.5" />
           {!collapsed && (
             <div className="overflow-hidden">
               <p className="text-[16px] font-extrabold text-gray-900 dark:text-white leading-tight truncate">

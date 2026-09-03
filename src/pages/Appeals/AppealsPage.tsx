@@ -8,21 +8,21 @@ import AppealFilterModal, { type AppealFilters } from "./AppealFilterModal";
 const getStatusBadge = (status: string) => {
   if (status === "in_review") {
     return (
-      <span className="bg-[#FEF9EC] dark:bg-amber-950/40 text-[#B45309] dark:text-amber-400 font-medium text-[12px] px-3 py-1 rounded-full inline-block">
+      <span className="bg-[#FFFBEB] dark:bg-amber-950/40 text-[#92400E] dark:text-amber-400 font-semibold text-[11px] px-3 py-1 rounded-full inline-block">
         Ko'rib chiqilmoqda
       </span>
     );
   }
   if (status === "approved") {
     return (
-      <span className="bg-[#E6F9F0] dark:bg-[#103020] text-[#00A854] dark:text-[#2ee088] font-medium text-[12px] px-3 py-1 rounded-full inline-block">
+      <span className="bg-[#ECFDF5] dark:bg-[#103020] text-[#047857] dark:text-[#2ee088] font-semibold text-[11px] px-3 py-1 rounded-full inline-block">
         Tasdiqlandi
       </span>
     );
   }
   if (status === "rejected") {
     return (
-      <span className="bg-[#FFF0F0] dark:bg-red-950/40 text-[#E11D48] dark:text-red-400 font-medium text-[12px] px-3 py-1 rounded-full inline-block">
+      <span className="bg-[#FEF2F2] dark:bg-red-950/40 text-[#7F1D1D] dark:text-red-400 font-semibold text-[11px] px-3 py-1 rounded-full inline-block">
         Bekor qilindi
       </span>
     );
@@ -100,14 +100,14 @@ const AppealsPage = () => {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="Sabab yoki foydalanuvchi bo'yicha..."
-            className="w-full h-10 pl-10 pr-4 rounded-xl border border-[#e5e5e5] dark:border-[#262626] bg-white dark:bg-[#141414] text-[13px] text-[#0A0A0A] dark:text-[#fafafa] placeholder:text-[#a3a3a3] outline-none focus:border-[#0474F3] transition-colors"
+            className="w-full h-10 pl-10 pr-4 rounded-lg border border-[#e5e5e5] dark:border-[#262626] bg-white dark:bg-[#141414] text-[13px] text-[#0A0A0A] dark:text-[#fafafa] placeholder:text-[#a3a3a3] outline-none focus:border-[#0474F3] transition-colors"
           />
         </div>
 
         {/* Filter button */}
         <button
           onClick={() => setIsFilterModalOpen(true)}
-          className={`h-10 px-4 rounded-xl border flex items-center gap-2 text-[13px] font-medium transition-colors cursor-pointer shrink-0 ${
+          className={`h-10 px-4 rounded-lg border flex items-center gap-2 text-[13px] font-medium transition-colors cursor-pointer shrink-0 ${
             activeFiltersCount > 0
               ? "border-[#0474F3] text-[#0474F3] bg-blue-50/50 dark:bg-blue-950/20"
               : "border-[#e5e5e5] dark:border-[#262626] bg-white dark:bg-[#141414] text-[#404040] dark:text-[#d4d4d4] hover:bg-gray-50 dark:hover:bg-zinc-800"
@@ -127,7 +127,7 @@ const AppealsPage = () => {
       <div className="bg-white dark:bg-[#141414] overflow-auto h-[calc(100vh-150px)]">
           <table className="w-full text-left border-collapse">
             <thead className="sticky top-0 z-10 bg-[#fafafa]">
-              <tr className="border-b border-[#f0f0f0] dark:border-[#262626] text-[12px] font-semibold text-[#737373] dark:text-[#a3a3a3]">
+              <tr className="border-b border-[#f0f0f0] dark:border-[#262626] text-[11px] font-semibold text-[#737373] dark:text-[#a3a3a3]">
                 <th className="py-3 px-4 w-12 text-center">#</th>
                 <th className="py-3 px-4">Kimdan</th>
                 <th className="py-3 px-4">Kimga</th>
@@ -193,7 +193,7 @@ const AppealsPage = () => {
 
                     {/* Arrow */}
                     <td className="py-4 px-4 text-right">
-                      <ChevronRight className="w-4 h-4 text-[#A3A3A3] group-hover:text-[#0A0A0A] dark:group-hover:text-white transition-colors" />
+                      <ChevronRight className="w-4 h-4 text-[#6B6B6B] group-hover:text-[#0A0A0A] dark:group-hover:text-white transition-colors" />
                     </td>
                   </tr>
                 ))

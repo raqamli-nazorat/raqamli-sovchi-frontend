@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { axiosAPI } from "../../lib/axiosAPI";
-import { ChevronRight, Search, X, SlidersHorizontal } from "lucide-react";
+import { ChevronRight, Search, X, SlidersHorizontal, Copy, Check } from "lucide-react";
 import dayjs from "dayjs";
 import UserFilterModal, { type UserFilters } from "./UserFilterModal";
 
@@ -174,6 +174,17 @@ const UsersPage = () => {
 
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [appliedFilters, setAppliedFilters] = useState<UserFilters>({});
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const handleCopyId = (e: React.MouseEvent, text: string, id: string) => {
+    e.stopPropagation();
+    if (!text || text === "—") return;
+    navigator.clipboard.writeText(text);
+    setCopiedId(id);
+    setTimeout(() => {
+      setCopiedId(null);
+    }, 1500);
+  };
 
   const observerTarget = useRef<HTMLDivElement>(null);
 
@@ -614,7 +625,7 @@ const UsersPage = () => {
             <tbody className="divide-y divide-[#F5F5F5] dark:divide-[#262626]">
               {loading && page === 1 ? (
                 // Shimmer loading skeletons
-                Array.from({ length: 6 }).map((_, i) => (
+                Array.from({ length: 8 }).map((_, i) => (
                   <tr key={i} className="animate-pulse">
                     <td className="py-4 pl-6 pr-2">
                       <div className="w-4 h-4 bg-gray-200 dark:bg-zinc-800 rounded" />
@@ -694,12 +705,12 @@ const UsersPage = () => {
                       ? `${user.profile_info.first_name} ${user.profile_info.last_name || ""}`.trim()
                       : "") ||
                     user.phone_number ||
-                    "—";
-                  const displayId = user.display_id || (user.id ? `USR-${user.id}` : "—");
+                    "";
+                  const displayId = user.display_id || "";
                   const regionName =
-                    user.region_name || user.profile_info?.region_info?.name || "—";
+                    user.region_name || user.profile_info?.region_info?.name || "";
                   const districtName =
-                    user.district_name || user.profile_info?.district_info?.name || "—";
+                    user.district_name || user.profile_info?.district_info?.name || "";
                   const candidateType = formatCandidateType(
                     user.candidate_type || user.profile_info?.candidate_type
                   );
@@ -727,7 +738,7 @@ const UsersPage = () => {
                       className="hover:bg-gray-50/70 dark:hover:bg-zinc-900/40 cursor-pointer transition-colors text-[13px] whitespace-nowrap"
                     >
                       {/* # */}
-                      <td className="py-3.5 pl-6 pr-2 text-[#737373] dark:text-[#a3a3a3] font-normal">
+                      <td className="py-3.5 pl-6 pr-2 text-[#404040] dark:text-[#a3a3a3] font-normal">
                         {index + 1}
                       </td>
 
@@ -738,48 +749,62 @@ const UsersPage = () => {
                             <img
                               src={avatarImage}
                               alt={fullName}
-                              className="w-8 h-8 rounded-full object-cover shrink-0"
+                              className="w-7.5 h-7.5 rounded-full object-cover shrink-0"
                             />
                           ) : (
                             <div
-                              className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-[11.5px] shrink-0 ${statusStyles.bg} ${statusStyles.text}`}
+                              className={`w-7.5 h-7.5 rounded-full flex items-center justify-center font-bold text-[11.5px] shrink-0 ${statusStyles.bg} ${statusStyles.text}`}
                             >
                               {initials}
                             </div>
                           )}
-                          <span className="font-semibold text-[#0A0A0A] dark:text-[#fafafa] truncate">
+                          <span className="font-semibold text-[#13px] text-[#0A0A0A] dark:text-[#fafafa] truncate">
                             {fullName}
                           </span>
                         </div>
                       </td>
 
                       {/* ID */}
-                      <td className="py-3.5 px-3 text-[#737373] dark:text-[#a3a3a3] font-normal">
-                        {displayId}
+                      <td className="py-3.5 px-3 text-[#404040] dark:text-[#a3a3a3] font-normal">
+                        <div className="inline-flex items-center gap-1.5 group/id">
+                          <span>{displayId}</span>
+                          <button
+                            type="button"
+                            onClick={(e) => handleCopyId(e, displayId, user.id)}
+                            className="p-1 rounded hover:bg-gray-100 dark:hover:bg-zinc-800 text-gray-400 hover:text-gray-700 dark:hover:text-zinc-200 transition-colors opacity-0 group-hover/id:opacity-100 focus:opacity-100 group-hover:opacity-100 cursor-pointer"
+                            title="Nusxa olish"
+                          >
+                            {copiedId === user.id ? (
+                              <Check className="w-3.5 h-3.5 text-emerald-500 stroke-[2.5]" />
+                            ) : (
+                              <Copy className="w-3.5 h-3.5 stroke-[2]" />
+                            )}
+                          </button>
+                        </div>
                       </td>
 
                       {/* Viloyat */}
-                      <td className="py-3.5 px-3 text-[#0a0a0a] dark:text-[#fafafa] font-normal">
+                      <td className="py-3.5 px-3 text-[#404040] dark:text-[#fafafa] font-normal">
                         {regionName}
                       </td>
 
                       {/* Tuman */}
-                      <td className="py-3.5 px-3 text-[#737373] dark:text-[#a3a3a3] font-normal">
+                      <td className="py-3.5 px-3 text-[#404040] dark:text-[#a3a3a3] font-normal">
                         {districtName}
                       </td>
 
                       {/* Turi */}
-                      <td className="py-3.5 px-3 text-[#0a0a0a] dark:text-[#fafafa] font-normal">
+                      <td className="py-3.5 px-3 text-[#404040] dark:text-[#fafafa] font-normal">
                         {candidateType}
                       </td>
 
                       {/* Roli */}
-                      <td className="py-3.5 px-3 text-[#737373] dark:text-[#a3a3a3] font-normal">
+                      <td className="py-3.5 px-3 text-[#404040] dark:text-[#a3a3a3] font-normal">
                         {roleName}
                       </td>
 
                       {/* Ro'yxatdan o'tgan usul */}
-                      <td className="py-3.5 px-3 text-[#0a0a0a] dark:text-[#fafafa] font-normal">
+                      <td className="py-3.5 px-3 text-[#404040] dark:text-[#fafafa] font-normal">
                         {registeredMethod}
                       </td>
 
@@ -808,17 +833,17 @@ const UsersPage = () => {
                       </td>
 
                       {/* Yaratilgan */}
-                      <td className="py-3.5 px-3 text-[#0a0a0a] dark:text-[#fafafa] font-normal whitespace-nowrap">
+                      <td className="py-3.5 px-3 text-[#404040] dark:text-[#fafafa] font-normal whitespace-nowrap">
                         {createdAt}
                       </td>
 
                       {/* Yangilangan */}
-                      <td className="py-3.5 px-3 text-[#0a0a0a] dark:text-[#fafafa] font-normal whitespace-nowrap">
+                      <td className="py-3.5 px-3 text-[#404040] dark:text-[#fafafa] font-normal whitespace-nowrap">
                         {updatedAt}
                       </td>
 
                       {/* Action Chevron */}
-                      <td className="py-3.5 pl-2 pr-6 text-right text-gray-400 hover:text-gray-600 dark:hover:text-zinc-300 transition-colors">
+                      <td className="py-3.5 pl-2 pr-6 text-right text-[#6B6B6B] hover:text-gray-600 dark:hover:text-zinc-300 transition-colors">
                         <ChevronRight size={16} />
                       </td>
                     </tr>

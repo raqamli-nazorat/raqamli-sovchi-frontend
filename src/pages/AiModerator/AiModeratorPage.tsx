@@ -63,8 +63,8 @@ const INITIAL_SIGNALS: AiSignal[] = [
 ];
 
 const severityStyles: Record<Severity, string> = {
-  Yuqori: "bg-[#FEF2F2] dark:bg-[#3a1414] text-[#DC2626]",
-  "O'rta": "bg-[#FEFCE8] dark:bg-[#332b0d] text-[#A16207]",
+  Yuqori: "bg-[#FEF2F2] dark:bg-[#3a1414] text-[#7F1D1D]",
+  "O'rta": "bg-[#FFFBEB] dark:bg-[#332b0d] text-[#92400E]",
   Past: "bg-[#F5F5F5] dark:bg-[#262626] text-[#525252] dark:text-[#A3A3A3]",
 };
 
@@ -84,11 +84,11 @@ const AiModeratorPage = () => {
             key={stat.label}
             className="bg-white dark:bg-[#141414] border border-[#E5E5E5] dark:border-[#262626] rounded-2xl p-5"
           >
-            <p className="text-[13px] text-[#737373] dark:text-[#A3A3A3]">{stat.label}</p>
-            <p className="text-[30px] font-bold text-[#0A0A0A] dark:text-white mt-2 tracking-tight tabular-nums">
+            <p className="text-[12px] text-[#737373] dark:text-[#A3A3A3]">{stat.label}</p>
+            <p className="text-[26px] font-bold text-[#0A0A0A] dark:text-white mt-2 tracking-tight tabular-nums">
               {stat.value}
             </p>
-            <p className="text-[12px] text-[#A3A3A3] mt-2">so'nggi 24 soat</p>
+            <p className="text-[11px] font-semibold text-[#A3A3A3] mt-2">so'nggi 24 soat</p>
           </div>
         ))}
       </div>
@@ -98,13 +98,13 @@ const AiModeratorPage = () => {
         <div className="overflow-x-auto">
           <table className="w-full text-left">
             <thead>
-              <tr className="bg-[#f5f5f5] dark:bg-[#1c1c1c] border-b border-[#F0F0F0] dark:border-[#262626]">
-                <th className="px-6 py-3.5 text-[13px] font-medium text-[#525252] dark:text-[#A3A3A3]">
+              <tr className="bg-[#fafafa] dark:bg-[#1c1c1c] border-b border-[#e5e5e5] dark:border-[#262626]">
+                <th className="px-6 py-3.5 text-[11px] font-semibold text-[#737373] dark:text-[#A3A3A3]">
                   Foydalanuvchi
                 </th>
-                <th className="px-6 py-3.5 text-[13px] font-medium text-[#525252] dark:text-[#A3A3A3]">Signal</th>
-                <th className="px-6 py-3.5 text-[13px] font-medium text-[#525252] dark:text-[#A3A3A3]">Darajasi</th>
-                <th className="px-6 py-3.5 text-[13px] font-medium text-[#525252] dark:text-[#A3A3A3]">Chora</th>
+                <th className="px-6 py-3.5 text-[11px] font-semibold text-[#737373] dark:text-[#A3A3A3]">Signal</th>
+                <th className="px-6 py-3.5 text-[11px] font-semibold text-[#737373] dark:text-[#A3A3A3]">Darajasi</th>
+                <th className="px-6 py-3.5 text-[11px] font-semibold text-[#737373] dark:text-[#A3A3A3]">Chora</th>
                 <th className="px-6 py-3.5" />
               </tr>
             </thead>
@@ -116,10 +116,10 @@ const AiModeratorPage = () => {
                     idx < signals.length - 1 ? "border-b border-[#F0F0F0] dark:border-[#262626]" : ""
                   }
                 >
-                  <td className="px-6 py-4 text-[13px] font-medium text-[#404040] dark:text-[#D4D4D4] tabular-nums">
+                  <td className="px-6 py-4 text-[12px] font-medium text-[#404040] dark:text-[#D4D4D4] tabular-nums">
                     {row.user}
                   </td>
-                  <td className="px-6 py-4 text-[14px] text-[#404040] dark:text-[#D4D4D4]">{row.signal}</td>
+                  <td className="px-6 py-4 text-[13px] text-[#404040] dark:text-[#D4D4D4]">{row.signal}</td>
                   <td className="px-6 py-4">
                     <span
                       className={`inline-block px-2.5 py-0.5 rounded-full text-[12px] font-semibold ${severityStyles[row.severity]}`}
@@ -133,8 +133,8 @@ const AiModeratorPage = () => {
                       onClick={() => toggleBlock(row.id)}
                       className={`text-[13px] font-bold transition-colors cursor-pointer ${
                         row.blocked
-                          ? "text-[#404040] dark:text-[#D4D4D4] hover:text-[#0A0A0A] dark:hover:text-white"
-                          : "text-[#D32F2F] hover:text-[#B91C1C]"
+                          ? "text-[#737373] dark:text-[#D4D4D4] hover:text-[#0A0A0A] dark:hover:text-white"
+                          : "text-[#7F1D1D] hover:text-[#B91C1C]"
                       }`}
                     >
                       {row.blocked ? "Blokdan chiqarish" : "Profilni bloklash"}

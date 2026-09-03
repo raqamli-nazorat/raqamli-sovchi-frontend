@@ -239,13 +239,13 @@ const HomePage = () => {
         <div className="lg:col-span-8 bg-white dark:bg-[#141414] border border-[#e5e5e5] dark:border-[#262626] rounded-xl p-4.5 shadow-xs flex flex-col justify-between">
           
           {/* Header & Tabs */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4">
-            <h2 className="text-[15px] md:text-[16px] font-semibold text-[#0A0A0A] dark:text-[#fafafa] tracking-tight">
+          <div className="flex flex-col sm:flex-row items-start justify-between gap-3 pb-4">
+            <h2 className="text-[13px] font-semibold text-[#0A0A0A] dark:text-[#fafafa] tracking-tight">
               {CHART_DATA[activeTab].title}
             </h2>
 
             {/* Segmented Tab Buttons */}
-            <div className="inline-flex items-center bg-[#F3F4F6] dark:bg-[#1c1c1c] p-1 rounded-xl gap-0.5 self-start sm:self-auto border border-neutral-200/50 dark:border-neutral-800">
+            <div className="inline-flex items-center gap-1.5 self-start sm:self-auto">
               {tabOptions.map((tab) => {
                 const isActive = activeTab === tab.key;
                 return (
@@ -256,10 +256,10 @@ const HomePage = () => {
                       setActiveTab(tab.key);
                       setHoveredIndex(null);
                     }}
-                    className={`px-3.5 py-1.5 rounded-lg text-[12px] md:text-[13px] font-medium transition-all duration-150 cursor-pointer ${
+                    className={`px-3 h-[25px] rounded-md text-[11px] font-semibold transition-all duration-150 cursor-pointer ${
                       isActive
                         ? "bg-[#0A0A0A] text-white dark:bg-white dark:text-[#0A0A0A] shadow-xs font-semibold"
-                        : "text-[#737373] hover:text-[#0A0A0A] dark:text-[#a3a3a3] dark:hover:text-white"
+                        : "bg-[#F5F5F5] text-[#525252] hover:text-[#0A0A0A] dark:text-[#a3a3a3] dark:hover:text-white"
                     }`}
                   >
                     {tab.label}
@@ -307,7 +307,7 @@ const HomePage = () => {
                     <div className="w-full flex justify-center items-end h-full">
                       <div
                         style={{ height: `${heightPercentage}%` }}
-                        className={`w-full max-w-[42px] rounded-lg transition-all duration-200 ${
+                        className={`w-full max-w-[42px] rounded-t-md transition-all duration-200 ${
                           isHovered
                             ? "bg-[#0070F3] shadow-md shadow-[#0070F3]/30 scale-[1.03]"
                             : isToday
@@ -319,7 +319,7 @@ const HomePage = () => {
 
                     {/* Day Label */}
                     <span
-                      className={`mt-3 text-[11px] md:text-[12px] font-medium transition-colors ${
+                      className={`mt-3 text-[10px] transition-colors ${
                         isHovered || (hoveredIndex === null && isToday)
                           ? "text-[#0A0A0A] dark:text-white font-bold"
                           : "text-[#a3a3a3] dark:text-[#737373] group-hover:text-[#0A0A0A] dark:group-hover:text-white"
@@ -334,18 +334,18 @@ const HomePage = () => {
           </div>
 
           {/* Footer Summary of selected / hovered bar */}
-          <div className="mt-4 pt-3 border-t border-[#f0f0f0] dark:border-[#202020] flex items-center justify-between text-[12px] md:text-[13px] text-[#737373] dark:text-[#a3a3a3]">
+          <div className="flex items-center justify-between text-[12px] text-[#737373] dark:text-[#a3a3a3]">
             <div>
               Tanlangan kun:{" "}
-              <span className="font-semibold text-[#0A0A0A] dark:text-[#fafafa]">
+              <span className="">
                 {activeDay.dateStr}
               </span>{" "}
               ·{" "}
-              <span className="font-semibold text-[#0A0A0A] dark:text-[#fafafa]">
+              <span className="">
                 {activeDay.value} ta {CHART_DATA[activeTab].footerPrefix}
               </span>
               {activeDay.change && (
-                <span className="ml-2 text-[11px] font-medium text-emerald-500">
+                <span className="">
                   ({activeDay.change})
                 </span>
               )}
@@ -356,20 +356,20 @@ const HomePage = () => {
         {/* RIGHT: Funnel Card (col-span-4) */}
         <div className="lg:col-span-5 bg-white dark:bg-[#141414] border border-[#e5e5e5] dark:border-[#262626] rounded-xl p-4.5 shadow-xs flex flex-col justify-between">
           <div>
-            <h2 className="text-[15px] md:text-[16px] font-semibold text-[#0A0A0A] dark:text-[#fafafa] tracking-tight mb-5">
+            <h2 className="text-[13px] font-semibold text-[#0A0A0A] dark:text-[#fafafa] tracking-tight mb-5">
               Anketa to'ldirish voronkasi
             </h2>
 
             {/* 5 Funnel Stages */}
-            <div className="space-y-4 md:space-y-5">
+            <div className="space-y-4 ">
               {FUNNEL_DATA.map((step, idx) => (
                 <div key={idx} className="group">
                   {/* Step Name & Value */}
-                  <div className="flex items-center justify-between text-[13px] mb-1.5">
-                    <span className="text-[#525252] dark:text-[#a3a3a3] font-medium group-hover:text-[#0A0A0A] dark:group-hover:text-white transition-colors">
+                  <div className="flex items-center justify-between text-[12px] mb-1.5">
+                    <span className="text-[#404040] dark:text-[#a3a3a3] group-hover:text-[#0A0A0A] dark:group-hover:text-white transition-colors">
                       {step.label}
                     </span>
-                    <span className="text-[#0A0A0A] dark:text-[#fafafa] font-semibold tracking-tight">
+                    <span className="text-[#404040] dark:text-[#fafafa] tracking-tight">
                       {step.count}
                     </span>
                   </div>
@@ -390,7 +390,7 @@ const HomePage = () => {
 
       {/* 3. BOTTOM SECTION: NAVBATDAGI VAZIFALAR */}
       <div className="bg-white dark:bg-[#141414] border border-[#e5e5e5] dark:border-[#262626] rounded-xl p-4.5 shadow-xs">
-        <h2 className="text-[14px] md:text-[15px] font-semibold text-[#0A0A0A] dark:text-[#fafafa] tracking-tight mb-4">
+        <h2 className="text-[13px] font-semibold text-[#0A0A0A] dark:text-[#fafafa] tracking-tight mb-4">
           Navbatdagi vazifalar
         </h2>
 
@@ -402,17 +402,17 @@ const HomePage = () => {
               className="border border-[#e5e5e5] dark:border-[#262626] rounded-xl p-4 md:p-5 transition-all duration-200 cursor-pointer bg-white dark:bg-[#141414]"
             >
               {/* Big metric count */}
-              <div className={`text-[24px] md:text-[26px] font-bold leading-none ${task.colorClass}`}>
+              <div className={`text-[22px] font-bold leading-none ${task.colorClass}`}>
                 {task.count}
               </div>
 
               {/* Title */}
-              <div className="mt-3 text-[13px] md:text-[14px] font-semibold text-[#0A0A0A] dark:text-[#fafafa]">
+              <div className="mt-3 text-[12px] font-semibold text-[#0A0A0A] dark:text-[#fafafa]">
                 {task.title}
               </div>
 
               {/* Subtitle / Description */}
-              <div className="mt-1 text-[11px] md:text-[12px] text-[#737373] dark:text-[#a3a3a3] leading-normal">
+              <div className="mt-1 text-[11px] text-[#737373] dark:text-[#a3a3a3] leading-normal">
                 {task.subtitle}
               </div>
             </div>

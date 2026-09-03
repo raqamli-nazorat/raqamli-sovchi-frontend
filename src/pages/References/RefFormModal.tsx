@@ -281,14 +281,11 @@ const RefFormModal = ({
     if (field.type === "permissions") {
       return (
         <div key={field.name} className="flex flex-col min-h-0 flex-1">
-          <p className="text-[13px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mb-1 shrink-0">
-            {field.label}
-          </p>
-          <div className="border border-[#f0f0f0] dark:border-[#262626] rounded-xl overflow-hidden flex flex-col min-h-0 flex-1">
-            <div className="grid grid-cols-[1fr_repeat(4,72px)] items-center px-4 py-2.5 bg-[#FAFAFA] dark:bg-[#1c1c1c] text-[11px] font-semibold text-[#737373] dark:text-[#a3a3a3] shrink-0">
-              <span />
+          <div className="overflow-hidden flex flex-col min-h-0 flex-1">
+            <div className="grid grid-cols-[1fr_repeat(4,72px)] items-center py-2.5 text-[11px] font-semibold text-[#737373] dark:text-[#a3a3a3] shrink-0">
+              <span className="text-[13px] font-semibold text-[#0a0a0a]">Ruxsatlar</span>
               {ACTION_COLUMNS.map((c) => (
-                <span key={c.key} className="text-center">
+                <span key={c.key} className="text-end">
                   {c.label}
                 </span>
               ))}
@@ -304,13 +301,13 @@ const RefFormModal = ({
               {!detailLoading && permGroups.map((g) => (
                 <div
                   key={g.label}
-                  className="grid grid-cols-[1fr_repeat(4,72px)] items-center px-4 py-2.5 border-t border-[#f0f0f0] dark:border-[#262626]"
+                  className="grid grid-cols-[1fr_repeat(4,72px)] items-center py-2.5 border-t border-[#f0f0f0] dark:border-[#262626]"
                 >
                   <span className="text-[13px] text-[#0A0A0A] dark:text-[#fafafa]">{g.label}</span>
                   {ACTION_COLUMNS.map((c) => {
                     const perms = g.actions[c.key];
                     return (
-                      <span key={c.key} className="flex justify-center">
+                      <span key={c.key} className="flex justify-end">
                         <input
                           type="checkbox"
                           disabled={!perms}

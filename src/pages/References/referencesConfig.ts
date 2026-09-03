@@ -125,7 +125,6 @@ const simpleNameConfig = (
     { header: "Yangilangan", value: (i) => fmtDateTime(i.updated_at) },
   ],
   formTitle: base.formTitle,
-  formHint: "Nom takrorlanmasligi kerak.",
   fields: [{ name: "name", label: "Nomi", type: "text", required: true }],
   titleOf: (i) => i.name || "",
   detailFields: [{ label: "Nomi", value: (i) => i.name || "" }],
@@ -204,7 +203,6 @@ export const REF_CONFIGS: Record<string, RefEntityConfig> = {
       { header: "Yangilangan", value: (i) => fmtDateTime(i.updated_at) },
     ],
     formTitle: "Yangi viloyat",
-    formHint: "Kodi ixtiyoriy — keyin ham qo'shsa bo'ladi.",
     fields: [
       { name: "name", label: "Nomi", type: "text", required: true },
       { name: "code", label: "Kodi", type: "number" },
@@ -326,7 +324,6 @@ export const REF_CONFIGS: Record<string, RefEntityConfig> = {
       { header: "Yangilangan", value: (i) => fmtDateTime(i.updated_at) },
     ],
     formTitle: "Yangi savol bo'limi",
-    formHint: "Bo'lim yaratilgach, unga savollar qo'shasiz.",
     fields: [{ name: "name", label: "Nomi", type: "text", required: true }],
     titleOf: (i) => i.name || "",
     detailFields: [

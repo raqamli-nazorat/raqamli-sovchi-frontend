@@ -119,7 +119,7 @@ const AppealDetailPage = () => {
         <div className="lg:col-span-8 space-y-4">
           
           {/* Card 1: Taraflar & Sabab */}
-          <div className="bg-white dark:bg-[#141414] rounded-2xl border border-[#e5e5e5] dark:border-[#262626] p-5 lg:p-6 shadow-xs">
+          <div className="bg-white dark:bg-[#141414] rounded-xl border border-[#e5e5e5] dark:border-[#262626] p-5 shadow-xs">
             <div className="flex items-center justify-between gap-4 flex-wrap">
               
               <div className="flex items-center gap-4 flex-wrap">
@@ -157,19 +157,19 @@ const AppealDetailPage = () => {
               </div>
 
               {/* Sababi Badge */}
-              <span className="bg-[#FFF0F0] dark:bg-red-950/40 text-[#E11D48] dark:text-red-400 font-medium text-[12px] px-3 py-1 rounded-full">
+              <span className="bg-[#FEF2F2] dark:bg-red-950/40 text-[#7F1D1D] dark:text-red-400 font-semibold text-[11px] px-3 py-1 rounded-full">
                 {appeal.tag}
               </span>
             </div>
 
-            <p className="text-[13px] text-[#525252] dark:text-[#d4d4d4] mt-4 leading-relaxed">
+            <p className="text-[12px] text-[#404040] dark:text-[#d4d4d4] mt-4 leading-relaxed">
               {appeal.description}
             </p>
           </div>
 
           {/* Card 2: Suhbat tarixi · dalil */}
-          <div className="bg-white dark:bg-[#141414] rounded-2xl border border-[#e5e5e5] dark:border-[#262626] p-5 lg:p-6 shadow-xs">
-            <h3 className="text-[15px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mb-4">
+          <div className="bg-white dark:bg-[#141414] rounded-xl border border-[#e5e5e5] dark:border-[#262626] p-5 shadow-xs">
+            <h3 className="text-[13px] font-semibold text-[#0A0A0A] dark:text-[#fafafa] mb-4">
               Suhbat tarixi · dalil
             </h3>
 
@@ -184,23 +184,23 @@ const AppealDetailPage = () => {
                     <div
                       className={`max-w-[85%] sm:max-w-[65%] rounded-2xl px-4 py-3 ${
                         msg.flagged
-                          ? "bg-[#FFF5F5] dark:bg-red-950/20 border border-[#FECACA] dark:border-red-900/40"
-                          : "bg-[#F8FAFC] dark:bg-zinc-900"
+                          ? "bg-[#FEF2F2] dark:bg-red-950/20 border border-[#FCA5A5] dark:border-red-900/40"
+                          : "bg-[#F5F5F5] dark:bg-zinc-900"
                       }`}
                     >
                       <p
-                        className={`text-[13px] ${
+                        className={`text-[12px] ${
                           msg.flagged
-                            ? "text-[#B91C1C] dark:text-red-300 font-medium"
+                            ? "text-[#7F1D1D] dark:text-red-300 font-medium"
                             : "text-[#0A0A0A] dark:text-[#fafafa]"
                         }`}
                       >
                         {msg.text}
                       </p>
-                      <p className="text-[10px] text-[#a3a3a3] mt-1.5 flex items-center gap-2">
+                      <p className="text-[10px] text-[#6B6B6B] mt-1.5 flex items-center gap-2">
                         <span>{msg.time}</span>
                         {msg.flagged && (
-                          <span className="font-bold text-[#DC2626] dark:text-red-400">
+                          <span className="font-semibold text-[#7F1D1D] dark:text-red-400">
                             AI: qoidabuzarlik aniqlandi
                           </span>
                         )}
@@ -213,8 +213,8 @@ const AppealDetailPage = () => {
           </div>
 
           {/* Card 3: AI tahlili */}
-          <div className="bg-white dark:bg-[#141414] rounded-2xl border border-[#e5e5e5] dark:border-[#262626] p-5 lg:p-6 shadow-xs">
-            <h3 className="text-[15px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mb-4">
+          <div className="bg-white dark:bg-[#141414] rounded-xl border border-[#e5e5e5] dark:border-[#262626] p-5 shadow-xs">
+            <h3 className="text-[13px] font-semibold text-[#0A0A0A] dark:text-[#fafafa] mb-4">
               AI tahlili
             </h3>
 
@@ -223,7 +223,7 @@ const AppealDetailPage = () => {
                 <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">
                   Qoidabuzarlik darajasi
                 </p>
-                <p className="text-[13px] font-bold text-[#DC2626] dark:text-red-400 mt-1">
+                <p className="text-[12px] font-semibold text-[#7F1D1D] dark:text-red-400 mt-1">
                   {analysis.level}
                 </p>
               </div>
@@ -232,7 +232,7 @@ const AppealDetailPage = () => {
                 <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">
                   Oldingi ogohlantirishlar
                 </p>
-                <p className="text-[13px] font-bold text-[#B45309] dark:text-amber-400 mt-1">
+                <p className="text-[12px] font-semibold text-[#92400E] dark:text-amber-400 mt-1">
                   {analysis.warnings}
                 </p>
               </div>
@@ -241,7 +241,7 @@ const AppealDetailPage = () => {
                 <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">
                   Shikoyatlar soni
                 </p>
-                <p className="text-[13px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-1">
+                <p className="text-[12px] font-semibold text-[#0A0A0A] dark:text-[#fafafa] mt-1">
                   {analysis.reports}
                 </p>
               </div>
@@ -250,7 +250,7 @@ const AppealDetailPage = () => {
                 <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">
                   Tavsiya
                 </p>
-                <p className="text-[13px] font-bold text-[#7F1D1D] dark:text-red-400 mt-1">
+                <p className="text-[12px] font-semibold text-[#7F1D1D] dark:text-red-400 mt-1">
                   {analysis.advice}
                 </p>
               </div>
@@ -263,8 +263,8 @@ const AppealDetailPage = () => {
         <div className="lg:col-span-4 space-y-4">
           
           {/* Card 1: Qaror */}
-          <div className="bg-white dark:bg-[#141414] rounded-2xl border border-[#e5e5e5] dark:border-[#262626] p-5 shadow-xs">
-            <h3 className="text-[15px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mb-3">
+          <div className="bg-white dark:bg-[#141414] rounded-xl border border-[#e5e5e5] dark:border-[#262626] p-5 shadow-xs">
+            <h3 className="text-[13px] font-semibold text-[#0A0A0A] dark:text-[#fafafa] mb-3">
               Qaror
             </h3>
 
@@ -300,7 +300,7 @@ const AppealDetailPage = () => {
                 </div>
 
                 {/* SLA Timer */}
-                <div className="flex items-center gap-2 mt-4 px-3.5 py-2.5 bg-[#FEF9EC] dark:bg-amber-950/20 text-[#92400E] dark:text-amber-400 rounded-xl">
+                <div className="flex items-center gap-2 mt-4 px-3.5 py-2.5 bg-[#FFFBEB] dark:bg-amber-950/20 text-[#92400E] dark:text-amber-400 rounded-xl">
                   <Clock className="w-4 h-4 text-[#92400E] shrink-0" strokeWidth={3} />
                   <span className="text-[12px] font-medium">
                     14 soat 46 daqiqa qoldi (24 soatlik SLA)
@@ -379,36 +379,36 @@ const AppealDetailPage = () => {
           </div>
 
           {/* Card 2: Shikoyat qilingan profil */}
-          <div className="bg-white dark:bg-[#141414] rounded-2xl border border-[#e5e5e5] dark:border-[#262626] p-5 shadow-xs">
-            <h3 className="text-[15px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mb-3.5">
+          <div className="bg-white dark:bg-[#141414] rounded-xl border border-[#e5e5e5] dark:border-[#262626] p-5 shadow-xs">
+            <h3 className="text-[13px] font-semibold text-[#0A0A0A] dark:text-[#fafafa] mb-3.5">
               Shikoyat qilingan profil
             </h3>
 
             <div className="space-y-2.5 text-[12px]">
               <div className="flex items-center justify-between">
                 <span className="text-[#737373] dark:text-[#a3a3a3]">Holati</span>
-                <span className="font-bold text-[#0A0A0A] dark:text-[#fafafa]">
+                <span className="font-semibold text-[#0A0A0A] dark:text-[#fafafa]">
                   {profile.status}
                 </span>
               </div>
 
               <div className="flex items-center justify-between">
                 <span className="text-[#737373] dark:text-[#a3a3a3]">Ro'yxatdan</span>
-                <span className="font-bold text-[#0A0A0A] dark:text-[#fafafa]">
+                <span className="font-semibold text-[#0A0A0A] dark:text-[#fafafa]">
                   {profile.registered}
                 </span>
               </div>
 
               <div className="flex items-center justify-between">
                 <span className="text-[#737373] dark:text-[#a3a3a3]">Anketa</span>
-                <span className="font-bold text-[#0A0A0A] dark:text-[#fafafa]">
+                <span className="font-semibold text-[#0A0A0A] dark:text-[#fafafa]">
                   {profile.questionnaire}
                 </span>
               </div>
 
               <div className="flex items-center justify-between">
                 <span className="text-[#737373] dark:text-[#a3a3a3]">AI signallari</span>
-                <span className="font-bold text-[#0A0A0A] dark:text-[#fafafa]">
+                <span className="font-semibold text-[#0A0A0A] dark:text-[#fafafa]">
                   {profile.aiSignals}
                 </span>
               </div>

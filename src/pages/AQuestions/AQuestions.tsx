@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { ChevronDown, Plus, X} from "lucide-react";
+import { Check, ChevronDown, Plus, X} from "lucide-react";
 import { REF_APIS, refApiError } from "../References/referencesApi";
 import { useHeader } from "../../components/Layout/Layout";
 import Select from "../../components/ui/Select";
@@ -346,7 +346,7 @@ const AQuestions = () => {
 
               <button
                 onClick={handleOpenAddModal}
-                className="h-10 px-4 flex items-center gap-1.5 bg-[#0474F3] hover:bg-[#042480] active:scale-[0.99] text-white text-[13px] font-semibold rounded-lg transition-all cursor-pointer shadow-sm"
+                className="h-8.5 px-3.5 flex items-center gap-1.5 bg-[#0474F3] hover:bg-[#042480] active:scale-[0.99] text-white text-[12px] font-semibold rounded-lg transition-all cursor-pointer shadow-sm"
               >
                 <Plus className="w-4 h-4 stroke-[2.5]" /> Savol qo'shish
               </button>
@@ -378,18 +378,18 @@ const AQuestions = () => {
                     <div
                       key={q.id}
                       onClick={() => setExpandedQuestionId(expanded ? null : q.id)}
-                      className={`bg-white dark:bg-[#141414] rounded-2xl border transition-all cursor-pointer p-5 hover:shadow-sm ${expanded
+                      className={`bg-white dark:bg-[#141414] rounded-xl border transition-all cursor-pointer p-5 hover:shadow-sm ${expanded
                         ? "border-[#0474F3] ring-0.75 ring-[#0474F3]"
                         : "border-[#E5E5E5] dark:border-[#262626]"
                         }`}
                     >
                       <div className="flex items-start justify-between gap-4 w-full">
                         <div className="flex items-start gap-3 w-full">
-                          <span className="text-[14.5px] font-bold text-[#0474F3] tabular-nums">
+                          <span className="text-[12px] font-semibold text-[#0474F3] tabular-nums">
                             {displayIndex}
                           </span>
                           <div className="space-y-1 flex items-start justify-between gap-3 w-full">
-                            <h3 className="text-[14.5px] font-semibold text-[#0A0A0A] dark:text-[#fafafa] leading-snug">
+                            <h3 className="text-[13px] font-semibold text-[#0A0A0A] dark:text-[#fafafa] leading-snug">
                               {q.text}
                             </h3>
                             {q.is_trap_question && (
@@ -402,8 +402,7 @@ const AQuestions = () => {
 
                         <div className="flex items-center gap-3 shrink-0">
                           <ChevronDown
-                            className={`w-4 h-4 text-gray-400 transition-transform duration-300 ${expanded ? "rotate-180" : ""
-                              }`}
+                            className="w-4 h-4 text-gray-400"
                           />
                         </div>
                       </div>
@@ -420,7 +419,7 @@ const AQuestions = () => {
                             {opts.map((o) => (
                               <div
                                 key={o.option_letter}
-                                className="flex items-start justify-between gap-4 py-0.75 text-[13.5px]"
+                                className="flex items-start justify-between gap-4 py-0.75 text-[12px]"
                               >
                                 <div className="flex items-start gap-2.5">
                                   <span className="font-semibold text-gray-400 dark:text-zinc-500 shrink-0 w-4">
@@ -450,7 +449,7 @@ const AQuestions = () => {
       {/* ── Savol qo'shish / tahrirlash modali ── */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 animate-in fade-in duration-200">
-          <div className="w-full max-w-[640px] bg-white dark:bg-[#141414] rounded-[24px] border border-[#e5e5e5] dark:border-[#262626] p-6 shadow-2xl animate-in zoom-in-95 duration-200">
+          <div className="w-full max-w-[640px] bg-white dark:bg-[#141414] rounded-2xl border border-[#e5e5e5] dark:border-[#262626] p-6 shadow-2xl animate-in zoom-in-95 duration-200">
             {/* Modal Header */}
             <div className="flex items-start justify-between">
               <div>
@@ -702,8 +701,10 @@ const AQuestions = () => {
                 disabled={saving}
                 className="px-5 py-2.5 bg-[#0474F3] hover:bg-[#023399] active:bg-[#0474F3] disabled:bg-[#4599f8] text-white rounded-xl text-[13px] font-semibold transition-colors cursor-pointer disabled:cursor-default shadow-sm flex items-center gap-2"
               >
-                {saving && (
+                {saving ? (
                   <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <Check size={16}/>
                 )}
                 Savolni saqlash
               </button>
