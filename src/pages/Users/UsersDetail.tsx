@@ -930,15 +930,6 @@ const UsersDetail = () => {
                             </span>
                         </div>
 
-                        {/* Tahrirlash button */}
-                        <button
-                            onClick={openEditModal}
-                            className="w-full py-2 px-3.5 bg-white dark:bg-zinc-900 border border-[#e5e5e5] dark:border-[#262626] hover:bg-gray-50 dark:hover:bg-zinc-800 text-[#0A0A0A] dark:text-[#fafafa] text-[12px] font-semibold rounded-xl flex items-center justify-start gap-2 shadow-xs transition-all cursor-pointer"
-                        >
-                            <HugeIcon icon={PencilEdit01Icon} size={18} strokeWidth={2.2} />
-                            <span>Tahrirlash</span>
-                        </button>
-
                         {/* Profilni bloklash button */}
                         <button
                             onClick={handleBlock}
@@ -1088,7 +1079,7 @@ const UsersDetail = () => {
 
             {/* Block Modal */}
             {showBlockModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
                     <div className="w-full max-w-[480px] bg-white dark:bg-[#141414] rounded-[24px] border border-[#e5e5e5] dark:border-[#262626] p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
                         
                         <div className="w-12 h-12 rounded-full bg-[#FFF0F0] dark:bg-red-950/30 text-[#DC2626] dark:text-red-400 flex items-center justify-center">
@@ -1139,168 +1130,19 @@ const UsersDetail = () => {
                         <div className="flex items-center justify-end gap-3 mt-6">
                             <button
                                 onClick={() => setShowBlockModal(false)}
-                                className="px-5 py-2.5 bg-white dark:bg-zinc-900 border border-[#e5e5e5] dark:border-[#262626] rounded-xl text-[13px] font-semibold text-[#404040] dark:text-[#e5e5e5] hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                                className="px-5 py-2.5 bg-white dark:bg-zinc-900 border border-[#e5e5e5] dark:border-[#262626] rounded-lg text-[13px] font-semibold flex items-center gap-2 text-[#404040] dark:text-[#e5e5e5] hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
                             >
+                                <Check size={16} strokeWidth={2.5} />
                                 Bekor qilish
                             </button>
                             <button
                                 onClick={handleBlockSubmit}
-                                className="px-5 py-2.5 bg-[#7F1D1D] hover:bg-[#b91c1c] text-white rounded-xl text-[13px] font-semibold transition-colors cursor-pointer shadow-xs"
+                                className="px-5 py-2.5 flex items-center gap-2 bg-[#7F1D1D] hover:bg-[#b91c1c] text-white rounded-lg text-[13px] font-semibold transition-colors cursor-pointer shadow-xs"
                             >
+                                <Check size={16} strokeWidth={2.5} />
                                 Profilni bloklash
                             </button>
                         </div>
-
-                    </div>
-                </div>
-            )}
-
-            {/* Edit Profile Modal */}
-            {showEditModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
-                    <div className="w-full max-w-[540px] bg-white dark:bg-[#141414] rounded-[24px] border border-[#e5e5e5] dark:border-[#262626] p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
-                        
-                        <div className="flex items-center justify-between pb-4 border-b border-[#e5e5e5] dark:border-[#262626]">
-                            <div className="flex items-center gap-2.5">
-                                <div className="w-10 h-10 rounded-full bg-blue-50 dark:bg-blue-950/40 text-[#0474F3] flex items-center justify-center">
-                                    <Pencil className="w-5 h-5" />
-                                </div>
-                                <div>
-                                    <h3 className="text-[16px] font-bold text-[#0A0A0A] dark:text-[#fafafa]">
-                                        Profilni tahrirlash
-                                    </h3>
-                                    <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">
-                                        {displayId}
-                                    </p>
-                                </div>
-                            </div>
-                            <button
-                                onClick={() => setShowEditModal(false)}
-                                className="text-gray-400 hover:text-gray-600 dark:hover:text-zinc-200 cursor-pointer"
-                            >
-                                <X className="w-5 h-5" />
-                            </button>
-                        </div>
-
-                        <form onSubmit={handleEditSubmit} className="space-y-4 mt-5">
-                            <div>
-                                <label className="text-[12px] font-semibold text-[#404040] dark:text-zinc-300 block mb-1">
-                                    F.I.SH
-                                </label>
-                                <input
-                                    type="text"
-                                    value={editForm.full_name}
-                                    onChange={(e) => setEditForm(prev => ({ ...prev, full_name: e.target.value }))}
-                                    className="w-full px-3.5 py-2.5 bg-white dark:bg-zinc-900 border border-[#e5e5e5] dark:border-[#262626] rounded-xl text-[13px] text-[#0a0a0a] dark:text-[#fafafa] outline-none focus:border-[#0474F3] transition-colors"
-                                />
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-3">
-                                <div>
-                                    <label className="text-[12px] font-semibold text-[#404040] dark:text-zinc-300 block mb-1">
-                                        Telefon raqam
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={editForm.phone_number}
-                                        onChange={(e) => setEditForm(prev => ({ ...prev, phone_number: e.target.value }))}
-                                        className="w-full px-3.5 py-2.5 bg-white dark:bg-zinc-900 border border-[#e5e5e5] dark:border-[#262626] rounded-xl text-[13px] text-[#0a0a0a] dark:text-[#fafafa] outline-none focus:border-[#0474F3] transition-colors"
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="text-[12px] font-semibold text-[#404040] dark:text-zinc-300 block mb-1">
-                                        Email
-                                    </label>
-                                    <input
-                                        type="email"
-                                        value={editForm.email}
-                                        onChange={(e) => setEditForm(prev => ({ ...prev, email: e.target.value }))}
-                                        className="w-full px-3.5 py-2.5 bg-white dark:bg-zinc-900 border border-[#e5e5e5] dark:border-[#262626] rounded-xl text-[13px] text-[#0a0a0a] dark:text-[#fafafa] outline-none focus:border-[#0474F3] transition-colors"
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-3">
-                                <div>
-                                    <label className="text-[12px] font-semibold text-[#404040] dark:text-zinc-300 block mb-1">
-                                        Kasbi
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={editForm.occupation}
-                                        onChange={(e) => setEditForm(prev => ({ ...prev, occupation: e.target.value }))}
-                                        className="w-full px-3.5 py-2.5 bg-white dark:bg-zinc-900 border border-[#e5e5e5] dark:border-[#262626] rounded-xl text-[13px] text-[#0a0a0a] dark:text-[#fafafa] outline-none focus:border-[#0474F3] transition-colors"
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="text-[12px] font-semibold text-[#404040] dark:text-zinc-300 block mb-1">
-                                        Ta'lim darajasi
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={editForm.education}
-                                        onChange={(e) => setEditForm(prev => ({ ...prev, education: e.target.value }))}
-                                        className="w-full px-3.5 py-2.5 bg-white dark:bg-zinc-900 border border-[#e5e5e5] dark:border-[#262626] rounded-xl text-[13px] text-[#0a0a0a] dark:text-[#fafafa] outline-none focus:border-[#0474F3] transition-colors"
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-3 gap-3">
-                                <div>
-                                    <label className="text-[12px] font-semibold text-[#404040] dark:text-zinc-300 block mb-1">
-                                        Viloyat
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={editForm.region}
-                                        onChange={(e) => setEditForm(prev => ({ ...prev, region: e.target.value }))}
-                                        className="w-full px-3.5 py-2.5 bg-white dark:bg-zinc-900 border border-[#e5e5e5] dark:border-[#262626] rounded-xl text-[13px] text-[#0a0a0a] dark:text-[#fafafa] outline-none focus:border-[#0474F3] transition-colors"
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="text-[12px] font-semibold text-[#404040] dark:text-zinc-300 block mb-1">
-                                        Tuman
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={editForm.district}
-                                        onChange={(e) => setEditForm(prev => ({ ...prev, district: e.target.value }))}
-                                        className="w-full px-3.5 py-2.5 bg-white dark:bg-zinc-900 border border-[#e5e5e5] dark:border-[#262626] rounded-xl text-[13px] text-[#0a0a0a] dark:text-[#fafafa] outline-none focus:border-[#0474F3] transition-colors"
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="text-[12px] font-semibold text-[#404040] dark:text-zinc-300 block mb-1">
-                                        Mahalla
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={editForm.mahalla}
-                                        onChange={(e) => setEditForm(prev => ({ ...prev, mahalla: e.target.value }))}
-                                        className="w-full px-3.5 py-2.5 bg-white dark:bg-zinc-900 border border-[#e5e5e5] dark:border-[#262626] rounded-xl text-[13px] text-[#0a0a0a] dark:text-[#fafafa] outline-none focus:border-[#0474F3] transition-colors"
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#e5e5e5] dark:border-[#262626]">
-                                <button
-                                    type="button"
-                                    onClick={() => setShowEditModal(false)}
-                                    className="px-5 py-2.5 bg-white dark:bg-zinc-900 border border-[#e5e5e5] dark:border-[#262626] rounded-xl text-[13px] font-semibold text-[#404040] dark:text-[#e5e5e5] hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
-                                >
-                                    Bekor qilish
-                                </button>
-                                <button
-                                    type="submit"
-                                    className="px-5 py-2.5 bg-[#0474F3] hover:bg-[#0360cb] text-white rounded-xl text-[13px] font-semibold transition-colors cursor-pointer shadow-xs"
-                                >
-                                    Saqlash
-                                </button>
-                            </div>
-                        </form>
 
                     </div>
                 </div>
