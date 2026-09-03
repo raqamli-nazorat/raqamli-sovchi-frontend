@@ -11,3 +11,4 @@ export { default as PsychologistsPage } from "./Psychologists/PsychologistsPage"
 export { default as ReferenceListPage } from "./References/ReferenceListPage";
 export { default as SettingPage } from "./Setting/Setting";
 export { default as NotificationPage } from "./Setting/NotificationPage";
+export { default as ProfilePage } from "./Profile/ProfilePage.jsx";

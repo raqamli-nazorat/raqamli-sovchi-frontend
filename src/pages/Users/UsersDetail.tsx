@@ -929,15 +929,6 @@ const UsersDetail = () => {
                             </span>
                         </div>
 
-                        {/* Tahrirlash button */}
-                        <button
-                            onClick={openEditModal}
-                            className="w-full py-2 px-3.5 bg-white dark:bg-zinc-900 border border-[#e5e5e5] dark:border-[#262626] hover:bg-gray-50 dark:hover:bg-zinc-800 text-[#0A0A0A] dark:text-[#fafafa] text-[12px] font-semibold rounded-xl flex items-center justify-start gap-2 shadow-xs transition-all cursor-pointer"
-                        >
-                            <HugeIcon icon={PencilEdit01Icon} size={18} strokeWidth={2.2} />
-                            <span>Tahrirlash</span>
-                        </button>
-
                         {/* Profilni bloklash button */}
                         <button
                             onClick={handleBlock}
