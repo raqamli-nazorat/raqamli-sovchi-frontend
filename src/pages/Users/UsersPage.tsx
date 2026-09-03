@@ -589,7 +589,7 @@ const UsersPage = () => {
       </div>
 
       {/* Users Table Card */}
-      <div className="bg-white dark:bg-[#141414] overflow-auto max-h-[calc(100vh-150px)]">
+      <div className="bg-white dark:bg-[#141414] overflow-auto max-h-[calc(100vh-130px)]">
           <table className="w-full text-left border-collapse min-w-max">
             {/* Table Header */}
             <thead className="sticky top-0 z-10 bg-[#fafafa] dark:bg-[#141414]">

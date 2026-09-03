@@ -15,6 +15,7 @@ const PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {
   "/psychologists": { title: "Psixologlar", subtitle: "Mutaxassislar va suhbatlar" },
   "/profile-moderation": { title: "Profil moderatsiyasi", subtitle: "Selfi tasdiqlash va rasm tekshiruvi" },
   "/questions": { title: "Anketa savollari", subtitle: "Platforma savollari" },
+  "/profile": { title: "Mening profilim", subtitle: "Hisob ma'lumotlari va xavfsizlik" },
 };
 
 const getPageInfo = (pathname: string, appeal?: Appeal) => {
