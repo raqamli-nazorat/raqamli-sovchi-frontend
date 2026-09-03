@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { HugeiconsIcon } from "@hugeicons/react";
 import type { Appeal } from "../../store/slices/appealsSlice";
@@ -92,6 +92,7 @@ interface SidebarProps {
 
 const Sidebar = ({ collapsed, onToggle }: SidebarProps) => {
   const location = useLocation();
+  const navigate = useNavigate();
   const [refsOpen, setRefsOpen] = useState(location.pathname.startsWith("/references"));
   const appealsInReviewCount = useSelector(
     (state: any) => state.appeals.items.filter((a: Appeal) => a.status === "in_review").length
@@ -281,10 +282,11 @@ const Sidebar = ({ collapsed, onToggle }: SidebarProps) => {
       <div className="border-t border-gray-100 dark:border-gray-800 p-3 space-y-1">
         {/* User row */}
         <div
+          onClick={() => navigate("/profile")}
           className={`flex items-center gap-2.5 rounded-xl px-2 py-2 hover:bg-gray-50 dark:hover:bg-gray-800/60 cursor-pointer transition-colors ${collapsed ? "justify-center" : ""}`}
         >
           <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center shrink-0">
-            <span className="text-[11px] font-bold text-blue-600 dark:text-blue-400">{currentUser?.profile_info?.first_name?.slice(0, 1).toUpperCase() + currentUser?.profile_info?.last_name?.slice(0, 1).toUpperCase() || "US"}</span>
+            <span className="text-[11px] font-bold text-blue-600 dark:text-blue-400">{currentUser?.full_name?.split(" ").map((i: string) => i?.slice(0, 1)).join("") || "US"}</span>
           </div>
           {!collapsed && (
             <>

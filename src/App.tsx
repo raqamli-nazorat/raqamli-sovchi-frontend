@@ -13,7 +13,8 @@ import {
   AQuestions,
   SettingPage,
   NotificationPage,
-  PsychologistsPage
+  PsychologistsPage,
+  ProfilePage
 } from "./pages";
 import Layout from "./components/Layout/Layout";
 
@@ -96,6 +97,7 @@ const router = createBrowserRouter([
       { path: "/psychologists", element: <PsychologistsPage /> },
       { path: "/settings", element: <SettingPage /> },
       { path: "/notification", element: <NotificationPage /> },
+      { path: "/profile", element: <ProfilePage /> },
     ],
   },
   {
