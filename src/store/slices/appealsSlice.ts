@@ -41,6 +41,7 @@ export interface Appeal {
   description: string;
   time: string;
   status: AppealStatus;
+  action?: string;
   moderator?: string;
   resolvedAt?: string;
   rejectReason?: string;
@@ -103,6 +104,14 @@ export const mapComplaintToAppeal = (item: ComplaintListItem | ComplaintDetail):
     ? dayjs(detail.resolved_at).format("DD.MM.YYYY HH:mm")
     : undefined;
 
+  const action =
+    detail.action ||
+    (detail.admin_note?.toLowerCase().includes("blok")
+      ? "Profil bloklandi"
+      : detail.admin_note?.toLowerCase().includes("ogohlantirish")
+      ? "Ogohlantirish yuborildi"
+      : undefined);
+
   return {
     id: String(item.id),
     fromUser,
@@ -113,6 +122,7 @@ export const mapComplaintToAppeal = (item: ComplaintListItem | ComplaintDetail):
     description,
     time,
     status,
+    action,
     moderator,
     resolvedAt,
     rejectReason: detail.admin_note || undefined,
@@ -156,11 +166,19 @@ const appealsSlice = createSlice({
     },
     approveAppeal: (
       state,
-      { payload }: PayloadAction<{ id: string; moderator?: string; resolvedAt?: string }>
+      {
+        payload,
+      }: PayloadAction<{
+        id: string;
+        action?: string;
+        moderator?: string;
+        resolvedAt?: string;
+      }>
     ) => {
       const item = state.items.find((a) => a.id === payload.id);
       if (item) {
         item.status = "approved";
+        if (payload.action) item.action = payload.action;
         item.moderator = payload.moderator || "Admin";
         item.resolvedAt = payload.resolvedAt || dayjs().format("DD.MM.YYYY HH:mm");
       }
