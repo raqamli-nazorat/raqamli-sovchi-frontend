@@ -330,8 +330,8 @@ const ProfilePage: React.FC = () => {
       {toast && (
         <div
           className={`fixed top-5 right-5 z-50 flex items-center gap-2.5 px-4 py-3 rounded-xl shadow-xl text-[13px] font-medium transition-all duration-300 animate-in fade-in slide-in-from-top-3 ${toast.type === "success"
-              ? "bg-[#10B981] text-white"
-              : "bg-[#DC2626] text-white"
+            ? "bg-[#10B981] text-white"
+            : "bg-[#DC2626] text-white"
             }`}
         >
           {toast.type === "success" ? (
@@ -520,8 +520,8 @@ const ProfilePage: React.FC = () => {
               {passwordFeedback && (
                 <div
                   className={`p-3 rounded-xl text-[12px] flex items-center gap-2 ${passwordFeedback.type === "success"
-                      ? "bg-emerald-50 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800"
-                      : "bg-red-50 text-red-800 dark:bg-red-950/40 dark:text-red-300 border border-red-200 dark:border-red-800"
+                    ? "bg-emerald-50 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800"
+                    : "bg-red-50 text-red-800 dark:bg-red-950/40 dark:text-red-300 border border-red-200 dark:border-red-800"
                     }`}
                 >
                   {passwordFeedback.type === "success" ? (
@@ -534,9 +534,9 @@ const ProfilePage: React.FC = () => {
               )}
 
               {/* Password Inputs Grid: Oldingi parol, Yangi parol, Parolni tasdiqlang */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+              <div className="grid grid-cols-15 gap-3.5">
                 {/* 1. Oldingi parol */}
-                <div>
+                <div className="col-span-4">
                   <label className="text-[12px] font-medium text-[#404040] dark:text-[#a3a3a3] block mb-1.5">
                     Oldingi parol
                   </label>
@@ -565,7 +565,7 @@ const ProfilePage: React.FC = () => {
                 </div>
 
                 {/* 2. Yangi parol */}
-                <div>
+                <div className="col-span-4">
                   <label className="text-[12px] font-medium text-[#404040] dark:text-[#a3a3a3] block mb-1.5">
                     Yangi parol
                   </label>
@@ -594,7 +594,7 @@ const ProfilePage: React.FC = () => {
                 </div>
 
                 {/* 3. Parolni tasdiqlang */}
-                <div>
+                <div className="col-span-4">
                   <label className="text-[12px] font-medium text-[#404040] dark:text-[#a3a3a3] block mb-1.5">
                     Parolni tasdiqlang
                   </label>
@@ -621,51 +621,12 @@ const ProfilePage: React.FC = () => {
                     </button>
                   </div>
                 </div>
-              </div>
-
-              {/* Parolni yangilash Button */}
-              <div className="flex items-start justify-between pt-1">
-                <div className="space-y-4">
-                  {/* Toggle 1: Ikki faktorli autentifikatsiya */}
-                  <div className="flex items-center gap-3.5">
-                    <Toggle
-                      id="toggle-2fa"
-                      checked={twoFactorAuth}
-                      onChange={setTwoFactorAuth}
-                    />
-                    <div className="flex flex-col">
-                      <span className="text-[13px] font-semibold text-[#0A0A0A] dark:text-[#fafafa]">
-                        Ikki faktorli autentifikatsiya
-                      </span>
-                      <span className="text-[12px] text-[#737373] dark:text-[#a3a3a3]">
-                        Kirishda SMS kod talab qilinadi
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Toggle 2: Kirishlarni qayd etish */}
-                  <div className="flex items-center gap-3.5">
-                    <Toggle
-                      id="toggle-audit"
-                      checked={auditLogging}
-                      onChange={setAuditLogging}
-                    />
-                    <div className="flex flex-col">
-                      <span className="text-[13px] font-semibold text-[#0A0A0A] dark:text-[#fafafa]">
-                        Kirishlarni qayd etish
-                      </span>
-                      <span className="text-[12px] text-[#737373] dark:text-[#a3a3a3]">
-                        Har bir sessiya jurnalga yozib boriladi
-                      </span>
-                    </div>
-                  </div>
-                </div>
 
                 <button
                   id="update-password-btn"
                   type="submit"
                   disabled={passwordLoading}
-                  className="h-9 px-4 bg-[#0474F3] hover:bg-[#023399] active:bg-[#0474F3] disabled:opacity-60 text-white font-medium text-[12px] rounded-lg flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer"
+                  className="h-9 px-3 col-span-3 bg-[#0474F3] mt-auto hover:bg-[#023399] active:bg-[#0474F3] disabled:opacity-60 text-white font-medium text-[12px] rounded-lg flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer"
                 >
                   {passwordLoading ? (
                     <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -681,45 +642,6 @@ const ProfilePage: React.FC = () => {
 
         {/* ════════════════ RIGHT COLUMN (4 cols) ════════════════ */}
         <div className="lg:col-span-4 space-y-4">
-          {/* ── 3. Top Card: Aktiv sessiyalar ── */}
-          <div className="bg-white dark:bg-[#141414] rounded-2xl border border-[#e5e5e5] dark:border-[#262626] p-6 shadow-sm space-y-6.5">
-            <h3 className="text-[15px] font-bold text-[#0A0A0A] dark:text-[#fafafa]">
-              Aktiv sessiyalar
-            </h3>
-
-            <div className="space-y-4">
-              {activeSessions.map((session) => (
-                <div
-                  key={session.id}
-                  className="flex items-center justify-between gap-5"
-                >
-                  <div className="min-w-0">
-                    <p className="text-[13px] font-semibold text-[#0A0A0A] dark:text-[#fafafa] truncate">
-                      {session.device}
-                    </p>
-                    <p className="text-[12px] text-[#737373] dark:text-[#a3a3a3] truncate mt-0.5">
-                      {session.location}
-                    </p>
-                  </div>
-
-                  {session.isCurrent ? (
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#ECFDF5] text-[#10B981] dark:bg-emerald-950/40 dark:text-emerald-400 shrink-0">
-                      Hozir
-                    </span>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveSession(session.id)}
-                      className="text-[12px] font-semibold text-[#DC2626] hover:text-red-700 transition-colors cursor-pointer shrink-0"
-                    >
-                      Chiqarish
-                    </button>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-
           {/* ── 4. Bottom Card: Tizimdan chiqish ── */}
           <div
             id="logout-card-btn"
