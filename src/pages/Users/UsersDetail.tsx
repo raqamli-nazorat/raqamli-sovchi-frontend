@@ -78,14 +78,31 @@ export type UserDetailResponse = {
         name?: string;
         full_name?: string | null;
         phone?: string | null;
-        kinship?: string | null;
-        candidate_role?: string | null;
         phone_masked?: string | null;
+        phone_number?: string | null;
+        kinship?: string | { id?: string; name?: string } | null;
+        kinship_name?: string | null;
+        candidate_role?: string | null;
         main_photo?: string | null;
+        photo?: string | null;
         region?: string | null;
         district?: string | null;
         is_approved?: boolean;
-    } | null;
+        status?: string;
+        candidates_count?: number;
+        user_id?: string;
+        dates?: {
+            application_date?: string | null;
+            sms_sent_date?: string | null;
+            approved_date?: string | null;
+            questionnaire_date?: string | null;
+        };
+        application_date?: string | null;
+        sms_sent_date?: string | null;
+        approved_date?: string | null;
+        questionnaire_date?: string | null;
+        created_at?: string;
+    } | any | null;
     account?: {
         display_id?: string;
         role?: {
@@ -191,10 +208,6 @@ const UsersDetail = () => {
     const [loadingAction, setLoadingAction] = useState(false);
     const [userData, setUserData] = useState<UserDetailResponse | null>(null);
 
-    // Associated API states
-    const [representedUsers, setRepresentedUsers] = useState<RepresentedUserItem[]>([]);
-    const [loadingRepresented, setLoadingRepresented] = useState(false);
-
     const [historyList, setHistoryList] = useState<UserHistoryItem[]>([]);
     const [loadingHistory, setLoadingHistory] = useState(false);
 
@@ -236,24 +249,6 @@ const UsersDetail = () => {
             })
             .finally(() => {
                 setLoading(false);
-            });
-    };
-
-    // 2. Fetch Represented Users (Vakillar)
-    const fetchRepresentedUsers = () => {
-        if (!id) return;
-        setLoadingRepresented(true);
-        axiosAPI.get(`accounts/users/${id}/represented-users/`)
-            .then((response) => {
-                const list = response.data?.data || (Array.isArray(response.data) ? response.data : []);
-                setRepresentedUsers(list);
-            })
-            .catch((err) => {
-                console.warn("API error fetching represented users:", err);
-                setRepresentedUsers([]);
-            })
-            .finally(() => {
-                setLoadingRepresented(false);
             });
     };
 
@@ -303,7 +298,6 @@ const UsersDetail = () => {
 
     useEffect(() => {
         fetchUserData();
-        fetchRepresentedUsers();
         fetchHistory();
         fetchMatchHistory();
     }, [id]);
@@ -453,9 +447,15 @@ const UsersDetail = () => {
     };
 
     const candidateType = formatCandidateType(userData?.account?.candidate_type || userData?.personal?.candidate_type || userData?.candidate_type);
-    const hasGuardian = Boolean(userData?.guardian && (userData.guardian.id || userData.guardian.name || userData.guardian.full_name || userData.guardian.phone || userData.guardian.phone_masked || userData.guardian.kinship));
-    const hasRepresented = Boolean(representedUsers && representedUsers.length > 0);
-    const hasVakilData = hasRepresented || hasGuardian;
+    const guardian = userData?.guardian;
+    const hasGuardian = Boolean(
+        guardian && (
+            Array.isArray(guardian)
+                ? guardian.length > 0
+                : (guardian.id || guardian.name || guardian.full_name || guardian.phone || guardian.phone_masked || guardian.phone_number || guardian.kinship)
+        )
+    );
+    const hasVakilData = hasGuardian;
     const managementType = userData?.account?.management_type || (hasVakilData ? "Vakil orqali" : "O'zi");
 
     const regDate = userData?.account?.created_at
@@ -961,7 +961,7 @@ const UsersDetail = () => {
                         )}
                     </div>
 
-                    {/* Card 4: Vakil ma'lumotlari (from represented-users API & guardian) */}
+                    {/* Card 4: Vakil ma'lumotlari (from guardian) */}
                     {hasVakilData && (
                         <div className="bg-white dark:bg-[#141414] rounded-2xl border border-[#e5e5e5] dark:border-[#262626] p-5 lg:p-6 shadow-sm">
 
@@ -978,159 +978,159 @@ const UsersDetail = () => {
                                 Vakil — nomzod nomidan anketani to'ldiruvchi va profilni boshqaruvchi qarindosh (amma, xola, amaki, tog'a).
                             </p>
 
-                            {loadingRepresented ? (
-                                <div className="py-6 flex justify-center">
-                                    <div className="w-6 h-6 border-2 border-[#0474F3] border-t-transparent rounded-full animate-spin" />
-                                </div>
-                            ) : (
-                                <div className="space-y-4">
-                                    {(representedUsers.length > 0 ? representedUsers : [userData?.guardian]).map((rep: any, idx: number) => {
-                                        if (!rep) return null;
+                            <div className="space-y-4">
+                                {(Array.isArray(userData?.guardian) ? userData.guardian : [userData?.guardian]).map((rep: any, idx: number) => {
+                                    if (!rep) return null;
 
-                                        const repName = rep.name || rep.full_name || "";
-                                        const repDisplayId = rep.display_id || (rep.id ? `USR-${rep.id.slice(0, 5).toUpperCase()}` : "");
-                                        const repPhoto = rep.photo || rep.main_photo || null;
-                                        const repInitials = repName !== ""
-                                            ? repName.split(" ").filter(Boolean).map((n: string) => n[0]).join("").toUpperCase().slice(0, 2)
-                                            : "VK";
-                                        const repKinship = rep.kinship_name || rep.kinship || "";
-                                        const repPhone = rep.phone || rep.phone_masked || "";
-                                        const repRole = rep.candidate_role ? formatCandidateType(rep.candidate_role) : candidateType;
-                                        const repDates = rep.dates;
-                                        const repTargetId = (rep.id && rep.id !== id) ? rep.id : (rep.user_id && rep.user_id !== id) ? rep.user_id : null;
+                                    const repName = rep.name || rep.full_name || "";
+                                    const repDisplayId = rep.display_id || (rep.id ? `USR-${rep.id.slice(0, 5).toUpperCase()}` : "");
+                                    const repPhoto = rep.photo || rep.main_photo || null;
+                                    const repInitials = repName !== ""
+                                        ? repName.split(" ").filter(Boolean).map((n: string) => n[0]).join("").toUpperCase().slice(0, 2)
+                                        : "VK";
+                                    const repKinship = typeof rep.kinship === 'object' ? rep.kinship?.name : (rep.kinship_name || rep.kinship || "");
+                                    const repPhone = rep.phone || rep.phone_masked || rep.phone_number || "";
+                                    const repRole = rep.candidate_role ? formatCandidateType(rep.candidate_role) : candidateType;
+                                    const repDates = rep.dates || (rep.application_date || rep.sms_sent_date || rep.approved_date || rep.questionnaire_date ? {
+                                        application_date: rep.application_date || rep.created_at,
+                                        sms_sent_date: rep.sms_sent_date,
+                                        approved_date: rep.approved_date,
+                                        questionnaire_date: rep.questionnaire_date,
+                                    } : null);
+                                    const repTargetId = (rep.id && rep.id !== id) ? rep.id : (rep.user_id && rep.user_id !== id) ? rep.user_id : null;
 
-                                        return (
-                                            <div key={rep.id || idx} className="space-y-4">
-                                                {/* Representative Card Box */}
-                                                <div
-                                                    onClick={() => {
-                                                        if (repTargetId) {
-                                                            window.open(`/users/${repTargetId}`, '_blank');
-                                                        }
-                                                    }}
-                                                    className={`bg-[#F8FAFC] dark:bg-zinc-900 border border-[#E2E8F0] dark:border-zinc-800 rounded-xl p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all ${repTargetId ? 'cursor-pointer hover:border-blue-400 hover:shadow-sm' : ''}`}
-                                                >
-                                                    <div className="flex items-center gap-3">
-                                                        {repPhoto ? (
-                                                            <img
-                                                                src={repPhoto}
-                                                                alt={repName}
-                                                                className="w-10 h-10 rounded-full object-cover border border-[#e2e8f0] dark:border-zinc-700 shrink-0"
-                                                            />
-                                                        ) : (
-                                                            <div className="w-10 h-10 rounded-full bg-[#EDE9FE] dark:bg-purple-950/40 text-[#7C3AED] dark:text-purple-400 font-bold text-xs flex items-center justify-center shrink-0">
-                                                                {repInitials}
-                                                            </div>
-                                                        )}
-                                                        <div>
-                                                            <p className="text-[13px] font-bold text-[#0A0A0A] dark:text-[#fafafa]">
-                                                                {repName}
-                                                            </p>
-                                                            <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                                                                {repDisplayId && (
-                                                                    <span className="text-[10px] text-[#737373] dark:text-[#a3a3a3]">
-                                                                        {repDisplayId}
-                                                                    </span>
-                                                                )}
-                                                                <span className="bg-[#E2E8F0] dark:bg-zinc-800 text-[#475569] dark:text-zinc-300 text-[10px] font-semibold px-2 py-0.5 rounded">
-                                                                    {repRole}
+                                    return (
+                                        <div key={rep.id || idx} className="space-y-4">
+                                            {/* Representative Card Box */}
+                                            <div
+                                                onClick={() => {
+                                                    if (repTargetId) {
+                                                        window.open(`/users/${repTargetId}`, '_blank');
+                                                    }
+                                                }}
+                                                className={`bg-[#F8FAFC] dark:bg-zinc-900 border border-[#E2E8F0] dark:border-zinc-800 rounded-xl p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all ${repTargetId ? 'cursor-pointer hover:border-blue-400 hover:shadow-sm' : ''}`}
+                                            >
+                                                <div className="flex items-center gap-3">
+                                                    {repPhoto ? (
+                                                        <img
+                                                            src={repPhoto}
+                                                            alt={repName}
+                                                            className="w-10 h-10 rounded-full object-cover border border-[#e2e8f0] dark:border-zinc-700 shrink-0"
+                                                        />
+                                                    ) : (
+                                                        <div className="w-10 h-10 rounded-full bg-[#EDE9FE] dark:bg-purple-950/40 text-[#7C3AED] dark:text-purple-400 font-bold text-xs flex items-center justify-center shrink-0">
+                                                            {repInitials}
+                                                        </div>
+                                                    )}
+                                                    <div>
+                                                        <p className="text-[13px] font-bold text-[#0A0A0A] dark:text-[#fafafa]">
+                                                            {repName}
+                                                        </p>
+                                                        <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                                                            {repDisplayId && (
+                                                                <span className="text-[10px] text-[#737373] dark:text-[#a3a3a3]">
+                                                                    {repDisplayId}
                                                                 </span>
-                                                                <span className={`${rep.is_approved || rep.status === "Tasdiqlangan"
-                                                                    ? 'bg-[#E6F9F0] dark:bg-[#103020] text-[#00A854] dark:text-[#2ee088]'
-                                                                    : 'bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400'
-                                                                    } text-[10px] font-semibold px-2 py-0.5 rounded`}>
-                                                                    {rep.status || (rep.is_approved ? "Tasdiqlangan" : "Kutilmoqda")}
-                                                                </span>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="flex items-center gap-6 sm:gap-8 justify-between sm:justify-end">
-                                                        <div>
-                                                            <p className="text-[10px] text-[#737373] dark:text-[#a3a3a3]">Qarindoshligi</p>
-                                                            <p className="text-[12px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-0.5">{repKinship}</p>
-                                                        </div>
-
-                                                        <div>
-                                                            <p className="text-[10px] text-[#737373] dark:text-[#a3a3a3]">Telefon</p>
-                                                            <p className="text-[12px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-0.5">{repPhone}</p>
-                                                        </div>
-
-                                                        <div>
-                                                            <p className="text-[10px] text-[#737373] dark:text-[#a3a3a3]">Nomzodlari</p>
-                                                            <p className="text-[12px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-0.5">
-                                                                {rep.candidates_count !== undefined ? `${rep.candidates_count} ta` : "1 ta"}
-                                                            </p>
+                                                            )}
+                                                            <span className="bg-[#E2E8F0] dark:bg-zinc-800 text-[#475569] dark:text-zinc-300 text-[10px] font-semibold px-2 py-0.5 rounded">
+                                                                {repRole}
+                                                            </span>
+                                                            <span className={`${rep.is_approved || rep.status === "Tasdiqlangan"
+                                                                ? 'bg-[#E6F9F0] dark:bg-[#103020] text-[#00A854] dark:text-[#2ee088]'
+                                                                : 'bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400'
+                                                                } text-[10px] font-semibold px-2 py-0.5 rounded`}>
+                                                                {rep.status || (rep.is_approved ? "Tasdiqlangan" : "Kutilmoqda")}
+                                                            </span>
                                                         </div>
                                                     </div>
                                                 </div>
 
-                                                {/* Rozilik va sanalar Timeline */}
-                                                {repDates && (
-                                                    <div className="mt-4 pt-3 border-t border-[#f0f0f0] dark:border-[#262626]">
-                                                        <div className="flex items-center justify-between mb-3">
-                                                            <div className="flex items-center gap-1.5">
-                                                                <Info className="w-3.5 h-3.5 text-[#737373] dark:text-[#a3a3a3]" />
-                                                                <h4 className="text-[12px] font-bold text-[#525252] dark:text-[#fafafa]">
-                                                                    Rozilik va sanalar
-                                                                </h4>
+                                                <div className="flex items-center gap-6 sm:gap-8 justify-between sm:justify-end">
+                                                    <div>
+                                                        <p className="text-[10px] text-[#737373] dark:text-[#a3a3a3]">Qarindoshligi</p>
+                                                        <p className="text-[12px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-0.5">{repKinship}</p>
+                                                    </div>
+
+                                                    <div>
+                                                        <p className="text-[10px] text-[#737373] dark:text-[#a3a3a3]">Telefon</p>
+                                                        <p className="text-[12px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-0.5">{repPhone}</p>
+                                                    </div>
+
+                                                    <div>
+                                                        <p className="text-[10px] text-[#737373] dark:text-[#a3a3a3]">Nomzodlari</p>
+                                                        <p className="text-[12px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-0.5">
+                                                            {rep.candidates_count !== undefined ? `${rep.candidates_count} ta` : "1 ta"}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Rozilik va sanalar Timeline */}
+                                            {repDates && (
+                                                <div className="mt-4 pt-3 border-t border-[#f0f0f0] dark:border-[#262626]">
+                                                    <div className="flex items-center justify-between mb-3">
+                                                        <div className="flex items-center gap-1.5">
+                                                            <Info className="w-3.5 h-3.5 text-[#737373] dark:text-[#a3a3a3]" />
+                                                            <h4 className="text-[12px] font-bold text-[#525252] dark:text-[#fafafa]">
+                                                                Rozilik va sanalar
+                                                            </h4>
+                                                        </div>
+                                                        <span className="text-[10px] text-[#737373] dark:text-[#a3a3a3]">
+                                                            SMS nomzodning raqamiga boradi, havola 48 soat ishlaydi
+                                                        </span>
+                                                    </div>
+
+                                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-2">
+                                                        <div>
+                                                            <div className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 ${repDates.application_date
+                                                                ? 'bg-[#E6F9F0] dark:bg-[#103020] text-[#00A854] dark:text-[#2ee088]'
+                                                                : 'bg-gray-100 dark:bg-zinc-800 text-gray-400'
+                                                                }`}>
+                                                                {repDates.application_date ? <Check className="w-2.5 h-2.5 stroke-[3]" /> : <Minus className="w-2.5 h-2.5" />}
                                                             </div>
-                                                            <span className="text-[10px] text-[#737373] dark:text-[#a3a3a3]">
-                                                                SMS nomzodning raqamiga boradi, havola 48 soat ishlaydi
-                                                            </span>
+                                                            <p className="text-[11px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-1.5">
+                                                                Ariza to'ldirildi
+                                                            </p>
+                                                            <p className="text-[10px] text-[#737373] dark:text-[#a3a3a3] mt-0.5">
+                                                                {repDates.application_date ? dayjs(repDates.application_date).format("DD.MM.YYYY HH:mm") : ""}
+                                                            </p>
                                                         </div>
 
-                                                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-2">
-                                                            <div>
-                                                                <div className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 ${repDates.application_date
-                                                                    ? 'bg-[#E6F9F0] dark:bg-[#103020] text-[#00A854] dark:text-[#2ee088]'
-                                                                    : 'bg-gray-100 dark:bg-zinc-800 text-gray-400'
-                                                                    }`}>
-                                                                    {repDates.application_date ? <Check className="w-2.5 h-2.5 stroke-[3]" /> : <Minus className="w-2.5 h-2.5" />}
-                                                                </div>
-                                                                <p className="text-[11px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-1.5">
-                                                                    Ariza to'ldirildi
-                                                                </p>
-                                                                <p className="text-[10px] text-[#737373] dark:text-[#a3a3a3] mt-0.5">
-                                                                    {repDates.application_date ? dayjs(repDates.application_date).format("DD.MM.YYYY HH:mm") : ""}
-                                                                </p>
+                                                        <div>
+                                                            <div className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 ${repDates.sms_sent_date
+                                                                ? 'bg-[#E6F9F0] dark:bg-[#103020] text-[#00A854] dark:text-[#2ee088]'
+                                                                : 'bg-gray-100 dark:bg-zinc-800 text-gray-400'
+                                                                }`}>
+                                                                {repDates.sms_sent_date ? <Check className="w-2.5 h-2.5 stroke-[3]" /> : <Minus className="w-2.5 h-2.5" />}
                                                             </div>
+                                                            <p className="text-[11px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-1.5">
+                                                                Nomzodga SMS yuborildi
+                                                            </p>
+                                                            <p className="text-[10px] text-[#737373] dark:text-[#a3a3a3] mt-0.5">
+                                                                {repDates.sms_sent_date ? dayjs(repDates.sms_sent_date).format("DD.MM.YYYY HH:mm") : ""}
+                                                            </p>
+                                                        </div>
 
-                                                            <div>
-                                                                <div className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 ${repDates.sms_sent_date
-                                                                    ? 'bg-[#E6F9F0] dark:bg-[#103020] text-[#00A854] dark:text-[#2ee088]'
-                                                                    : 'bg-gray-100 dark:bg-zinc-800 text-gray-400'
-                                                                    }`}>
-                                                                    {repDates.sms_sent_date ? <Check className="w-2.5 h-2.5 stroke-[3]" /> : <Minus className="w-2.5 h-2.5" />}
-                                                                </div>
-                                                                <p className="text-[11px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-1.5">
-                                                                    Nomzodga SMS yuborildi
-                                                                </p>
-                                                                <p className="text-[10px] text-[#737373] dark:text-[#a3a3a3] mt-0.5">
-                                                                    {repDates.sms_sent_date ? dayjs(repDates.sms_sent_date).format("DD.MM.YYYY HH:mm") : ""}
-                                                                </p>
+                                                        <div>
+                                                            <div className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 ${repDates.approved_date
+                                                                ? 'bg-[#E6F9F0] dark:bg-[#103020] text-[#00A854] dark:text-[#2ee088]'
+                                                                : 'bg-gray-100 dark:bg-zinc-800 text-gray-400'
+                                                                }`}>
+                                                                {repDates.approved_date ? <Check className="w-2.5 h-2.5 stroke-[3]" /> : <Minus className="w-2.5 h-2.5" />}
                                                             </div>
+                                                            <p className="text-[11px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-1.5">
+                                                                Nomzod rozilikni tasdiqladi
+                                                            </p>
+                                                            <p className="text-[10px] text-[#737373] dark:text-[#a3a3a3] mt-0.5">
+                                                                {repDates.approved_date ? dayjs(repDates.approved_date).format("DD.MM.YYYY HH:mm") : ""}
+                                                            </p>
+                                                        </div>
 
-                                                            <div>
-                                                                <div className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 ${repDates.approved_date
-                                                                    ? 'bg-[#E6F9F0] dark:bg-[#103020] text-[#00A854] dark:text-[#2ee088]'
-                                                                    : 'bg-gray-100 dark:bg-zinc-800 text-gray-400'
-                                                                    }`}>
-                                                                    {repDates.approved_date ? <Check className="w-2.5 h-2.5 stroke-[3]" /> : <Minus className="w-2.5 h-2.5" />}
-                                                                </div>
-                                                                <p className="text-[11px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-1.5">
-                                                                    Nomzod rozilikni tasdiqladi
-                                                                </p>
-                                                                <p className="text-[10px] text-[#737373] dark:text-[#a3a3a3] mt-0.5">
-                                                                    {repDates.approved_date ? dayjs(repDates.approved_date).format("DD.MM.YYYY HH:mm") : ""}
-                                                                </p>
-                                                            </div>
-
-                                                            <div>
-                                                                <div className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 ${repDates.questionnaire_date
-                                                                    ? 'bg-[#E6F9F0] dark:bg-[#103020] text-[#00A854] dark:text-[#2ee088]'
-                                                                    : 'bg-gray-100 dark:bg-zinc-800 text-gray-400'
-                                                                    }`}>
+                                                        <div>
+                                                            <div className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 ${repDates.questionnaire_date
+                                                                ? 'bg-[#E6F9F0] dark:bg-[#103020] text-[#00A854] dark:text-[#2ee088]'
+                                                                : 'bg-gray-100 dark:bg-zinc-800 text-gray-400'
+                                                                }`}>
                                                                 {repDates.questionnaire_date ? <Check className="w-2.5 h-2.5 stroke-[3]" /> : <Minus className="w-2.5 h-2.5" />}
                                                             </div>
                                                             <p className="text-[11px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-1.5">
@@ -1147,7 +1147,6 @@ const UsersDetail = () => {
                                     );
                                 })}
                             </div>
-                            )}
 
                         </div>
                     )}
@@ -1297,7 +1296,7 @@ const UsersDetail = () => {
                                         <span className="text-[#404040] dark:text-zinc-300">Vakil</span>
                                     </div>
                                     <span className="text-[#0A0A0A] dark:text-[#fafafa] font-medium">
-                                        {representedUsers.length > 0 || userData?.guardian ? "Biriktirilgan" : "Biriktirilmagan"}
+                                        {hasGuardian ? "Biriktirilgan" : "Biriktirilmagan"}
                                     </span>
                                 </div>
                             </div>

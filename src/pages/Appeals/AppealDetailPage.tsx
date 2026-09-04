@@ -82,13 +82,13 @@ const AppealDetailPage = () => {
     if (!id || !selectedAction || decisionLoading) return;
     setDecisionLoading(true);
     setDecisionError(null);
+    const enforcement_action = selectedAction === "block" ? "block" : "warn";
     const actionLabel =
       selectedAction === "block" ? "Profil bloklandi" : "Ogohlantirish yuborildi";
     try {
       const res = await complaintsApi.decision(id, {
         decision: "approved",
-        action: selectedAction,
-        admin_note: actionLabel,
+        enforcement_action,
       });
       setComplaint((prev) =>
         prev
@@ -96,10 +96,11 @@ const AppealDetailPage = () => {
             ...prev,
             status: "approved",
             status_label: "Tasdiqlandi",
+            enforcement_action,
             action: actionLabel,
             resolved_at: res.resolved_at || new Date().toISOString(),
             resolved_by_info: res.resolved_by_info || prev.resolved_by_info,
-            admin_note: res.admin_note ?? actionLabel,
+            admin_note: res.admin_note ?? null,
           }
           : prev
       );
@@ -573,17 +574,23 @@ const AppealDetailPage = () => {
                 <div className="flex items-center justify-between text-[12px]">
                   <span className="text-[#737373] dark:text-[#a3a3a3]">Chora</span>
                   <span
-                    className={`font-semibold ${(complaint.action || complaint.admin_note || "").includes("ogohlantirish") ||
-                        (complaint.action || complaint.admin_note || "").includes("Ogohlantirish")
+                    className={`font-semibold ${
+                      complaint.enforcement_action === "warn" ||
+                      (complaint.action || complaint.admin_note || "").includes("ogohlantirish") ||
+                      (complaint.action || complaint.admin_note || "").includes("Ogohlantirish")
                         ? "text-[#92400E] dark:text-amber-400"
                         : "text-[#7F1D1D] dark:text-red-400"
-                      }`}
+                    }`}
                   >
-                    {complaint.action ||
-                      (complaint.admin_note?.includes("ogohlantirish") ||
+                    {complaint.enforcement_action === "warn"
+                      ? "Ogohlantirish yuborildi"
+                      : complaint.enforcement_action === "block"
+                      ? "Profil bloklandi"
+                      : complaint.action ||
+                        (complaint.admin_note?.includes("ogohlantirish") ||
                         complaint.admin_note?.includes("Ogohlantirish")
-                        ? "Ogohlantirish yuborildi"
-                        : "Profil bloklandi")}
+                          ? "Ogohlantirish yuborildi"
+                          : "Profil bloklandi")}
                   </span>
                 </div>
 
@@ -691,7 +698,7 @@ const AppealDetailPage = () => {
                 >
                   <div className="mt-0.5 shrink-0">
                     {selectedAction === "warning" ? (
-                      <div className="w-5 h-5 rounded-full border-2 border-[#0474F3] flex items-center justify-center">
+                      <div className="w-5 h-5 rounded-full bg-[#0474F3] border-2 border-[#0474F3] flex items-center justify-center">
                         <div className="w-2.5 h-2.5 rounded-full bg-[#0474F3]" />
                       </div>
                     ) : (
@@ -718,7 +725,7 @@ const AppealDetailPage = () => {
                 >
                   <div className="mt-0.5 shrink-0">
                     {selectedAction === "block" ? (
-                      <div className="w-5 h-5 rounded-full border-2 border-[#0474F3] flex items-center justify-center">
+                      <div className="w-5 h-5 rounded-full bg-[#0474F3] border-2 border-[#0474F3] flex items-center justify-center">
                         <div className="w-2.5 h-2.5 rounded-full bg-[#0474F3]" />
                       </div>
                     ) : (
