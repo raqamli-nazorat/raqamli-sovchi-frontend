@@ -1184,7 +1184,7 @@ const UsersDetail = () => {
                         <button
                             onClick={handleBlock}
                             disabled={loadingAction}
-                            className={`w-full py-2 px-3.5 border rounded-xl text-[12px] font-semibold flex items-center justify-start gap-2 transition-all cursor-pointer ${!isBlocked
+                            className={`w-full py-2 px-3.5 border rounded-md text-[12px] font-semibold flex items-center justify-start gap-2 transition-all cursor-pointer ${!isBlocked
                                     ? 'bg-red-50 dark:bg-red-950/20 text-[#7F1D1D] dark:text-[#ef4444] border-red-200 dark:border-red-900/50'
                                     : 'bg-white! border-[#e5e5e5]! text-[#0474F3] dark:text-[#0474F3]'
                                 }`}
