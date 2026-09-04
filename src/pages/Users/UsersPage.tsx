@@ -32,131 +32,11 @@ export interface UserResult {
     region_info?: { id: string; name: string };
     district_info?: { id: string; name: string };
   } | null;
+  main_photo?: string | null;
+  questionnaire_percent?: number | null;
   created_at: string;
   updated_at?: string;
 }
-
-const SAMPLE_USERS: UserResult[] = [
-  {
-    id: "10241",
-    display_id: "USR-10241",
-    full_name: "Safarali Muxtorov",
-    phone_number: "+998 90 123 45 67",
-    candidate_type: "Kuyov",
-    region_name: "Toshkent",
-    district_name: "Yunusobod",
-    role_name: "Nomzod",
-    auth_provider: "Telefon raqami",
-    completion_percentage: 100,
-    status: "Tasdiqlangan",
-    is_verified: true,
-    is_blocked: false,
-    created_at: "2026-03-12T14:02:00",
-    updated_at: "2026-06-18T09:31:00",
-  },
-  {
-    id: "10318",
-    display_id: "USR-10318",
-    full_name: "Mohira Rasulova",
-    phone_number: "+998 91 234 56 78",
-    candidate_type: "Kelin",
-    region_name: "Toshkent",
-    district_name: "Chilonzor",
-    role_name: "Nomzod",
-    auth_provider: "Telegram",
-    completion_percentage: 100,
-    status: "Tasdiqlangan",
-    is_verified: true,
-    is_blocked: false,
-    created_at: "2026-03-18T09:40:00",
-    updated_at: "2026-04-02T12:32:00",
-  },
-  {
-    id: "10402",
-    display_id: "USR-10402",
-    full_name: "Zulfiya Muxtorova",
-    phone_number: "+998 93 345 67 89",
-    candidate_type: "Kelin",
-    region_name: "Namangan",
-    district_name: "Chust",
-    role_name: "Vakil",
-    auth_provider: "Telefon raqami",
-    completion_percentage: 63,
-    status: "Anketa to'liq emas",
-    is_verified: false,
-    is_blocked: false,
-    created_at: "2026-04-02T11:26:00",
-    updated_at: "2026-05-30T13:14:00",
-  },
-  {
-    id: "10455",
-    display_id: "USR-10455",
-    full_name: "Nilufar Ahmedova",
-    phone_number: "+998 94 456 78 90",
-    candidate_type: "Kelin",
-    region_name: "Farg'ona",
-    district_name: "Quva",
-    role_name: "Nomzod",
-    auth_provider: "Vakil orqali",
-    completion_percentage: 47,
-    status: "Anketa to'liq emas",
-    is_verified: false,
-    is_blocked: false,
-    created_at: "2026-04-17T16:08:00",
-    updated_at: "2026-07-11T16:54:00",
-  },
-  {
-    id: "10511",
-    display_id: "USR-10511",
-    full_name: "Bekzod Qodirov",
-    phone_number: "+998 97 567 89 01",
-    candidate_type: "Kuyov",
-    region_name: "Samarqand",
-    district_name: "Urgut",
-    role_name: "Nomzod",
-    auth_provider: "Google",
-    completion_percentage: 100,
-    status: "Bloklangan",
-    is_verified: true,
-    is_blocked: true,
-    created_at: "2026-05-05T10:33:00",
-    updated_at: "2026-06-21T12:22:00",
-  },
-  {
-    id: "10604",
-    display_id: "USR-10604",
-    full_name: "Dilnoza Sattorova",
-    phone_number: "+998 99 678 90 12",
-    candidate_type: "Kelin",
-    region_name: "Buxoro",
-    district_name: "G'ijduvon",
-    role_name: "Nomzod",
-    auth_provider: "Telegram",
-    completion_percentage: 83,
-    status: "Tasdiqlangan",
-    is_verified: true,
-    is_blocked: false,
-    created_at: "2026-05-21T13:57:00",
-    updated_at: "2026-06-29T10:05:00",
-  },
-  {
-    id: "10688",
-    display_id: "USR-10688",
-    full_name: "Sevinch Toshpo'latova",
-    phone_number: "+998 90 789 01 23",
-    candidate_type: "Kelin",
-    region_name: "Namangan",
-    district_name: "Namangan sh.",
-    role_name: "Nomzod",
-    auth_provider: "Vakil orqali",
-    completion_percentage: 30,
-    status: "Anketa to'liq emas",
-    is_verified: false,
-    is_blocked: false,
-    created_at: "2026-06-09T08:19:00",
-    updated_at: "2026-06-21T12:54:00",
-  },
-];
 
 const UsersPage = () => {
   const navigate = useNavigate();
@@ -255,7 +135,7 @@ const UsersPage = () => {
       const data = response.data?.data ?? response.data;
 
       if (response.data?.success !== false && data) {
-        const results = Array.isArray(data.results) ? data.results : Array.isArray(data) ? data : [];
+        const results: UserResult[] = Array.isArray(data.results) ? data.results : Array.isArray(data) ? data : [];
 
         // If backend returned results
         if (results.length > 0 || pageNumber > 1) {
@@ -263,137 +143,18 @@ const UsersPage = () => {
             setUsers(results);
           } else {
             setUsers((prev) => {
-              const existingIds = new Set(prev.map((u) => u.id));
+              const existingIds = new Set(prev.map((u: UserResult) => u.id));
               const newResults = results.filter((u: UserResult) => !existingIds.has(u.id));
               return [...prev, ...newResults];
             });
           }
           setHasMore(data.next !== null && results.length > 0);
-        } else {
-          // If empty search/filter on mock mode, filter sample users
-          let filtered = [...SAMPLE_USERS];
-          if (debouncedSearch) {
-            const q = debouncedSearch.toLowerCase();
-            filtered = filtered.filter(
-              (u) =>
-                u.full_name?.toLowerCase().includes(q) ||
-                u.display_id?.toLowerCase().includes(q) ||
-                u.phone_number?.toLowerCase().includes(q) ||
-                u.region_name?.toLowerCase().includes(q) ||
-                u.district_name?.toLowerCase().includes(q)
-            );
-          }
-          if (appliedFilters.region) {
-            const reg = appliedFilters.region.toLowerCase();
-            filtered = filtered.filter(
-              (u) =>
-                u.region_name?.toLowerCase() === reg ||
-                String(u.profile_info?.region_info?.id) === appliedFilters.region ||
-                u.profile_info?.region_info?.name?.toLowerCase() === reg
-            );
-          }
-          if (appliedFilters.district) {
-            const dist = appliedFilters.district.toLowerCase();
-            filtered = filtered.filter(
-              (u) =>
-                u.district_name?.toLowerCase() === dist ||
-                String(u.profile_info?.district_info?.id) === appliedFilters.district ||
-                u.profile_info?.district_info?.name?.toLowerCase() === dist
-            );
-          }
-          if (appliedFilters.candidate_type) {
-            filtered = filtered.filter(
-              (u) =>
-                (u.candidate_type || u.profile_info?.candidate_type)?.toLowerCase() ===
-                appliedFilters.candidate_type?.toLowerCase()
-            );
-          }
-          if (appliedFilters.auth_provider) {
-            filtered = filtered.filter((u) =>
-              (u.auth_provider || u.registered_method || "")
-                .toLowerCase()
-                .includes(appliedFilters.auth_provider!.toLowerCase())
-            );
-          }
-          if (appliedFilters.role) {
-            const roleVal = appliedFilters.role.toLowerCase();
-            filtered = filtered.filter(
-              (u) =>
-                u.role_name?.toLowerCase() === roleVal ||
-                String(u.role_info?.id) === appliedFilters.role ||
-                u.role_info?.name?.toLowerCase() === roleVal
-            );
-          }
-          if (appliedFilters.status) {
-            filtered = filtered.filter((u) => u.status === appliedFilters.status);
-          }
-          setUsers(filtered);
-          setHasMore(false);
         }
       } else {
         throw new Error(response.data?.error || "Foydalanuvchilarni yuklashda xatolik yuz berdi");
       }
     } catch (err: any) {
       console.warn("Users fetch notice (falling back to sample dataset if empty):", err);
-      // Fallback to demo sample dataset
-      let filtered = [...SAMPLE_USERS];
-      if (debouncedSearch) {
-        const q = debouncedSearch.toLowerCase();
-        filtered = filtered.filter(
-          (u) =>
-            u.full_name?.toLowerCase().includes(q) ||
-            u.display_id?.toLowerCase().includes(q) ||
-            u.phone_number?.toLowerCase().includes(q) ||
-            u.region_name?.toLowerCase().includes(q) ||
-            u.district_name?.toLowerCase().includes(q)
-        );
-      }
-      if (appliedFilters.region) {
-        const reg = appliedFilters.region.toLowerCase();
-        filtered = filtered.filter(
-          (u) =>
-            u.region_name?.toLowerCase() === reg ||
-            String(u.profile_info?.region_info?.id) === appliedFilters.region ||
-            u.profile_info?.region_info?.name?.toLowerCase() === reg
-        );
-      }
-      if (appliedFilters.district) {
-        const dist = appliedFilters.district.toLowerCase();
-        filtered = filtered.filter(
-          (u) =>
-            u.district_name?.toLowerCase() === dist ||
-            String(u.profile_info?.district_info?.id) === appliedFilters.district ||
-            u.profile_info?.district_info?.name?.toLowerCase() === dist
-        );
-      }
-      if (appliedFilters.candidate_type) {
-        filtered = filtered.filter(
-          (u) =>
-            (u.candidate_type || u.profile_info?.candidate_type)?.toLowerCase() ===
-            appliedFilters.candidate_type?.toLowerCase()
-        );
-      }
-      if (appliedFilters.auth_provider) {
-        filtered = filtered.filter((u) =>
-          (u.auth_provider || u.registered_method || "")
-            .toLowerCase()
-            .includes(appliedFilters.auth_provider!.toLowerCase())
-        );
-      }
-      if (appliedFilters.role) {
-        const roleVal = appliedFilters.role.toLowerCase();
-        filtered = filtered.filter(
-          (u) =>
-            u.role_name?.toLowerCase() === roleVal ||
-            String(u.role_info?.id) === appliedFilters.role ||
-            u.role_info?.name?.toLowerCase() === roleVal
-        );
-      }
-      if (appliedFilters.status) {
-        filtered = filtered.filter((u) => u.status === appliedFilters.status);
-      }
-      setUsers(filtered);
-      setHasMore(false);
     } finally {
       setLoading(false);
       setLoadingMore(false);
@@ -625,7 +386,7 @@ const UsersPage = () => {
             <tbody className="divide-y divide-[#F5F5F5] dark:divide-[#262626]">
               {loading && page === 1 ? (
                 // Shimmer loading skeletons
-                Array.from({ length: 8 }).map((_, i) => (
+                Array.from({ length: 10 }).map((_, i) => (
                   <tr key={i} className="animate-pulse">
                     <td className="py-4 pl-6 pr-2">
                       <div className="w-4 h-4 bg-gray-200 dark:bg-zinc-800 rounded" />
@@ -721,14 +482,11 @@ const UsersPage = () => {
                   const registeredMethod = formatAuthProvider(
                     user.auth_provider || user.registered_method
                   );
-                  const completion = user.completion_percentage ?? 0;
+                  const completion = user.questionnaire_percent ?? 0;
                   const createdAt = formatDateTime(user.created_at);
                   const updatedAt = formatDateTime(user.updated_at || user.created_at);
                   const avatarImage =
-                    user.avatar ||
-                    user.avatar_url ||
-                    user.profile_info?.photos_info?.find((p) => p.is_main)?.image ||
-                    user.profile_info?.photos_info?.[0]?.image;
+                    user.main_photo || "";
                   const initials = getInitials(fullName, user.phone_number);
 
                   return (
