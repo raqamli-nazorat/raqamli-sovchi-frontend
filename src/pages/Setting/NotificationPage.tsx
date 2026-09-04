@@ -16,7 +16,6 @@ import { useHeader } from "../../components/Layout/Layout";
 import type { AppDispatch, RootState } from "../../store";
 import {
     fetchNotifications,
-    fetchUnreadCount,
     markAllNotificationsRead,
     markNotificationRead,
     resetNotifications,
@@ -103,10 +102,12 @@ const NotificationPage = () => {
         setHeaderSubtitle("Platforma bildirishnomalari");
     }, [setHeaderTitle, setHeaderSubtitle]);
 
+    // count/ SO'RALMAYDI: unreadCount Navbar'dagi useNotificationsRealtime orqali
+    // allaqachon Redux'da bor (mount + WS push bilan tirik saqlanadi) — bu sahifa
+    // Layout'ning ichki route'i, Navbar undan OLDIN mount bo'ladi.
     useEffect(() => {
         dispatch(resetNotifications());
         dispatch(fetchNotifications({ page: 1 }));
-        dispatch(fetchUnreadCount());
     }, [dispatch]);
 
     // Ro'yxat allaqachon server tomonida filtrlangan (?is_read=false) — client-side filtr YO'Q.
@@ -125,18 +126,21 @@ const NotificationPage = () => {
     }, [items]);
 
     // Har tab bosilganda API'ga so'rov ketadi (bir xil tab qayta bosilsa ham).
+    // count/ SHART EMAS: "unread" tab uchun fetchNotifications({isRead:false})ning
+    // o'zi paginatsiya count'idan unreadCount'ni aniq qiladi (extraReducers'da).
     const loadTab = (t: "all" | "unread") => {
         setTab(t);
         dispatch(resetNotifications());
         dispatch(fetchNotifications({ page: 1, isRead: t === "unread" ? false : undefined }));
-        dispatch(fetchUnreadCount());
     };
 
     const reload = () => loadTab(tab);
 
-    // O'qilgan/hammasini o'qilgan amalidan keyin joriy ro'yxatni va sonni qayta yuklaymiz.
-    const afterMutation = () => {
-        dispatch(fetchUnreadCount());
+    // "Hammasini o'qilgan" — o'nlab qatorga tegadi, shuning uchun serverdan qayta
+    // yuklaymiz. count/ shart emas: markAllNotificationsRead.fulfilled unreadCount'ni
+    // 0'ga allaqachon o'rnatadi. Bitta qatorni o'qilgan qilishda esa optimistik reducer
+    // yetarli (ro'yxat joyida qoladi, yuklangan sahifalar yo'qolmaydi).
+    const afterMarkAll = () => {
         dispatch(resetNotifications());
         dispatch(fetchNotifications({ page: 1, isRead: tab === "unread" ? false : undefined }));
     };
@@ -168,7 +172,7 @@ const NotificationPage = () => {
                 {unreadCount > 0 && (
                     <button
                         onClick={() => {
-                            dispatch(markAllNotificationsRead()).finally(afterMutation);
+                            dispatch(markAllNotificationsRead()).finally(afterMarkAll);
                         }}
                         disabled={markingAll}
                         className="text-[13px] font-medium text-[#0474F3] hover:text-[#023399] disabled:opacity-50 transition-colors cursor-pointer whitespace-nowrap"
@@ -228,7 +232,7 @@ const NotificationPage = () => {
                                         notif={notif}
                                         onRead={() => {
                                             if (notif.is_read) return;
-                                            dispatch(markNotificationRead(notif.id)).finally(afterMutation);
+                                            dispatch(markNotificationRead(notif.id));
                                         }}
                                     />
                                 ))}

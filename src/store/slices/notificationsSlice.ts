@@ -1,4 +1,5 @@
 import { createAsyncThunk, createSlice, type PayloadAction } from "@reduxjs/toolkit";
+import axios from "axios";
 import {
   notificationsApi,
   type NotificationItem,
@@ -22,6 +23,9 @@ interface NotificationsState {
   filter: "all" | "unread";
   // real-time WebSocket holati
   wsStatus: WsStatus;
+  // WS orqali endi kelgan, hali ko'rsatilmagan popup-toastlar navbati
+  // (tab faol/fon bo'lishidan qat'i nazar — bildirishnoma DARHOL ko'rinishi uchun)
+  toastQueue: NotificationItem[];
 }
 
 const initialState: NotificationsState = {
@@ -37,12 +41,21 @@ const initialState: NotificationsState = {
   markingAll: false,
   filter: "all",
   wsStatus: "CLOSED",
+  toastQueue: [],
 };
 
 // WS/push payloadidan Notification obyektini normallashtirish.
 // Backend turli shakl yuborishi mumkin: tekis obyekt, {type,data:{...}}, {notification:{...}} va h.k.
 type AnyObj = Record<string, unknown>;
 const isObj = (v: unknown): v is AnyObj => !!v && typeof v === "object";
+
+// YAGONA DEDUP DARVOZASI (modul darajasida, Redux state emas — shu sabab reduxda
+// serializatsiya ogohlantirishi yo'q, useNotificationsRealtime'dagi shownDesktopIds
+// bilan bir xil naqsh): WS uzilib qayta ulanganda backend o'qilmagan bildirishnomalarni
+// QAYTA yuborishi mumkin. Agar dedup faqat `state.items` bo'yicha bo'lsa — foydalanuvchi
+// hali ro'yxatni ochmagan bo'lsa (items bo'sh) — har reconnectda son cheksiz oshib ketardi.
+// Haqiqiy `id`ga ega har bir xabar shu sessiyada FAQAT bir marta hisoblanadi.
+const seenNotificationIds = new Set<string>();
 
 const normalizeIncoming = (raw: unknown): NotificationItem | null => {
   let n: AnyObj | null = isObj(raw) ? raw : null;
@@ -93,7 +106,15 @@ export const fetchNotifications = createAsyncThunk(
 export const markNotificationRead = createAsyncThunk(
   "notifications/markNotificationRead",
   async (id: string) => {
-    await notificationsApi.markRead(id);
+    try {
+      await notificationsApi.markRead(id);
+    } catch (err) {
+      // 400/404 — "allaqachon o'qilgan / topilmadi": yakuniy holat baribir "o'qilgan",
+      // shuning uchun bu xato emas — optimistik holatni rollback QILMAYMIZ.
+      const status = axios.isAxiosError(err) ? err.response?.status : undefined;
+      if (status === 400 || status === 404) return id;
+      throw err; // tarmoq / 5xx — haqiqiy xato, .rejected optimistik holatni qaytaradi
+    }
     return id;
   }
 );
@@ -120,6 +141,13 @@ const notificationsSlice = createSlice({
     notificationReceived: (state, { payload }: PayloadAction<unknown>) => {
       const n = normalizeIncoming(payload);
       if (!n) return;
+      // Reconnect'da backend qayta yuborgan (haqiqiy id'li) xabar — shu sessiyada
+      // avval ko'rilgan bo'lsa hisobga qo'shilmaydi. `items` bo'sh bo'lsa ham ishlaydi.
+      const hasRealId = !n.id.startsWith("tmp-");
+      if (hasRealId) {
+        if (seenNotificationIds.has(n.id)) return;
+        seenNotificationIds.add(n.id);
+      }
       const dup = state.items.some((it) => it.id === n.id);
       if (dup) return;
       // Joriy ro'yxat filtriga mos kelsa — boshiga qo'shamiz
@@ -128,6 +156,16 @@ const notificationsSlice = createSlice({
       }
       state.total += 1;
       if (!n.is_read) state.unreadCount += 1;
+      // Tab fon/faolligidan qat'i nazar DARHOL ko'rinadigan popup — oxirgi 4 tasi yetarli.
+      if (!n.is_read) {
+        state.toastQueue.push(n);
+        if (state.toastQueue.length > 4) state.toastQueue.shift();
+      }
+    },
+
+    // Toast ko'rsatilib bo'lgach (avto-yopilish yoki qo'lda yopish) navbatdan olib tashlanadi.
+    dismissToast: (state, { payload }: PayloadAction<string>) => {
+      state.toastQueue = state.toastQueue.filter((n) => n.id !== payload);
     },
 
     setWsStatus: (state, { payload }: PayloadAction<WsStatus>) => {
@@ -191,6 +229,14 @@ const notificationsSlice = createSlice({
           state.unreadCount = Math.max(0, state.unreadCount - 1);
         }
       })
+      // So'rov muvaffaqiyatsiz bo'lsa — optimistik o'zgarishni qaytaramiz.
+      .addCase(markNotificationRead.rejected, (state, { meta }) => {
+        const item = state.items.find((n) => n.id === meta.arg);
+        if (item && item.is_read) {
+          item.is_read = false;
+          state.unreadCount += 1;
+        }
+      })
 
       // ── hammasini o'qilgan ──
       .addCase(markAllNotificationsRead.pending, (state) => {
@@ -209,7 +255,7 @@ const notificationsSlice = createSlice({
   },
 });
 
-export const { resetNotifications, notificationReceived, setWsStatus } =
+export const { resetNotifications, notificationReceived, dismissToast, setWsStatus } =
   notificationsSlice.actions;
 
 export default notificationsSlice.reducer;

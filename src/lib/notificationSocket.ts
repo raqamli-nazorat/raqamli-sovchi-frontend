@@ -15,6 +15,11 @@ class NotificationSocket {
   private manuallyClosed = false;
   private reconnectAttempts = 0;
   private readonly maxReconnectAttempts = 6;
+  // retryNow() ni cheklash uchun — oxirgi ulanish urinishi vaqti.
+  // WS umuman ishlamasa (proxy Upgrade'ni uzatmasa), foydalanuvchi tab almashtirgan
+  // sayin retryNow() 6 tadan reconnect + 6 ta tickets/ so'rovini qo'zg'atardi.
+  private lastConnectAttemptAt = 0;
+  private readonly retryCooldownMs = 30_000;
   // eskirgan ulanish callbacklarini e'tiborsiz qoldirish uchun
   private connectionId = 0;
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
@@ -49,6 +54,7 @@ class NotificationSocket {
 
   private initialize() {
     const activeId = ++this.connectionId;
+    this.lastConnectAttemptAt = Date.now();
     try {
       this.socket = new WebSocket(this.url);
     } catch {
@@ -121,11 +127,16 @@ class NotificationSocket {
   }
 
   // Tashqaridan majburan qayta ulanish (masalan tab qayta faollashganda).
+  // `retryCooldownMs` ichida takror chaqirilsa e'tiborsiz qoldiriladi — aks holda
+  // WS ishlamayotganda har tab almashtirish backendga so'rov yog'dirardi.
   retryNow() {
     if (this.status === "OPEN" || this.status === "CONNECTING") return;
+    if (Date.now() - this.lastConnectAttemptAt < this.retryCooldownMs) return;
     this.manuallyClosed = false;
-    this.reconnectAttempts = 0;
     if (this.reconnectTimer) clearTimeout(this.reconnectTimer);
+    // Urinishlar maksimumga yetgan bo'lsa — hisobni nollamaymiz: bu bitta sinov
+    // urinishi bo'lib qoladi, muvaffaqiyatsiz bo'lsa reconnect() darhol to'xtaydi.
+    if (this.reconnectAttempts < this.maxReconnectAttempts) this.reconnectAttempts = 0;
     if (this.url) this.initialize();
   }
 
