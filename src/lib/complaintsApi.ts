@@ -91,6 +91,7 @@ export interface ComplaintDetail {
   status: ComplaintStatus | string;
   status_label?: string;
   action?: string | null;
+  enforcement_action?: string | null;
   admin_note?: string | null;
   resolved_at?: string | null;
   conversation_excerpt?: any;
@@ -110,6 +111,7 @@ export interface ComplaintDetail {
 
 export interface ComplaintDecisionRequest {
   decision: "approved" | "rejected";
+  enforcement_action?: "warn" | "block" | string | null;
   action?: string | null;
   admin_note?: string | null;
 }
@@ -119,6 +121,7 @@ export interface ComplaintDecision {
   status: ComplaintStatus | string;
   status_label: string;
   action?: string | null;
+  enforcement_action?: string | null;
   admin_note?: string | null;
   resolved_at?: string | null;
   updated_at: string;
