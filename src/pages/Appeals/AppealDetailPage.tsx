@@ -45,6 +45,8 @@ const AppealDetailPage = () => {
   const [decisionError, setDecisionError] = useState<string | null>(null);
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [rejectReasonText, setRejectReasonText] = useState("");
+  const [showApproveModal, setShowApproveModal] = useState(false);
+  const [selectedAction, setSelectedAction] = useState<"warning" | "block" | null>(null);
 
   const fetchComplaintDetail = useCallback(async () => {
     if (!id) return;
@@ -69,34 +71,49 @@ const AppealDetailPage = () => {
     fetchComplaintDetail();
   }, [fetchComplaintDetail]);
 
-  // Handle Approve
-  const handleApprove = async () => {
-    if (!id || decisionLoading) return;
+  // Handle Approve Modal Open
+  const handleOpenApproveModal = () => {
+    setSelectedAction(null);
+    setShowApproveModal(true);
+  };
+
+  // Handle Approve Confirm
+  const handleConfirmApprove = async () => {
+    if (!id || !selectedAction || decisionLoading) return;
     setDecisionLoading(true);
     setDecisionError(null);
+    const actionLabel =
+      selectedAction === "block" ? "Profil bloklandi" : "Ogohlantirish yuborildi";
     try {
-      const res = await complaintsApi.decision(id, { decision: "approved" });
+      const res = await complaintsApi.decision(id, {
+        decision: "approved",
+        action: selectedAction,
+        admin_note: actionLabel,
+      });
       setComplaint((prev) =>
         prev
           ? {
             ...prev,
             status: "approved",
             status_label: "Tasdiqlandi",
+            action: actionLabel,
             resolved_at: res.resolved_at || new Date().toISOString(),
             resolved_by_info: res.resolved_by_info || prev.resolved_by_info,
-            admin_note: res.admin_note ?? prev.admin_note,
+            admin_note: res.admin_note ?? actionLabel,
           }
           : prev
       );
       dispatch(
         approveAppeal({
           id,
+          action: actionLabel,
           moderator: res.resolved_by_info?.full_name || "Admin",
           resolvedAt: res.resolved_at
             ? dayjs(res.resolved_at).format("DD.MM.YYYY HH:mm")
             : dayjs().format("DD.MM.YYYY HH:mm"),
         })
       );
+      setShowApproveModal(false);
     } catch (err: any) {
       const apiErr =
         err.response?.data?.error?.errorMsg ||
@@ -482,14 +499,10 @@ const AppealDetailPage = () => {
                 {/* Actions */}
                 <div className="space-y-2.5 mt-3.5">
                   <button
-                    onClick={handleApprove}
+                    onClick={handleOpenApproveModal}
                     className="w-full py-2.5 px-4 bg-[#0474F3] hover:bg-[#0360cb] active:scale-[0.99] text-white text-[13px] font-semibold rounded-lg flex items-center gap-2 transition-all cursor-pointer shadow-xs"
                   >
-                    {decisionLoading ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <Check className="w-4 h-4 stroke-[2.5]" />
-                    )}
+                    <Check className="w-4 h-4 stroke-[2.5]" />
                     <span>Tasdiqlash</span>
                   </button>
 
@@ -517,7 +530,7 @@ const AppealDetailPage = () => {
                   <span className="text-[12px] font-medium text-[#737373] dark:text-[#a3a3a3]">
                     Holati
                   </span>
-                  <span className="bg-[#FFF0F0] dark:bg-red-950/40 text-[#E11D48] dark:text-red-400 font-medium text-[12px] px-3 py-1 rounded-full">
+                  <span className="bg-[#FEF2F2] dark:bg-red-950/40 text-[#7F1D1D] dark:text-red-400 font-semibold text-[11px] px-3 py-1 rounded-full">
                     {complaint.status_label || "Bekor qilindi"}
                   </span>
                 </div>
@@ -547,13 +560,30 @@ const AppealDetailPage = () => {
               </div>
             ) : (
               /* State: Approved */
-              <div className="space-y-3">
+              <div className="space-y-3.5">
                 <div className="flex items-center justify-between">
                   <span className="text-[12px] font-medium text-[#737373] dark:text-[#a3a3a3]">
                     Holati
                   </span>
-                  <span className="bg-[#E6F9F0] dark:bg-[#103020] text-[#00A854] dark:text-[#2ee088] font-medium text-[12px] px-3 py-1 rounded-full">
+                  <span className="bg-[#ECFDF5] dark:bg-[#103020] text-[#047857] dark:text-[#2ee088] font-medium text-[12px] px-3 py-0.5 rounded-full">
                     {complaint.status_label || "Tasdiqlandi"}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between text-[12px]">
+                  <span className="text-[#737373] dark:text-[#a3a3a3]">Chora</span>
+                  <span
+                    className={`font-semibold ${(complaint.action || complaint.admin_note || "").includes("ogohlantirish") ||
+                        (complaint.action || complaint.admin_note || "").includes("Ogohlantirish")
+                        ? "text-[#92400E] dark:text-amber-400"
+                        : "text-[#7F1D1D] dark:text-red-400"
+                      }`}
+                  >
+                    {complaint.action ||
+                      (complaint.admin_note?.includes("ogohlantirish") ||
+                        complaint.admin_note?.includes("Ogohlantirish")
+                        ? "Ogohlantirish yuborildi"
+                        : "Profil bloklandi")}
                   </span>
                 </div>
 
@@ -569,13 +599,6 @@ const AppealDetailPage = () => {
                   <span className="font-bold text-[#0A0A0A] dark:text-[#fafafa]">
                     {resolvedDate}
                   </span>
-                </div>
-
-                <div className="pt-2 border-t border-[#f0f0f0] dark:border-[#262626]">
-                  <p className="text-[12px] text-[#00A854] dark:text-[#2ee088] leading-relaxed font-medium">
-                    {complaint.admin_note ||
-                      "Shikoyat tasdiqlandi va profilga nisbatan qoidabuzarlik choralari qo'llanildi."}
-                  </p>
                 </div>
               </div>
             )}
@@ -628,6 +651,132 @@ const AppealDetailPage = () => {
           </div>
         </div>
       </div>
+
+      {/* ── Shikoyatni tasdiqlash Modali ── */}
+      {showApproveModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
+          <div className="w-full max-w-[520px] bg-white dark:bg-[#141414] rounded-2xl border border-[#e5e5e5] dark:border-[#262626] p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+            {/* Header */}
+            <div className="flex items-center justify-between">
+              <h3 className="text-[18px] font-bold text-[#0A0A0A] dark:text-[#fafafa]">
+                Shikoyatni tasdiqlash
+              </h3>
+              <button
+                onClick={() => setShowApproveModal(false)}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-zinc-200 transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Description */}
+            <p className="text-[13px] text-[#737373] dark:text-[#a3a3a3] mt-2 leading-relaxed">
+              Shikoyat tasdiqlansa, qoidabuzarlik qayd etiladi. Qaysi chora ko'rilishini tanlang.
+            </p>
+
+            {/* Form */}
+            <div className="mt-4">
+              <label className="text-[13px] font-semibold text-[#0A0A0A] dark:text-[#fafafa] block mb-3">
+                Chora
+              </label>
+
+              <div className="space-y-3">
+                {/* Ogohlantirish yuborish */}
+                <div
+                  onClick={() => setSelectedAction("warning")}
+                  className={`p-4 rounded-2xl border-2 transition-colors cursor-pointer flex items-start gap-3.5 ${selectedAction === "warning"
+                      ? "border-[#0474F3] bg-white dark:bg-[#141414]"
+                      : "border-[#e5e5e5] dark:border-[#262626] bg-white dark:bg-[#141414] hover:border-gray-300 dark:hover:border-zinc-700"
+                    }`}
+                >
+                  <div className="mt-0.5 shrink-0">
+                    {selectedAction === "warning" ? (
+                      <div className="w-5 h-5 rounded-full border-2 border-[#0474F3] flex items-center justify-center">
+                        <div className="w-2.5 h-2.5 rounded-full bg-[#0474F3]" />
+                      </div>
+                    ) : (
+                      <div className="w-5 h-5 rounded-full border-2 border-[#d4d4d4] dark:border-zinc-600" />
+                    )}
+                  </div>
+                  <div>
+                    <h4 className="text-[13px] font-semibold text-[#0A0A0A] dark:text-[#fafafa] leading-snug">
+                      Ogohlantirish yuborish
+                    </h4>
+                    <p className="text-[12px] text-[#737373] dark:text-[#a3a3a3] mt-1 leading-normal">
+                      Foydalanuvchiga ogohlantirish boradi, profil ochiq qoladi.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Profilni bloklash */}
+                <div
+                  onClick={() => setSelectedAction("block")}
+                  className={`p-4 rounded-2xl border-2 transition-colors cursor-pointer flex items-start gap-3.5 ${selectedAction === "block"
+                      ? "border-[#0474F3] bg-white dark:bg-[#141414]"
+                      : "border-[#e5e5e5] dark:border-[#262626] bg-white dark:bg-[#141414] hover:border-gray-300 dark:hover:border-zinc-700"
+                    }`}
+                >
+                  <div className="mt-0.5 shrink-0">
+                    {selectedAction === "block" ? (
+                      <div className="w-5 h-5 rounded-full border-2 border-[#0474F3] flex items-center justify-center">
+                        <div className="w-2.5 h-2.5 rounded-full bg-[#0474F3]" />
+                      </div>
+                    ) : (
+                      <div className="w-5 h-5 rounded-full border-2 border-[#d4d4d4] dark:border-zinc-600" />
+                    )}
+                  </div>
+                  <div>
+                    <h4 className="text-[13px] font-semibold text-[#0A0A0A] dark:text-[#fafafa] leading-snug">
+                      Profilni bloklash
+                    </h4>
+                    <p className="text-[12px] text-[#737373] dark:text-[#a3a3a3] mt-1 leading-normal">
+                      Profil yopiladi, foydalanuvchi tizimga kira olmaydi.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex items-center justify-end gap-2.5 mt-6">
+              <button
+                type="button"
+                onClick={() => setShowApproveModal(false)}
+                disabled={decisionLoading}
+                className="px-4 py-2 bg-white dark:bg-zinc-900 border border-[#e5e5e5] dark:border-[#262626] rounded-lg text-[13px] font-medium text-[#0A0A0A] dark:text-[#e5e5e5] hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer flex items-center gap-1.5"
+              >
+                <X className="w-4 h-4 text-[#0A0A0A] dark:text-white" />
+                <span>Ortga</span>
+              </button>
+
+              {selectedAction ? (
+                <button
+                  type="button"
+                  onClick={handleConfirmApprove}
+                  disabled={decisionLoading}
+                  className="px-4 py-2 bg-[#0474F3] hover:bg-[#0360cb] text-white rounded-lg text-[13px] font-medium flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+                >
+                  {decisionLoading ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Check className="w-4 h-4 stroke-[2.5]" />
+                  )}
+                  <span>Tasdiqlash</span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  disabled
+                  className="px-4 py-2 bg-white dark:bg-zinc-900 border border-[#e5e5e5] dark:border-[#262626] rounded-lg text-[13px] font-medium text-[#a3a3a3] dark:text-zinc-500 cursor-not-allowed flex items-center gap-1.5"
+                >
+                  <Check className="w-4 h-4 stroke-[#a3a3a3] stroke-[2.5]" />
+                  <span>Tasdiqlash</span>
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Shikoyatni bekor qilish Modali ── */}
       {showRejectModal && (
