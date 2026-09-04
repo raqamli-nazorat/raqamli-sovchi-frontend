@@ -17,13 +17,11 @@ const WS_BASE = (import.meta.env.VITE_BASE_URL || "")
 // To'liq WS URL'ni .env orqali ham berish mumkin (ticket avtomatik qo'shiladi)
 const WS_PATH = import.meta.env.VITE_NOTIF_WS_URL || `${WS_BASE}/ws/notifications/`;
 
-// Django Channels AllowedHostsOriginValidator localhost'ni rad etadi ("403 Access denied").
-// Shu sabab dev (localhost) da WS'ni o'tkazib yuboramiz — .env'da VITE_ENABLE_WS="true"
-// bilan majburan yoqish mumkin. Production domenda avtomatik yoqiladi.
-const IS_LOCALHOST =
-  typeof window !== "undefined" &&
-  /^(localhost|127\.0\.0\.1|\[::1\])$/.test(window.location.hostname);
-const WS_ENABLED = import.meta.env.VITE_ENABLE_WS === "true" || !IS_LOCALHOST;
+// WS backend hozircha tayyor emas — har ulanish "failed" bo'lib, konsolni to'ldiryapti
+// va tickets/ endpointiga keraksiz so'rov ketyapti. Shu sabab WS (va ticket olish)
+// vaqtinchalik butunlay o'chirilgan; kerak bo'lganda .env'da VITE_ENABLE_WS="true"
+// bilan qayta yoqiladi.
+const WS_ENABLED = import.meta.env.VITE_ENABLE_WS === "true";
 
 // tab qayta faollashganda count resync — 60s'da eng ko'pi 1 marta
 const COUNT_RESYNC_THROTTLE_MS = 60_000;
