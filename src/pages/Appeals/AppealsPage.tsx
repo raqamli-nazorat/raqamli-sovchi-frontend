@@ -216,7 +216,7 @@ const AppealsPage = () => {
           }`}
         >
           <SlidersHorizontal className="w-4 h-4" />
-          <span>Filter</span>
+          <span>Filtr</span>
           {activeFiltersCount > 0 && (
             <span className="w-5 h-5 rounded-full bg-[#0474F3] text-white text-[10px] flex items-center justify-center font-bold">
               {activeFiltersCount}

@@ -66,7 +66,8 @@ const UsersPage = () => {
     }, 1500);
   };
 
-  const observerTarget = useRef<HTMLDivElement>(null);
+  const tableContainerRef = useRef<HTMLDivElement>(null);
+  const isFetchingRef = useRef(false);
 
   // Sync search state with debounced search
   useEffect(() => {
@@ -94,6 +95,9 @@ const UsersPage = () => {
 
   // Fetch Users data
   const fetchUsers = async (pageNumber: number, isInitial: boolean = false) => {
+    if (isFetchingRef.current && !isInitial) return;
+    isFetchingRef.current = true;
+
     if (isInitial) {
       setLoading(true);
       setError(null);
@@ -158,12 +162,16 @@ const UsersPage = () => {
     } finally {
       setLoading(false);
       setLoadingMore(false);
+      isFetchingRef.current = false;
     }
   };
 
   // Trigger search / filter changes
   useEffect(() => {
     setPage(1);
+    if (tableContainerRef.current) {
+      tableContainerRef.current.scrollTop = 0;
+    }
     fetchUsers(1, true);
   }, [debouncedSearch, appliedFilters]);
 
@@ -174,25 +182,17 @@ const UsersPage = () => {
     }
   }, [page]);
 
-  // Infinite Scroll IntersectionObserver
-  useEffect(() => {
-    const target = observerTarget.current;
-    if (!target || !hasMore || loading || loadingMore) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && !loading && !loadingMore && hasMore) {
-          setPage((prev) => prev + 1);
-        }
-      },
-      { threshold: 0.1 }
-    );
-
-    observer.observe(target);
-    return () => {
-      if (target) observer.unobserve(target);
-    };
-  }, [hasMore, loading, loadingMore]);
+  // Scroll handler for Infinite Scroll Pagination
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const container = e.currentTarget;
+    if (loading || loadingMore || !hasMore || isFetchingRef.current) return;
+    const threshold = 100;
+    const isNearBottom =
+      container.scrollHeight - container.scrollTop - container.clientHeight < threshold;
+    if (isNearBottom) {
+      setPage((prev) => prev + 1);
+    }
+  };
 
   // Generate initials for profile avatar fallback
   const getInitials = (fullName?: string | null, phone?: string) => {
@@ -351,7 +351,7 @@ const UsersPage = () => {
           }`}
         >
           <SlidersHorizontal size={16} className="stroke-[2]" />
-          <span>Filter</span>
+          <span>Filtr</span>
           {activeFiltersCount > 0 && (
             <span className="flex items-center justify-center min-w-[18px] h-[18px] px-1 bg-[#0474F3] text-white text-[10px] font-bold rounded-full">
               {activeFiltersCount}
@@ -361,7 +361,11 @@ const UsersPage = () => {
       </div>
 
       {/* Users Table Card */}
-      <div className="bg-white dark:bg-[#141414] overflow-auto max-h-[calc(100vh-130px)]">
+      <div
+        ref={tableContainerRef}
+        onScroll={handleScroll}
+        className="bg-white dark:bg-[#141414] overflow-auto max-h-[calc(100vh-130px)]"
+      >
           <table className="w-full text-left border-collapse min-w-max">
             {/* Table Header */}
             <thead className="sticky top-0 z-10 bg-[#fafafa] dark:bg-[#141414]">
@@ -611,12 +615,10 @@ const UsersPage = () => {
             </tbody>
           </table>
 
-        {/* Observer Trigger for Infinite Scroll */}
-        {hasMore && !loading && (
-          <div ref={observerTarget} className="h-10 w-full flex items-center justify-center py-6">
-            {loadingMore && (
-              <div className="w-5 h-5 border-2 border-[#0474F3] border-t-transparent rounded-full animate-spin" />
-            )}
+        {/* Loading More Spinner */}
+        {loadingMore && (
+          <div className="h-10 w-full flex items-center justify-center py-6">
+            <div className="w-5 h-5 border-2 border-[#0474F3] border-t-transparent rounded-full animate-spin" />
           </div>
         )}
       </div>

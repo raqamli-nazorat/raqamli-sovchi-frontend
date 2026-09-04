@@ -287,23 +287,12 @@ const AppealDetailPage = () => {
   return (
     <div className="p-4 space-y-4">
       {/* ── Orqaga qaytish ── */}
-      <div className="flex items-center justify-between">
-        <button
-          onClick={() => navigate("/appeals")}
-          className="flex items-center gap-1.5 text-[12px] font-medium text-[#737373] hover:text-[#0A0A0A] dark:text-[#a3a3a3] dark:hover:text-white transition-colors cursor-pointer"
-        >
-          <ChevronLeft className="w-4 h-4" />
-          <span>Shikoyatlar ro'yxatiga qaytish</span>
-        </button>
-
-        {/* Action Error message */}
-        {decisionError && (
-          <div className="flex items-center gap-2 text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40 px-3 py-1.5 rounded-lg">
-            <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-            <span>{decisionError}</span>
-          </div>
-        )}
-      </div>
+      {decisionError && (
+        <div className="flex items-center gap-2 text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40 px-3 py-1.5 rounded-lg">
+          <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+          <span>{decisionError}</span>
+        </div>
+      )}
 
       {/* ── Main 2-Column Grid ── */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
@@ -317,7 +306,7 @@ const AppealDetailPage = () => {
                 <div
                   onClick={() =>
                     complaint.from_user_info?.id &&
-                    navigate(`/users/details/${complaint.from_user_info.id}`)
+                    window.open(`/users/details/${complaint.from_user_info.id}`, '_blank')
                   }
                   className="flex items-center gap-3 cursor-pointer group"
                 >
@@ -343,7 +332,7 @@ const AppealDetailPage = () => {
                 <div
                   onClick={() =>
                     complaint.to_user_info?.id &&
-                    navigate(`/users/details/${complaint.to_user_info.id}`)
+                    window.open(`/users/details/${complaint.to_user_info.id}`, '_blank')
                   }
                   className="flex items-center gap-3 cursor-pointer group"
                 >
@@ -396,14 +385,14 @@ const AppealDetailPage = () => {
                     >
                       <div
                         className={`max-w-[85%] sm:max-w-[70%] rounded-2xl px-4 py-3 ${msg.flagged
-                            ? "bg-[#FEF2F2] dark:bg-red-950/20 border border-[#FCA5A5] dark:border-red-900/40"
-                            : "bg-[#F5F5F5] dark:bg-zinc-900"
+                          ? "bg-[#FEF2F2] dark:bg-red-950/20 border border-[#FCA5A5] dark:border-red-900/40"
+                          : "bg-[#F5F5F5] dark:bg-zinc-900"
                           }`}
                       >
                         <p
                           className={`text-[12px] leading-relaxed ${msg.flagged
-                              ? "text-[#7F1D1D] dark:text-red-300 font-medium"
-                              : "text-[#0A0A0A] dark:text-[#fafafa]"
+                            ? "text-[#7F1D1D] dark:text-red-300 font-medium"
+                            : "text-[#0A0A0A] dark:text-[#fafafa]"
                             }`}
                         >
                           {msg.text}
@@ -598,11 +587,11 @@ const AppealDetailPage = () => {
               <span>Shikoyat qilingan profil</span>
               {complaint.to_user_info?.id && (
                 <button
-                  onClick={() => navigate(`/users/details/${complaint.to_user_info?.id}`)}
+                  onClick={() => window.open(`/users/details/${complaint.to_user_info?.id}`, '_blank')}
                   className="text-xs text-[#0474F3] hover:underline flex items-center gap-1 cursor-pointer"
                 >
                   <span>Profilga o'tish</span>
-                  <ChevronRight className="w-3 h-3" />
+                  <ExternalLink className="w-3 h-3" />
                 </button>
               )}
             </h3>

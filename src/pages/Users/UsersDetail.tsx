@@ -76,6 +76,8 @@ export type UserDetailResponse = {
         id?: string;
         display_id?: string;
         name?: string;
+        full_name?: string | null;
+        phone?: string | null;
         kinship?: string | null;
         candidate_role?: string | null;
         phone_masked?: string | null;
@@ -160,17 +162,24 @@ export type MatchHistoryItem = {
 
 const BLOCK_REASONS = [
     { value: "fraud", label: "Firibgarlik belgilari" },
-    { value: "fake_info", label: "Noto'g'ri / Yolg'on ma'lumot" },
-    { value: "violation", label: "Qoidabuzarlik / Haqorat" },
-    { value: "abuse", label: "Tizimni suiiste'mol qilish" },
+    { value: "fake_profile", label: "Soxta profil" },
+    { value: "abusive_language", label: "Odobsiz xulq" },
+    { value: "spam", label: "Spam va reklama" },
     { value: "other", label: "Boshqa sabab" },
 ];
 
+const UNBLOCK_REASONS = [
+    { value: "Shikoyat tasdiqlanmadi", label: "Shikoyat tasdiqlanmadi" },
+    { value: "Xatolik tufayli bloklangan", label: "Xatolik tufayli bloklangan" },
+    { value: "Foydalanuvchi murojaati qanoatlantirildi", label: "Foydalanuvchi murojaati qanoatlantirildi" },
+    { value: "Boshqa sabab", label: "Boshqa sabab" },
+];
+
 const WAVEFORM_BARS = [
-    8, 14, 20, 12, 16, 22, 18, 10, 14, 20,
-    16, 12, 18, 14, 10, 14, 20, 8, 12, 16,
-    10, 14, 18, 12, 8, 14, 20, 16, 12, 8,
-    10, 14
+    6, 10, 14, 18, 12, 8, 14, 20, 16, 10, 14, 22, 18, 12, 8, 14, 20, 24, 18, 14,
+    10, 16, 22, 16, 12, 8, 14, 18, 22, 16, 10, 14, 20, 16, 12, 8, 14, 20, 24, 18,
+    12, 16, 22, 16, 10, 14, 18, 22, 16, 12, 8, 14, 20, 16, 10, 14, 18, 14, 10, 16,
+    20, 16, 12, 8, 6
 ];
 
 const UsersDetail = () => {
@@ -202,6 +211,12 @@ const UsersDetail = () => {
     const [showBlockModal, setShowBlockModal] = useState(false);
     const [blockReason, setBlockReason] = useState("fraud");
     const [sendNotification, setSendNotification] = useState(false);
+
+    const [showUnblockModal, setShowUnblockModal] = useState(false);
+    const [unblockReason, setUnblockReason] = useState("Shikoyat tasdiqlanmadi");
+    const [sendUnblockNotification, setSendUnblockNotification] = useState(true);
+    const [unblockSuccessAlert, setUnblockSuccessAlert] = useState<string | null>(null);
+
     const [selectedPhotoModal, setSelectedPhotoModal] = useState<string | null>(null);
 
     // 1. Fetch Main User Data
@@ -304,12 +319,12 @@ const UsersDetail = () => {
 
     // Data Resolution Helpers
     const userId = userData?.id || id || "";
-    const displayId = userData?.account?.display_id || userData?.display_id || (userId ? `USR-${userId.slice(0, 5).toUpperCase()}` : "-");
-    const fullName = userData?.full_name || "-";
+    const displayId = userData?.account?.display_id || userData?.display_id || (userId ? `USR-${userId.slice(0, 5).toUpperCase()}` : "");
+    const fullName = userData?.full_name || "";
 
     const photos = userData?.photos || [];
     const mainPhotoUrl = photos.find(p => p.is_main)?.url || photos[0]?.url || userData?.main_photo || null;
-    const initials = fullName && fullName !== "-"
+    const initials = fullName && fullName !== ""
         ? fullName
             .split(" ")
             .filter(Boolean)
@@ -419,7 +434,7 @@ const UsersDetail = () => {
     const voiceDurationDisplay = audioDuration ? formatAudioTime(audioDuration) : "0:00";
 
     const formatAuthProvider = (provider?: string | null) => {
-        if (!provider) return "-";
+        if (!provider) return "";
         const p = provider.toLowerCase();
         if (p === "phone" || p === "phone_number" || p.includes("telefon")) return "Telefon raqami";
         if (p === "telegram") return "Telegram bot";
@@ -429,7 +444,7 @@ const UsersDetail = () => {
     };
 
     const formatCandidateType = (type?: string | null) => {
-        if (!type) return "-";
+        if (!type) return "";
         const t = type.toLowerCase();
         if (t === "kuyov" || t === "groom" || t === "male") return "Kuyov";
         if (t === "kelin" || t === "bride" || t === "female") return "Kelin";
@@ -438,44 +453,47 @@ const UsersDetail = () => {
     };
 
     const candidateType = formatCandidateType(userData?.account?.candidate_type || userData?.personal?.candidate_type || userData?.candidate_type);
-    const managementType = userData?.account?.management_type || (representedUsers.length > 0 || userData?.guardian ? "Vakil orqali" : "O'zi");
+    const hasGuardian = Boolean(userData?.guardian && (userData.guardian.id || userData.guardian.name || userData.guardian.full_name || userData.guardian.phone || userData.guardian.phone_masked || userData.guardian.kinship));
+    const hasRepresented = Boolean(representedUsers && representedUsers.length > 0);
+    const hasVakilData = hasRepresented || hasGuardian;
+    const managementType = userData?.account?.management_type || (hasVakilData ? "Vakil orqali" : "O'zi");
 
     const regDate = userData?.account?.created_at
         ? dayjs(userData.account.created_at).format("DD.MM.YYYY")
-        : (userData?.created_at ? dayjs(userData.created_at).format("DD.MM.YYYY") : "-");
+        : (userData?.created_at ? dayjs(userData.created_at).format("DD.MM.YYYY") : "");
     const lastActive = userData?.last_active
         ? dayjs(userData.last_active).format("DD.MM.YYYY HH:mm")
-        : (userData?.account?.created_at ? dayjs(userData.account.created_at).format("DD.MM.YYYY HH:mm") : "-");
+        : (userData?.account?.created_at ? dayjs(userData.account.created_at).format("DD.MM.YYYY HH:mm") : "");
     const createdAtFormatted = userData?.account?.created_at
         ? dayjs(userData.account.created_at).format("DD.MM.YYYY HH:mm")
-        : (userData?.created_at ? dayjs(userData.created_at).format("DD.MM.YYYY HH:mm") : "-");
+        : (userData?.created_at ? dayjs(userData.created_at).format("DD.MM.YYYY HH:mm") : "");
 
     // Shaxsiy ma'lumotlar
     const personal = userData?.personal;
     const calculatedAge = personal?.age ?? (personal?.birth_date ? dayjs().diff(dayjs(personal.birth_date), 'year') : (userData?.age ?? null));
-    const ageText = calculatedAge ? `${calculatedAge} yosh` : "-";
-    const birthDate = personal?.birth_date ? dayjs(personal.birth_date).format("DD.MM.YYYY") : "-";
+    const ageText = calculatedAge ? `${calculatedAge} yosh` : "";
+    const birthDate = personal?.birth_date ? dayjs(personal.birth_date).format("DD.MM.YYYY") : "";
 
     const heightText = personal?.height ? `${personal.height} sm` : null;
     const weightText = personal?.weight ? `${personal.weight} kg` : null;
-    const heightWeight = heightText && weightText ? `${heightText}, ${weightText}` : (heightText || weightText || "-");
+    const heightWeight = heightText && weightText ? `${heightText}, ${weightText}` : (heightText || weightText || "");
 
-    const nationality = typeof personal?.nationality === 'object' ? personal?.nationality?.name : (personal?.nationality || "-");
-    const education = typeof personal?.education_level === 'object' ? personal?.education_level?.name : (personal?.education_level || "-");
-    const profession = typeof personal?.profession === 'object' ? personal?.profession?.name : (personal?.profession || "-");
-    const maritalStatus = typeof personal?.marital_status === 'object' ? personal?.marital_status?.name : (personal?.marital_status || "-");
+    const nationality = typeof personal?.nationality === 'object' ? personal?.nationality?.name : (personal?.nationality || "");
+    const education = typeof personal?.education_level === 'object' ? personal?.education_level?.name : (personal?.education_level || "");
+    const profession = typeof personal?.profession === 'object' ? personal?.profession?.name : (personal?.profession || "");
+    const maritalStatus = typeof personal?.marital_status === 'object' ? personal?.marital_status?.name : (personal?.marital_status || "");
     const children = personal?.children_count !== undefined && personal?.children_count !== null
         ? (personal.children_count > 0 ? `${personal.children_count} ta` : "Yo'q")
-        : (personal?.has_children !== undefined ? (personal.has_children ? "Bor" : "Yo'q") : "-");
-    const healthStatus = typeof personal?.health_status === 'object' ? personal?.health_status?.name : (personal?.health_status || "-");
+        : (personal?.has_children !== undefined ? (personal.has_children ? "Bor" : "Yo'q") : "");
+    const healthStatus = typeof personal?.health_status === 'object' ? personal?.health_status?.name : (personal?.health_status || "");
 
     // Manzil va aloqa
     const contact = userData?.contact;
-    const regionName = typeof contact?.region === 'object' ? contact?.region?.name : (contact?.region || userData?.region_name || "-");
-    const districtName = typeof contact?.district === 'object' ? contact?.district?.name : (contact?.district || userData?.district_name || "-");
-    const mahallaName = typeof contact?.mahalla === 'object' ? contact?.mahalla?.name : (contact?.mahalla || "-");
-    const phoneNumber = contact?.phone_masked || userData?.phone_number || "-";
-    const email = contact?.email || userData?.email || "-";
+    const regionName = typeof contact?.region === 'object' ? contact?.region?.name : (contact?.region || userData?.region_name || "");
+    const districtName = typeof contact?.district === 'object' ? contact?.district?.name : (contact?.district || userData?.district_name || "");
+    const mahallaName = typeof contact?.mahalla === 'object' ? contact?.mahalla?.name : (contact?.mahalla || "");
+    const phoneNumber = contact?.phone_masked || userData?.phone_number || "";
+    const email = contact?.email || userData?.email || "";
     const regMethod = formatAuthProvider(contact?.auth_provider || userData?.account?.auth_provider || userData?.auth_provider);
 
     // Questionnaire
@@ -486,46 +504,54 @@ const UsersDetail = () => {
     // Header updates
     useEffect(() => {
         setHeaderTitle("Foydalanuvchi kartasi");
-        setHeaderSubtitle(fullName !== "-" ? `${fullName}, ${displayId}` : displayId);
+        setHeaderSubtitle(fullName !== "" ? `${fullName}, ${displayId}` : displayId);
     }, [fullName, displayId, setHeaderTitle, setHeaderSubtitle]);
 
     // Block / Unblock Handlers
     const handleBlock = () => {
         if (isBlocked) {
-            handleUnblock();
+            setShowUnblockModal(true);
         } else {
             setShowBlockModal(true);
         }
     };
 
-    const handleUnblock = async () => {
+    const handleUnblockSubmit = async () => {
         setLoadingAction(true);
+        setShowUnblockModal(false);
         try {
             const unblockPayload = {
+                reason: unblockReason,
+                notify_user: sendUnblockNotification,
                 phone_number: contact?.phone_masked || userData?.phone_number || "",
                 email: contact?.email || userData?.email || "user@example.com",
                 role: userData?.account?.role?.id || userData?.role_info?.id || "",
-                is_blocked: true,
+                is_blocked: false,
             };
 
             await axiosAPI.post(`accounts/users/${userId}/unblock/`, unblockPayload);
             setIsBlocked(false);
-            setNotification({
-                type: 'success',
-                message: 'Foydalanuvchi muvaffaqiyatli blokdan chiqarildi!'
-            });
+            const reasonLabel = UNBLOCK_REASONS.find(r => r.value === unblockReason)?.label || unblockReason;
+            const formattedReason = reasonLabel.charAt(0).toLowerCase() + reasonLabel.slice(1);
+            const nowFormatted = dayjs().format("DD.MM.YYYY HH:mm");
+            setUnblockSuccessAlert(`Foydalanuvchi blokdan chiqarildi, ${nowFormatted}. Sabab: ${formattedReason}.`);
+            setNotification(null);
             fetchUserData();
             fetchHistory();
         } catch (err: any) {
             console.error("Unblock API error:", err);
             // Fallback patch attempt if post fails
             try {
-                await axiosAPI.patch(`accounts/users/${userId}/`, { is_blocked: false });
-                setIsBlocked(false);
-                setNotification({
-                    type: 'success',
-                    message: 'Foydalanuvchi blokdan chiqarildi!'
+                await axiosAPI.patch(`accounts/users/${userId}/`, {
+                    is_blocked: false,
+                    unblock_reason: unblockReason,
                 });
+                setIsBlocked(false);
+                const reasonLabel = UNBLOCK_REASONS.find(r => r.value === unblockReason)?.label || unblockReason;
+                const formattedReason = reasonLabel.charAt(0).toLowerCase() + reasonLabel.slice(1);
+                const nowFormatted = dayjs().format("DD.MM.YYYY HH:mm");
+                setUnblockSuccessAlert(`Foydalanuvchi blokdan chiqarildi, ${nowFormatted}. Sabab: ${formattedReason}.`);
+                setNotification(null);
                 fetchUserData();
                 fetchHistory();
             } catch (patchErr) {
@@ -542,6 +568,7 @@ const UsersDetail = () => {
     const handleBlockSubmit = async () => {
         setLoadingAction(true);
         setShowBlockModal(false);
+        setUnblockSuccessAlert(null);
         try {
             const blockPayload = {
                 reason: blockReason,
@@ -594,6 +621,13 @@ const UsersDetail = () => {
 
     return (
         <div className="p-4 space-y-4">
+
+            {/* Unblock Success Alert Banner (matching Image 2) */}
+            {unblockSuccessAlert && (
+                <div className="w-full bg-[#E8FAF0] dark:bg-[#103020]/70 border border-[#9CE3BF] dark:border-[#2ee088]/40 text-[#08834C] dark:text-[#2ee088] px-5 py-3.5 rounded-2xl text-[13px] font-medium leading-relaxed transition-all">
+                    {unblockSuccessAlert}
+                </div>
+            )}
 
             {/* Notification Alert Banner */}
             {notification && (
@@ -658,11 +692,11 @@ const UsersDetail = () => {
                                         </span>
 
                                         <span className={`${isBlocked
-                                            ? 'bg-[#FFF0F0] text-[#FF3B30] dark:bg-[#3d1414] dark:text-[#ff6b6b]'
+                                            ? 'bg-[#FEF2F2] text-[#7F1D1D] dark:bg-[#3d1414] dark:text-[#ff6b6b]'
                                             : isVerified
                                                 ? 'bg-[#E6F9F0] text-[#00A854] dark:bg-[#103020] dark:text-[#2ee088]'
                                                 : 'bg-[#EAF5FF] text-[#0084FF] dark:bg-[#10243d] dark:text-[#66b3ff]'
-                                            } text-[11px] font-medium px-2.5 py-0.5 rounded-full`}>
+                                            } text-[11px] font-semibold px-2.5 py-0.5 rounded-full`}>
                                             {isBlocked ? "Bloklangan" : (userData?.status || (isVerified ? "Tasdiqlangan" : "Tekshiruvda"))}
                                         </span>
                                     </div>
@@ -835,16 +869,16 @@ const UsersDetail = () => {
                                         const percent = Math.max(0, Math.min(100, (clickX / rect.width) * 100));
                                         handleSeekAudio(percent);
                                     }}
-                                    className="flex-1 flex items-center gap-[3px] h-7 px-2 overflow-hidden cursor-pointer select-none"
+                                    className="flex-1 flex items-center justify-between h-7 px-2 overflow-hidden cursor-pointer select-none"
                                     title="O'tkazish uchun bosing"
                                 >
                                     {WAVEFORM_BARS.map((height, i) => {
-                                        const barProgress = (i / WAVEFORM_BARS.length) * 100;
-                                        const isBarActive = audioProgress >= barProgress;
+                                        const barProgress = (i / (WAVEFORM_BARS.length - 1)) * 100;
+                                        const isBarActive = (!isPlaying && audioCurrentTime === 0) ? true : (audioProgress >= barProgress);
                                         return (
                                             <div
                                                 key={i}
-                                                className={`w-[3px] rounded-full transition-all duration-150 ${isBarActive
+                                                className={`w-[2.5px] rounded-full transition-all duration-150 ${isBarActive
                                                     ? 'bg-[#0474F3]'
                                                     : 'bg-[#CBD5E1] dark:bg-zinc-700 hover:bg-blue-300'
                                                     }`}
@@ -928,186 +962,182 @@ const UsersDetail = () => {
                     </div>
 
                     {/* Card 4: Vakil ma'lumotlari (from represented-users API & guardian) */}
-                    <div className="bg-white dark:bg-[#141414] rounded-2xl border border-[#e5e5e5] dark:border-[#262626] p-5 lg:p-6 shadow-sm">
+                    {hasVakilData && (
+                        <div className="bg-white dark:bg-[#141414] rounded-2xl border border-[#e5e5e5] dark:border-[#262626] p-5 lg:p-6 shadow-sm">
 
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                                <Contact className="w-4 h-4 text-[#737373] dark:text-[#a3a3a3]" />
-                                <h3 className="text-[13px] font-bold text-[#525252] dark:text-[#fafafa]">
-                                    Vakil ma'lumotlari
-                                </h3>
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                    <Contact className="w-4 h-4 text-[#737373] dark:text-[#a3a3a3]" />
+                                    <h3 className="text-[13px] font-bold text-[#525252] dark:text-[#fafafa]">
+                                        Vakil ma'lumotlari
+                                    </h3>
+                                </div>
                             </div>
-                            <span className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">
-                                Ma'lumotlar mobil ilovadan keladi
-                            </span>
-                        </div>
 
-                        <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3] mt-2 mb-4 leading-relaxed">
-                            Vakil — nomzod nomidan anketani to'ldiruvchi va profilni boshqaruvchi qarindosh (amma, xola, amaki, tog'a).
-                        </p>
+                            <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3] mt-2 mb-4 leading-relaxed">
+                                Vakil — nomzod nomidan anketani to'ldiruvchi va profilni boshqaruvchi qarindosh (amma, xola, amaki, tog'a).
+                            </p>
 
-                        {loadingRepresented ? (
-                            <div className="py-6 flex justify-center">
-                                <div className="w-6 h-6 border-2 border-[#0474F3] border-t-transparent rounded-full animate-spin" />
-                            </div>
-                        ) : (representedUsers.length > 0 || userData?.guardian) ? (
-                            <div className="space-y-4">
-                                {(representedUsers.length > 0 ? representedUsers : [userData?.guardian]).map((rep: any, idx: number) => {
-                                    if (!rep) return null;
-                                    console.log(rep);
-                                    
-                                    const repName = rep.name || rep.full_name || "-";
-                                    const repDisplayId = rep.display_id || (rep.id ? `USR-${rep.id.slice(0, 5).toUpperCase()}` : "");
-                                    const repPhoto = rep.photo || rep.main_photo || null;
-                                    const repInitials = repName !== "-"
-                                        ? repName.split(" ").filter(Boolean).map((n: string) => n[0]).join("").toUpperCase().slice(0, 2)
-                                        : "VK";
-                                    const repKinship = rep.kinship_name || rep.kinship || "-";
-                                    const repPhone = rep.phone || rep.phone_masked || "-";
-                                    const repRole = rep.candidate_role ? formatCandidateType(rep.candidate_role) : candidateType;
-                                    const repDates = rep.dates;
+                            {loadingRepresented ? (
+                                <div className="py-6 flex justify-center">
+                                    <div className="w-6 h-6 border-2 border-[#0474F3] border-t-transparent rounded-full animate-spin" />
+                                </div>
+                            ) : (
+                                <div className="space-y-4">
+                                    {(representedUsers.length > 0 ? representedUsers : [userData?.guardian]).map((rep: any, idx: number) => {
+                                        if (!rep) return null;
 
-                                    return (
-                                        <div key={rep.id || idx} className="space-y-4">
-                                            {/* Representative Card Box */}
-                                            <div
-                                                // onClick={() => {
-                                                //     if (rep.id) {
-                                                //         navigate(`/users/details/${rep.id}`);
-                                                //     }
-                                                // }}
-                                                className="bg-[#F8FAFC] dark:bg-zinc-900 border border-[#E2E8F0] dark:border-zinc-800 rounded-xl p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 cursor-pointer hover:border-gray-300 dark:hover:border-zinc-700 hover:shadow-xs transition-all"
-                                            >
-                                                <div className="flex items-center gap-3">
-                                                    {repPhoto ? (
-                                                        <img
-                                                            src={repPhoto}
-                                                            alt={repName}
-                                                            className="w-10 h-10 rounded-full object-cover border border-[#e2e8f0] dark:border-zinc-700 shrink-0"
-                                                        />
-                                                    ) : (
-                                                        <div className="w-10 h-10 rounded-full bg-[#EDE9FE] dark:bg-purple-950/40 text-[#7C3AED] dark:text-purple-400 font-bold text-xs flex items-center justify-center shrink-0">
-                                                            {repInitials}
-                                                        </div>
-                                                    )}
-                                                    <div>
-                                                        <p className="text-[13px] font-bold text-[#0A0A0A] dark:text-[#fafafa]">
-                                                            {repName}
-                                                        </p>
-                                                        <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                                                            {repDisplayId && (
-                                                                <span className="text-[10px] text-[#737373] dark:text-[#a3a3a3]">
-                                                                    {repDisplayId}
+                                        const repName = rep.name || rep.full_name || "";
+                                        const repDisplayId = rep.display_id || (rep.id ? `USR-${rep.id.slice(0, 5).toUpperCase()}` : "");
+                                        const repPhoto = rep.photo || rep.main_photo || null;
+                                        const repInitials = repName !== ""
+                                            ? repName.split(" ").filter(Boolean).map((n: string) => n[0]).join("").toUpperCase().slice(0, 2)
+                                            : "VK";
+                                        const repKinship = rep.kinship_name || rep.kinship || "";
+                                        const repPhone = rep.phone || rep.phone_masked || "";
+                                        const repRole = rep.candidate_role ? formatCandidateType(rep.candidate_role) : candidateType;
+                                        const repDates = rep.dates;
+                                        const repTargetId = (rep.id && rep.id !== id) ? rep.id : (rep.user_id && rep.user_id !== id) ? rep.user_id : null;
+
+                                        return (
+                                            <div key={rep.id || idx} className="space-y-4">
+                                                {/* Representative Card Box */}
+                                                <div
+                                                    onClick={() => {
+                                                        if (repTargetId) {
+                                                            window.open(`/users/${repTargetId}`, '_blank');
+                                                        }
+                                                    }}
+                                                    className={`bg-[#F8FAFC] dark:bg-zinc-900 border border-[#E2E8F0] dark:border-zinc-800 rounded-xl p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all ${repTargetId ? 'cursor-pointer hover:border-blue-400 hover:shadow-sm' : ''}`}
+                                                >
+                                                    <div className="flex items-center gap-3">
+                                                        {repPhoto ? (
+                                                            <img
+                                                                src={repPhoto}
+                                                                alt={repName}
+                                                                className="w-10 h-10 rounded-full object-cover border border-[#e2e8f0] dark:border-zinc-700 shrink-0"
+                                                            />
+                                                        ) : (
+                                                            <div className="w-10 h-10 rounded-full bg-[#EDE9FE] dark:bg-purple-950/40 text-[#7C3AED] dark:text-purple-400 font-bold text-xs flex items-center justify-center shrink-0">
+                                                                {repInitials}
+                                                            </div>
+                                                        )}
+                                                        <div>
+                                                            <p className="text-[13px] font-bold text-[#0A0A0A] dark:text-[#fafafa]">
+                                                                {repName}
+                                                            </p>
+                                                            <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                                                                {repDisplayId && (
+                                                                    <span className="text-[10px] text-[#737373] dark:text-[#a3a3a3]">
+                                                                        {repDisplayId}
+                                                                    </span>
+                                                                )}
+                                                                <span className="bg-[#E2E8F0] dark:bg-zinc-800 text-[#475569] dark:text-zinc-300 text-[10px] font-semibold px-2 py-0.5 rounded">
+                                                                    {repRole}
                                                                 </span>
-                                                            )}
-                                                            <span className="bg-[#E2E8F0] dark:bg-zinc-800 text-[#475569] dark:text-zinc-300 text-[10px] font-semibold px-2 py-0.5 rounded">
-                                                                {repRole}
-                                                            </span>
-                                                            <span className={`${rep.is_approved || rep.status === "Tasdiqlangan"
-                                                                ? 'bg-[#E6F9F0] dark:bg-[#103020] text-[#00A854] dark:text-[#2ee088]'
-                                                                : 'bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400'
-                                                                } text-[10px] font-semibold px-2 py-0.5 rounded`}>
-                                                                {rep.status || (rep.is_approved ? "Tasdiqlangan" : "Kutilmoqda")}
-                                                            </span>
+                                                                <span className={`${rep.is_approved || rep.status === "Tasdiqlangan"
+                                                                    ? 'bg-[#E6F9F0] dark:bg-[#103020] text-[#00A854] dark:text-[#2ee088]'
+                                                                    : 'bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400'
+                                                                    } text-[10px] font-semibold px-2 py-0.5 rounded`}>
+                                                                    {rep.status || (rep.is_approved ? "Tasdiqlangan" : "Kutilmoqda")}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="flex items-center gap-6 sm:gap-8 justify-between sm:justify-end">
+                                                        <div>
+                                                            <p className="text-[10px] text-[#737373] dark:text-[#a3a3a3]">Qarindoshligi</p>
+                                                            <p className="text-[12px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-0.5">{repKinship}</p>
+                                                        </div>
+
+                                                        <div>
+                                                            <p className="text-[10px] text-[#737373] dark:text-[#a3a3a3]">Telefon</p>
+                                                            <p className="text-[12px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-0.5">{repPhone}</p>
+                                                        </div>
+
+                                                        <div>
+                                                            <p className="text-[10px] text-[#737373] dark:text-[#a3a3a3]">Nomzodlari</p>
+                                                            <p className="text-[12px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-0.5">
+                                                                {rep.candidates_count !== undefined ? `${rep.candidates_count} ta` : "1 ta"}
+                                                            </p>
                                                         </div>
                                                     </div>
                                                 </div>
 
-                                                <div className="flex items-center gap-6 sm:gap-8 justify-between sm:justify-end">
-                                                    <div>
-                                                        <p className="text-[10px] text-[#737373] dark:text-[#a3a3a3]">Qarindoshligi</p>
-                                                        <p className="text-[12px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-0.5">{repKinship}</p>
-                                                    </div>
-
-                                                    <div>
-                                                        <p className="text-[10px] text-[#737373] dark:text-[#a3a3a3]">Telefon</p>
-                                                        <p className="text-[12px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-0.5">{repPhone}</p>
-                                                    </div>
-
-                                                    <div>
-                                                        <p className="text-[10px] text-[#737373] dark:text-[#a3a3a3]">Nomzodlari</p>
-                                                        <p className="text-[12px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-0.5">
-                                                            {rep.candidates_count !== undefined ? `${rep.candidates_count} ta` : "1 ta"}
-                                                        </p>
-                                                    </div>
-
-                                                    <ChevronRight className="w-4 h-4 text-[#737373] dark:text-[#a3a3a3] shrink-0" />
-                                                </div>
-                                            </div>
-
-                                            {/* Rozilik va sanalar Timeline */}
-                                            {repDates && (
-                                                <div className="mt-4 pt-3 border-t border-[#f0f0f0] dark:border-[#262626]">
-                                                    <div className="flex items-center justify-between mb-3">
-                                                        <div className="flex items-center gap-1.5">
-                                                            <Info className="w-3.5 h-3.5 text-[#737373] dark:text-[#a3a3a3]" />
-                                                            <h4 className="text-[12px] font-bold text-[#525252] dark:text-[#fafafa]">
-                                                                Rozilik va sanalar
-                                                            </h4>
-                                                        </div>
-                                                        <span className="text-[10px] text-[#737373] dark:text-[#a3a3a3]">
-                                                            SMS nomzodning raqamiga boradi, havola 48 soat ishlaydi
-                                                        </span>
-                                                    </div>
-
-                                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-2">
-                                                        <div>
-                                                            <div className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 ${repDates.application_date
-                                                                ? 'bg-[#E6F9F0] dark:bg-[#103020] text-[#00A854] dark:text-[#2ee088]'
-                                                                : 'bg-gray-100 dark:bg-zinc-800 text-gray-400'
-                                                                }`}>
-                                                                {repDates.application_date ? <Check className="w-2.5 h-2.5 stroke-[3]" /> : <Minus className="w-2.5 h-2.5" />}
+                                                {/* Rozilik va sanalar Timeline */}
+                                                {repDates && (
+                                                    <div className="mt-4 pt-3 border-t border-[#f0f0f0] dark:border-[#262626]">
+                                                        <div className="flex items-center justify-between mb-3">
+                                                            <div className="flex items-center gap-1.5">
+                                                                <Info className="w-3.5 h-3.5 text-[#737373] dark:text-[#a3a3a3]" />
+                                                                <h4 className="text-[12px] font-bold text-[#525252] dark:text-[#fafafa]">
+                                                                    Rozilik va sanalar
+                                                                </h4>
                                                             </div>
-                                                            <p className="text-[11px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-1.5">
-                                                                Ariza to'ldirildi
-                                                            </p>
-                                                            <p className="text-[10px] text-[#737373] dark:text-[#a3a3a3] mt-0.5">
-                                                                {repDates.application_date ? dayjs(repDates.application_date).format("DD.MM.YYYY HH:mm") : "-"}
-                                                            </p>
+                                                            <span className="text-[10px] text-[#737373] dark:text-[#a3a3a3]">
+                                                                SMS nomzodning raqamiga boradi, havola 48 soat ishlaydi
+                                                            </span>
                                                         </div>
 
-                                                        <div>
-                                                            <div className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 ${repDates.sms_sent_date
-                                                                ? 'bg-[#E6F9F0] dark:bg-[#103020] text-[#00A854] dark:text-[#2ee088]'
-                                                                : 'bg-gray-100 dark:bg-zinc-800 text-gray-400'
-                                                                }`}>
-                                                                {repDates.sms_sent_date ? <Check className="w-2.5 h-2.5 stroke-[3]" /> : <Minus className="w-2.5 h-2.5" />}
+                                                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-2">
+                                                            <div>
+                                                                <div className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 ${repDates.application_date
+                                                                    ? 'bg-[#E6F9F0] dark:bg-[#103020] text-[#00A854] dark:text-[#2ee088]'
+                                                                    : 'bg-gray-100 dark:bg-zinc-800 text-gray-400'
+                                                                    }`}>
+                                                                    {repDates.application_date ? <Check className="w-2.5 h-2.5 stroke-[3]" /> : <Minus className="w-2.5 h-2.5" />}
+                                                                </div>
+                                                                <p className="text-[11px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-1.5">
+                                                                    Ariza to'ldirildi
+                                                                </p>
+                                                                <p className="text-[10px] text-[#737373] dark:text-[#a3a3a3] mt-0.5">
+                                                                    {repDates.application_date ? dayjs(repDates.application_date).format("DD.MM.YYYY HH:mm") : ""}
+                                                                </p>
                                                             </div>
-                                                            <p className="text-[11px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-1.5">
-                                                                Nomzodga SMS yuborildi
-                                                            </p>
-                                                            <p className="text-[10px] text-[#737373] dark:text-[#a3a3a3] mt-0.5">
-                                                                {repDates.sms_sent_date ? dayjs(repDates.sms_sent_date).format("DD.MM.YYYY HH:mm") : "-"}
-                                                            </p>
-                                                        </div>
 
-                                                        <div>
-                                                            <div className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 ${repDates.approved_date
-                                                                ? 'bg-[#E6F9F0] dark:bg-[#103020] text-[#00A854] dark:text-[#2ee088]'
-                                                                : 'bg-gray-100 dark:bg-zinc-800 text-gray-400'
-                                                                }`}>
-                                                                {repDates.approved_date ? <Check className="w-2.5 h-2.5 stroke-[3]" /> : <Minus className="w-2.5 h-2.5" />}
+                                                            <div>
+                                                                <div className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 ${repDates.sms_sent_date
+                                                                    ? 'bg-[#E6F9F0] dark:bg-[#103020] text-[#00A854] dark:text-[#2ee088]'
+                                                                    : 'bg-gray-100 dark:bg-zinc-800 text-gray-400'
+                                                                    }`}>
+                                                                    {repDates.sms_sent_date ? <Check className="w-2.5 h-2.5 stroke-[3]" /> : <Minus className="w-2.5 h-2.5" />}
+                                                                </div>
+                                                                <p className="text-[11px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-1.5">
+                                                                    Nomzodga SMS yuborildi
+                                                                </p>
+                                                                <p className="text-[10px] text-[#737373] dark:text-[#a3a3a3] mt-0.5">
+                                                                    {repDates.sms_sent_date ? dayjs(repDates.sms_sent_date).format("DD.MM.YYYY HH:mm") : ""}
+                                                                </p>
                                                             </div>
-                                                            <p className="text-[11px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-1.5">
-                                                                Nomzod rozilikni tasdiqladi
-                                                            </p>
-                                                            <p className="text-[10px] text-[#737373] dark:text-[#a3a3a3] mt-0.5">
-                                                                {repDates.approved_date ? dayjs(repDates.approved_date).format("DD.MM.YYYY HH:mm") : "-"}
-                                                            </p>
-                                                        </div>
 
-                                                        <div>
-                                                            <div className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 ${repDates.questionnaire_date
-                                                                ? 'bg-[#E6F9F0] dark:bg-[#103020] text-[#00A854] dark:text-[#2ee088]'
-                                                                : 'bg-gray-100 dark:bg-zinc-800 text-gray-400'
-                                                                }`}>
+                                                            <div>
+                                                                <div className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 ${repDates.approved_date
+                                                                    ? 'bg-[#E6F9F0] dark:bg-[#103020] text-[#00A854] dark:text-[#2ee088]'
+                                                                    : 'bg-gray-100 dark:bg-zinc-800 text-gray-400'
+                                                                    }`}>
+                                                                    {repDates.approved_date ? <Check className="w-2.5 h-2.5 stroke-[3]" /> : <Minus className="w-2.5 h-2.5" />}
+                                                                </div>
+                                                                <p className="text-[11px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-1.5">
+                                                                    Nomzod rozilikni tasdiqladi
+                                                                </p>
+                                                                <p className="text-[10px] text-[#737373] dark:text-[#a3a3a3] mt-0.5">
+                                                                    {repDates.approved_date ? dayjs(repDates.approved_date).format("DD.MM.YYYY HH:mm") : ""}
+                                                                </p>
+                                                            </div>
+
+                                                            <div>
+                                                                <div className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 ${repDates.questionnaire_date
+                                                                    ? 'bg-[#E6F9F0] dark:bg-[#103020] text-[#00A854] dark:text-[#2ee088]'
+                                                                    : 'bg-gray-100 dark:bg-zinc-800 text-gray-400'
+                                                                    }`}>
                                                                 {repDates.questionnaire_date ? <Check className="w-2.5 h-2.5 stroke-[3]" /> : <Minus className="w-2.5 h-2.5" />}
                                                             </div>
                                                             <p className="text-[11px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-1.5">
                                                                 Anketa to'ldirildi
                                                             </p>
                                                             <p className="text-[10px] text-[#737373] dark:text-[#a3a3a3] mt-0.5">
-                                                                {repDates.questionnaire_date ? dayjs(repDates.questionnaire_date).format("DD.MM.YYYY HH:mm") : "-"}
+                                                                {repDates.questionnaire_date ? dayjs(repDates.questionnaire_date).format("DD.MM.YYYY HH:mm") : ""}
                                                             </p>
                                                         </div>
                                                     </div>
@@ -1117,21 +1147,10 @@ const UsersDetail = () => {
                                     );
                                 })}
                             </div>
-                        ) : (
-                            <div className="border-2 border-dashed border-[#e2e8f0] dark:border-zinc-800 rounded-2xl p-8 flex flex-col items-center justify-center text-center">
-                                <div className="w-10 h-10 rounded-xl bg-[#F5F5F5] dark:bg-zinc-800 text-[#737373] dark:text-[#a3a3a3] flex items-center justify-center mb-3">
-                                    <IdCard className="w-5 h-5" />
-                                </div>
-                                <h4 className="text-[14px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mb-1.5">
-                                    Vakil biriktirilmagan
-                                </h4>
-                                <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3] max-w-sm leading-relaxed">
-                                    Bu profilni nomzodning o'zi boshqaradi. Vakil biriktirilsa, uning ma'lumotlari va rozilik sanalari shu blokda ko'rinadi.
-                                </p>
-                            </div>
-                        )}
+                            )}
 
-                    </div>
+                        </div>
+                    )}
 
                 </div>
 
@@ -1152,7 +1171,7 @@ const UsersDetail = () => {
                                 Joriy holati
                             </span>
                             <span className={`${isBlocked
-                                ? 'bg-[#FFF0F0] text-[#FF3B30] dark:bg-[#3d1414] dark:text-[#ff6b6b]'
+                                ? 'bg-[#FEF2F2] text-[#7F1D1D] dark:bg-[#3d1414] dark:text-[#ff6b6b]'
                                 : isVerified
                                     ? 'bg-[#E6F9F0] text-[#00A854] dark:bg-[#103020] dark:text-[#2ee088]'
                                     : 'bg-[#EAF5FF] text-[#0084FF] dark:bg-[#10243d] dark:text-[#66b3ff]'
@@ -1165,16 +1184,16 @@ const UsersDetail = () => {
                         <button
                             onClick={handleBlock}
                             disabled={loadingAction}
-                            className={`w-full py-2 px-3.5 border rounded-xl text-[12px] font-semibold flex items-center justify-start gap-2 transition-all cursor-pointer ${isBlocked
+                            className={`w-full py-2 px-3.5 border rounded-xl text-[12px] font-semibold flex items-center justify-start gap-2 transition-all cursor-pointer ${!isBlocked
                                     ? 'bg-red-50 dark:bg-red-950/20 text-[#7F1D1D] dark:text-[#ef4444] border-red-200 dark:border-red-900/50'
-                                    : 'bg-white dark:bg-zinc-900 border-[#fee2e2] dark:border-red-950/40 hover:bg-red-50/50 dark:hover:bg-red-950/20 text-[#7F1D1D] dark:text-[#ef4444]'
+                                    : 'bg-white! border-[#e5e5e5]! text-[#0474F3] dark:text-[#0474F3]'
                                 }`}
                         >
                             {loadingAction ? (
                                 <div className="w-3.5 h-3.5 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
                             ) : (
                                 <>
-                                    <Info size={16} strokeWidth={3} className='text-[#0a0a0a]' />
+                                    <Info size={16} strokeWidth={3} className={`text-[#0a0a0a] ${isBlocked ? 'text-[#0474F3]!' : ''} `} />
                                     <span>{isBlocked ? "Blokdan chiqarish" : "Profilni bloklash"}</span>
                                 </>
                             )}
@@ -1238,7 +1257,7 @@ const UsersDetail = () => {
                                         <span className="text-[#404040] dark:text-zinc-300">Telefon raqami</span>
                                     </div>
                                     <span className="text-[#0A0A0A] dark:text-[#fafafa] font-medium">
-                                        {contact?.phone_masked || userData?.phone_number ? "Tasdiqlangan" : "-"}
+                                        {contact?.phone_masked || userData?.phone_number ? "Tasdiqlangan" : ""}
                                     </span>
                                 </div>
 
@@ -1258,7 +1277,7 @@ const UsersDetail = () => {
                                         <span className="text-[#404040] dark:text-zinc-300">Anketa</span>
                                     </div>
                                     <span className="text-[#0A0A0A] dark:text-[#fafafa] font-medium">
-                                        {totalAnswered > 0 ? `${totalAnswered} ta javob` : "-"}
+                                        {totalAnswered > 0 ? `${totalAnswered} ta javob` : ""}
                                     </span>
                                 </div>
 
@@ -1386,7 +1405,7 @@ const UsersDetail = () => {
                                                         {item.partner_name}
                                                     </p>
                                                     <p className="text-[10px] text-[#737373] dark:text-[#a3a3a3]">
-                                                        {item.created_at ? dayjs(item.created_at).format("DD.MM.YYYY HH:mm") : "-"}
+                                                        {item.created_at ? dayjs(item.created_at).format("DD.MM.YYYY HH:mm") : ""}
                                                     </p>
                                                 </div>
                                             </div>
@@ -1492,6 +1511,73 @@ const UsersDetail = () => {
                             >
                                 <Check size={16} strokeWidth={2.5} />
                                 Profilni bloklash
+                            </button>
+                        </div>
+
+                    </div>
+                </div>
+            )}
+
+            {/* Unblock Modal (matching Image 1) */}
+            {showUnblockModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+                    <div className="w-full max-w-[480px] bg-white dark:bg-[#141414] rounded-[24px] border border-[#e5e5e5] dark:border-[#262626] p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+
+                        <h3 className="text-[17px] font-bold text-[#0A0A0A] dark:text-[#fafafa]">
+                            Blokdan chiqarasizmi?
+                        </h3>
+
+                        <p className="text-[13px] text-[#525252] dark:text-[#a3a3a3] leading-relaxed mt-2.5">
+                            {fullName || "Foydalanuvchi"} ({displayId}) qayta tizimga kira oladi, profili nomzodlar ro'yxatiga qaytadi. Bloklash yozuvi audit jurnalida saqlanadi.
+                        </p>
+
+                        <label className="text-[12px] font-semibold text-[#404040] dark:text-zinc-300 mt-5 block">
+                            Blokdan chiqarish sababi
+                        </label>
+
+                        <Select
+                            value={unblockReason}
+                            onChange={setUnblockReason}
+                            options={UNBLOCK_REASONS}
+                            className="mt-2"
+                        />
+
+                        <div
+                            onClick={() => setSendUnblockNotification(!sendUnblockNotification)}
+                            className="flex items-center gap-3 mt-5 select-none cursor-pointer group"
+                        >
+                            <div className={`w-5 h-5 rounded-md flex items-center justify-center transition-all border ${sendUnblockNotification
+                                ? 'bg-[#0474F3] border-[#0474F3] text-white shadow-xs'
+                                : 'border-[#e5e5e5] dark:border-[#262626] bg-white dark:bg-zinc-900 group-hover:border-gray-300'
+                                }`}>
+                                {sendUnblockNotification && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+                            </div>
+                            <span className="text-[13px] font-medium text-[#404040] dark:text-zinc-300">
+                                Foydalanuvchiga xabar yuborilsin
+                            </span>
+                        </div>
+
+                        <div className="flex items-center justify-end gap-3 mt-6">
+                            <button
+                                type="button"
+                                onClick={() => setShowUnblockModal(false)}
+                                className="px-5 py-2.5 bg-white dark:bg-zinc-900 border border-[#e5e5e5] dark:border-[#262626] rounded-xl text-[13px] font-semibold flex items-center gap-2 text-[#404040] dark:text-[#e5e5e5] hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                            >
+                                <Check size={16} strokeWidth={2.5} className="text-[#0a0a0a] dark:text-[#fafafa]" />
+                                Bekor qilish
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleUnblockSubmit}
+                                disabled={loadingAction}
+                                className="px-5 py-2.5 flex items-center gap-2 bg-[#0474F3] hover:bg-[#0362cf] text-white rounded-xl text-[13px] font-semibold transition-colors cursor-pointer shadow-xs disabled:opacity-50"
+                            >
+                                {loadingAction ? (
+                                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                ) : (
+                                    <Check size={16} strokeWidth={2.5} />
+                                )}
+                                Blokdan chiqarish
                             </button>
                         </div>
 
