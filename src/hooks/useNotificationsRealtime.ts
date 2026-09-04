@@ -8,8 +8,10 @@ import {
 } from "../store/slices/notificationsSlice";
 import { notificationsApi } from "../lib/notificationsApi";
 import notificationSocket from "../lib/notificationSocket";
+import { registerPushDevice, unregisterPushDevice } from "../lib/pushNotifications";
 
 // VITE_BASE_URL (".../api/v1/") dan WS bazasi: wss://host
+// Oqim: POST accounts/notifications/tickets/ → wss://host/ws/notifications/?ticket=<ticket>
 const WS_BASE = (import.meta.env.VITE_BASE_URL || "")
   .replace(/\/api\/v1\/?$/, "")
   .replace(/^http/, "ws");
@@ -17,11 +19,12 @@ const WS_BASE = (import.meta.env.VITE_BASE_URL || "")
 // To'liq WS URL'ni .env orqali ham berish mumkin (ticket avtomatik qo'shiladi)
 const WS_PATH = import.meta.env.VITE_NOTIF_WS_URL || `${WS_BASE}/ws/notifications/`;
 
-// WS backend hozircha tayyor emas — har ulanish "failed" bo'lib, konsolni to'ldiryapti
-// va tickets/ endpointiga keraksiz so'rov ketyapti. Shu sabab WS (va ticket olish)
-// vaqtinchalik butunlay o'chirilgan; kerak bo'lganda .env'da VITE_ENABLE_WS="true"
-// bilan qayta yoqiladi.
-const WS_ENABLED = import.meta.env.VITE_ENABLE_WS === "true";
+// Real-time WebSocket SUKUT BO'YICHA YOQILGAN (localhost dev'da ham) — .env'da
+// VITE_ENABLE_WS="false" bilan butunlay o'chiriladi. Agar backend WS Origin
+// validatsiyasi (masalan Django Channels AllowedHostsOriginValidator) joriy
+// frontend originini rad etsa, ulanish 6 urinishdan keyin jim to'xtaydi va
+// retryNow() 30s cooldown bilan cheklangan — shu bilan xavfsiz.
+const WS_ENABLED = import.meta.env.VITE_ENABLE_WS !== "false";
 
 // tab qayta faollashganda count resync — 60s'da eng ko'pi 1 marta
 const COUNT_RESYNC_THROTTLE_MS = 60_000;
@@ -59,6 +62,9 @@ const showDesktopNotification = (n: { id: string; title: string; message: string
 export const useNotificationsRealtime = () => {
   const dispatch = useDispatch<AppDispatch>();
   const lastCountResyncRef = useRef(0);
+  // WS kamida bir marta OPEN bo'lganmi — birinchi ulanishdagi keraksiz count
+  // so'rovini oldini olish uchun (son mountda allaqachon olinadi).
+  const wsHasOpenedRef = useRef(false);
 
   const resyncCount = useCallback(
     (force = false) => {
@@ -75,9 +81,18 @@ export const useNotificationsRealtime = () => {
     lastCountResyncRef.current = Date.now();
     dispatch(fetchUnreadCount());
 
-    // 2) OS bildirishnoma ruxsatini yumshoq so'raymiz
-    if (typeof Notification !== "undefined" && Notification.permission === "default") {
-      Notification.requestPermission().catch(() => {});
+    // 2) OS bildirishnoma ruxsati + FCM push qurilmasini ro'yxatga olish.
+    //    registerPushDevice() Firebase ulanmagan bo'lsa jimgina no-op (stub).
+    if (typeof Notification !== "undefined") {
+      if (Notification.permission === "granted") {
+        registerPushDevice();
+      } else if (Notification.permission === "default") {
+        Notification.requestPermission()
+          .then((perm) => {
+            if (perm === "granted") registerPushDevice();
+          })
+          .catch(() => {});
+      }
     }
 
     // 3) WebSocket
@@ -115,9 +130,13 @@ export const useNotificationsRealtime = () => {
             getTicketUrl,
             (status) => {
               dispatch(setWsStatus(status));
-              // WS uzilib, keyin qayta ulanganda — o'tkazib yuborilgan bo'lishi mumkin
-              // bo'lган xabarlar uchun sonni bir marta sinxronlaymiz
-              if (status === "OPEN") resyncCount(true);
+              if (status === "OPEN") {
+                // Birinchi ulanishda son mountda allaqachon olindi — takror so'rov shart emas.
+                // Faqat QAYTA ulanishda sinxronlaymiz: uzilish paytida push o'tkazib
+                // yuborilgan bo'lishi mumkin.
+                if (wsHasOpenedRef.current) resyncCount(true);
+                wsHasOpenedRef.current = true;
+              }
             }
           );
         } catch {
@@ -144,6 +163,9 @@ export const useNotificationsRealtime = () => {
       document.removeEventListener("visibilitychange", onVisible);
       window.removeEventListener("focus", onVisible);
       notificationSocket.disconnect();
+      // Logout / ilova yopilishi — bu qurilmani push ro'yxatidan chiqaramiz.
+      // Stub holatida (Firebase yo'q) hech qachon ro'yxatga olinmagani uchun no-op.
+      unregisterPushDevice();
     };
   }, [dispatch, resyncCount]);
 };

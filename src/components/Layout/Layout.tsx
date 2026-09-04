@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Outlet, useNavigate, useLocation, useOutletContext } from "react-router-dom";
 import Sidebar from "../ui/Sidebar";
 import Navbar from "./Navbar";
+import NotificationToastStack from "../Notifications/NotificationToastStack";
 import { axiosAPI } from "../../lib/axiosAPI";
 import { useDispatch } from "react-redux";
 import { setCurrentUser } from "../../store/slices/referencesSlice";
@@ -124,6 +125,7 @@ const Layout = () => {
           <Outlet context={{ setHeaderTitle: setCustomTitle, setHeaderSubtitle: setCustomSubtitle }} />
         </main>
       </div>
+      <NotificationToastStack />
     </div>
   );
 };
