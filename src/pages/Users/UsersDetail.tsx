@@ -8,7 +8,6 @@ import {
     Check,
     X,
     AlertCircle,
-    UserMinus,
     Play,
     Pause,
     Info,
@@ -186,10 +185,11 @@ const BLOCK_REASONS = [
 ];
 
 const UNBLOCK_REASONS = [
-    { value: "Shikoyat tasdiqlanmadi", label: "Shikoyat tasdiqlanmadi" },
-    { value: "Xatolik tufayli bloklangan", label: "Xatolik tufayli bloklangan" },
-    { value: "Foydalanuvchi murojaati qanoatlantirildi", label: "Foydalanuvchi murojaati qanoatlantirildi" },
-    { value: "Boshqa sabab", label: "Boshqa sabab" },
+    { value: "appeal_accepted", label: "Apellyatsiya qabul qilindi" },
+    { value: "mistake", label: "Xato bloklangan edi" },
+    { value: "reviewed_cleared", label: "Qayta ko'rib chiqildi, qoidabuzarlik topilmadi" },
+    { value: "penalty_period_ended", label: "Jazo muddati tugadi" },
+    { value: "other", label: "Boshqa" },
 ];
 
 const WAVEFORM_BARS = [
@@ -226,7 +226,7 @@ const UsersDetail = () => {
     const [sendNotification, setSendNotification] = useState(false);
 
     const [showUnblockModal, setShowUnblockModal] = useState(false);
-    const [unblockReason, setUnblockReason] = useState("Shikoyat tasdiqlanmadi");
+    const [unblockReason, setUnblockReason] = useState("appeal_accepted");
     const [sendUnblockNotification, setSendUnblockNotification] = useState(true);
     const [unblockSuccessAlert, setUnblockSuccessAlert] = useState<string | null>(null);
 
@@ -447,6 +447,7 @@ const UsersDetail = () => {
     };
 
     const candidateType = formatCandidateType(userData?.account?.candidate_type || userData?.personal?.candidate_type || userData?.candidate_type);
+    const intentLabel = (userData as any)?.personal?.intent_label || (userData as any)?.intent_label || "Niyati jiddiy";
     const guardian = userData?.guardian;
     const hasGuardian = Boolean(
         guardian && (
@@ -500,6 +501,10 @@ const UsersDetail = () => {
     const questionnaire = userData?.questionnaire;
     const totalAnswered = questionnaire?.answered ?? 0;
     const questionnaireSections = questionnaire?.sections || [];
+    const TOTAL_QUESTIONNAIRE_QUESTIONS = 30;
+    const questionnaireProgressText = totalAnswered > 0
+        ? `${totalAnswered}/${TOTAL_QUESTIONNAIRE_QUESTIONS} savol`
+        : "To'ldirilmagan";
 
     // Header updates
     useEffect(() => {
@@ -523,10 +528,6 @@ const UsersDetail = () => {
             const unblockPayload = {
                 reason: unblockReason,
                 notify_user: sendUnblockNotification,
-                phone_number: contact?.phone_masked || userData?.phone_number || "",
-                email: contact?.email || userData?.email || "user@example.com",
-                role: userData?.account?.role?.id || userData?.role_info?.id || "",
-                is_blocked: false,
             };
 
             await axiosAPI.post(`accounts/users/${userId}/unblock/`, unblockPayload);
@@ -645,11 +646,47 @@ const UsersDetail = () => {
                 </div>
             )}
 
+            {/* Top summary stat bar */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                <div className="bg-[#FAFAFA] dark:bg-zinc-900 rounded-xl py-3.5 px-[18px]">
+                    <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">Holati</p>
+                    <p className={`text-[17px] font-bold mt-1.5 ${isBlocked
+                        ? 'text-[#7F1D1D] dark:text-[#ff6b6b]'
+                        : isVerified
+                            ? 'text-[#00A854] dark:text-[#2ee088]'
+                            : 'text-[#0084FF] dark:text-[#66b3ff]'
+                        }`}>
+                        {isBlocked ? "Bloklangan" : (userData?.status || (isVerified ? "Tasdiqlangan" : "Tekshiruvda"))}
+                    </p>
+                </div>
+
+                <div className="bg-[#FAFAFA] dark:bg-zinc-900 rounded-xl py-3.5 px-[18px]">
+                    <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">So'rovnoma</p>
+                    <p className="text-[17px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-1.5">
+                        {questionnaireProgressText}
+                    </p>
+                </div>
+
+                <div className="bg-[#FAFAFA] dark:bg-zinc-900 rounded-xl py-3.5 px-[18px]">
+                    <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">Boshqaruv</p>
+                    <p className="text-[17px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-1.5">
+                        {managementType}
+                    </p>
+                </div>
+
+                <div className="bg-[#FAFAFA] dark:bg-zinc-900 rounded-xl py-3.5 px-[18px]">
+                    <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">Oxirgi faollik</p>
+                    <p className="text-[17px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-1.5">
+                        {lastActive}
+                    </p>
+                </div>
+            </div>
+
             {/* Main Layout Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
 
-                {/* LEFT COLUMN (8 cols): Main Profile Card, O'zi haqida, Anketa natijasi, Vakil ma'lumotlari */}
-                <div className="lg:col-span-8 space-y-4">
+                {/* LEFT COLUMN (8 cols): Main Profile Card, Anketa natijasi, O'zi haqida */}
+                <div className="lg:col-span-6 space-y-4">
 
                     {/* Card 1: Header + Shaxsiy ma'lumotlar + Manzil va aloqa */}
                     <div className="bg-white dark:bg-[#141414] rounded-2xl border border-[#e5e5e5] dark:border-[#262626] p-5 lg:p-6 shadow-sm">
@@ -683,11 +720,11 @@ const UsersDetail = () => {
 
                                     {/* Badges */}
                                     <div className="flex items-center gap-1.5 mt-2 flex-wrap">
-                                        <span className="border border-[#e5e5e5] dark:border-[#262626] bg-white dark:bg-zinc-800 text-[#404040] dark:text-zinc-300 text-[11px] font-medium px-2.5 py-0.5 rounded-md">
+                                        <span className="bg-[#F5F5F5] dark:bg-zinc-800 text-[#404040] dark:text-zinc-300 text-[11px] font-medium px-2.5 py-0.5 rounded-full">
                                             {candidateType}
                                         </span>
 
-                                        <span className="border border-[#e5e5e5] dark:border-[#262626] bg-white dark:bg-zinc-800 text-[#404040] dark:text-zinc-300 text-[11px] font-medium px-2.5 py-0.5 rounded-md">
+                                        <span className="bg-[#F5F5F5] dark:bg-zinc-800 text-[#404040] dark:text-zinc-300 text-[11px] font-medium px-2.5 py-0.5 rounded-full">
                                             {managementType}
                                         </span>
 
@@ -699,6 +736,12 @@ const UsersDetail = () => {
                                             } text-[11px] font-semibold px-2.5 py-0.5 rounded-full`}>
                                             {isBlocked ? "Bloklangan" : (userData?.status || (isVerified ? "Tasdiqlangan" : "Tekshiruvda"))}
                                         </span>
+
+                                        {intentLabel && (
+                                            <span className="bg-[#F5F5F5] dark:bg-zinc-800 text-[#404040] dark:text-zinc-300 text-[11px] font-medium px-2.5 py-0.5 rounded-full">
+                                                {intentLabel}
+                                            </span>
+                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -794,7 +837,7 @@ const UsersDetail = () => {
                                 </div>
 
                                 <div>
-                                    <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">Mahalla</p>
+                                    <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">Joylashuv</p>
                                     <p className="text-[13px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-0.5">{mahallaName}</p>
                                 </div>
 
@@ -817,87 +860,7 @@ const UsersDetail = () => {
 
                     </div>
 
-                    {/* Card 2: O'zi haqida */}
-                    <div className="bg-white dark:bg-[#141414] rounded-2xl border border-[#e5e5e5] dark:border-[#262626] p-5 lg:p-6 shadow-sm space-y-4">
-                        <div>
-                            <div className="flex items-center gap-2 mb-2.5">
-                                <Info className="w-4 h-4 text-[#737373] dark:text-[#a3a3a3]" />
-                                <h3 className="text-[13px] font-bold text-[#525252] dark:text-[#fafafa]">
-                                    O'zi haqida
-                                </h3>
-                            </div>
-
-                            {bioText ? (
-                                <p className="text-[12px] text-[#404040] dark:text-[#d4d4d4] leading-relaxed whitespace-pre-line">
-                                    {bioText}
-                                </p>
-                            ) : (
-                                <p className="text-[12px] text-[#737373] dark:text-[#a3a3a3] italic">
-                                    Ma'lumot kiritilmagan
-                                </p>
-                            )}
-                        </div>
-
-                        {/* Audio container */}
-                        {voiceIntro && (
-                            <div className="p-3 rounded-xl bg-[#F8FAFC] dark:bg-zinc-900/90 border border-[#e2e8f0] dark:border-zinc-800 flex items-center gap-3.5">
-                                <button
-                                    onClick={togglePlayAudio}
-                                    className="w-8 h-8 rounded-full bg-[#0474F3] hover:bg-[#0360cb] text-white flex items-center justify-center shrink-0 transition-colors shadow-sm cursor-pointer"
-                                >
-                                    {isPlaying ? (
-                                        <Pause className="w-3.5 h-3.5 fill-white" />
-                                    ) : (
-                                        <Play className="w-3.5 h-3.5 fill-white ml-0.5" />
-                                    )}
-                                </button>
-
-                                <div className="min-w-0 shrink-0">
-                                    <p className="text-[12px] font-bold text-[#0A0A0A] dark:text-[#fafafa]">
-                                        Ovozli tanishtiruv
-                                    </p>
-                                    <p className="text-[10px] text-[#737373] dark:text-[#a3a3a3]">
-                                        {dayjs().format("DD.MM.YYYY [kuni yuklangan]")}
-                                    </p>
-                                </div>
-
-                                {/* Waveform visualizer */}
-                                <div
-                                    onClick={(e) => {
-                                        const rect = e.currentTarget.getBoundingClientRect();
-                                        const clickX = e.clientX - rect.left;
-                                        const percent = Math.max(0, Math.min(100, (clickX / rect.width) * 100));
-                                        handleSeekAudio(percent);
-                                    }}
-                                    className="flex-1 flex items-center justify-between h-7 px-2 overflow-hidden cursor-pointer select-none"
-                                    title="O'tkazish uchun bosing"
-                                >
-                                    {WAVEFORM_BARS.map((height, i) => {
-                                        const barProgress = (i / (WAVEFORM_BARS.length - 1)) * 100;
-                                        const isBarActive = (!isPlaying && audioCurrentTime === 0) ? true : (audioProgress >= barProgress);
-                                        return (
-                                            <div
-                                                key={i}
-                                                className={`w-[2.5px] rounded-full transition-all duration-150 ${isBarActive
-                                                    ? 'bg-[#0474F3]'
-                                                    : 'bg-[#CBD5E1] dark:bg-zinc-700 hover:bg-blue-300'
-                                                    }`}
-                                                style={{ height: `${height}px` }}
-                                            />
-                                        );
-                                    })}
-                                </div>
-
-                                <span className="text-[12px] font-mono text-[#737373] dark:text-[#a3a3a3] shrink-0">
-                                    {isPlaying && audioDuration
-                                        ? `${formatAudioTime(audioCurrentTime)} / ${formatAudioTime(audioDuration)}`
-                                        : voiceDurationDisplay}
-                                </span>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Card 3: Anketa natijasi */}
+                    {/* Card 2: Anketa natijasi */}
                     <div className="bg-white dark:bg-[#141414] rounded-2xl border border-[#e5e5e5] dark:border-[#262626] p-5 lg:p-6 shadow-sm">
                         <div className="flex items-center justify-between mb-5">
                             <div className="flex items-center gap-2">
@@ -961,200 +924,91 @@ const UsersDetail = () => {
                         )}
                     </div>
 
-                    {/* Card 4: Vakil ma'lumotlari (from guardian) */}
-                    {hasVakilData && (
-                        <div className="bg-white dark:bg-[#141414] rounded-2xl border border-[#e5e5e5] dark:border-[#262626] p-5 lg:p-6 shadow-sm">
-
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                    <Contact className="w-4 h-4 text-[#737373] dark:text-[#a3a3a3]" />
-                                    <h3 className="text-[13px] font-bold text-[#525252] dark:text-[#fafafa]">
-                                        Vakil ma'lumotlari
-                                    </h3>
-                                </div>
+                    {/* Card 3: O'zi haqida */}
+                    <div className="bg-white dark:bg-[#141414] rounded-2xl border border-[#e5e5e5] dark:border-[#262626] p-5 lg:p-6 shadow-sm space-y-4">
+                        <div>
+                            <div className="flex items-center gap-2 mb-2.5">
+                                <Info className="w-4 h-4 text-[#737373] dark:text-[#a3a3a3]" />
+                                <h3 className="text-[13px] font-bold text-[#525252] dark:text-[#fafafa]">
+                                    O'zi haqida
+                                </h3>
                             </div>
 
-                            <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3] mt-2 mb-4 leading-relaxed">
-                                Vakil — nomzod nomidan anketani to'ldiruvchi va profilni boshqaruvchi qarindosh (amma, xola, amaki, tog'a).
-                            </p>
-
-                            <div className="space-y-4">
-                                {(Array.isArray(userData?.guardian) ? userData.guardian : [userData?.guardian]).map((rep: any, idx: number) => {
-                                    if (!rep) return null;
-
-                                    const repName = rep.name || rep.full_name || "";
-                                    const repDisplayId = rep.display_id || (rep.id ? `USR-${rep.id.slice(0, 5).toUpperCase()}` : "");
-                                    const repPhoto = rep.photo || rep.main_photo || null;
-                                    const repInitials = repName !== ""
-                                        ? repName.split(" ").filter(Boolean).map((n: string) => n[0]).join("").toUpperCase().slice(0, 2)
-                                        : "VK";
-                                    const repKinship = typeof rep.kinship === 'object' ? rep.kinship?.name : (rep.kinship_name || rep.kinship || "");
-                                    const repPhone = rep.phone || rep.phone_masked || rep.phone_number || "";
-                                    const repRole = rep.candidate_role ? formatCandidateType(rep.candidate_role) : candidateType;
-                                    const repDates = rep.dates || (rep.application_date || rep.sms_sent_date || rep.approved_date || rep.questionnaire_date ? {
-                                        application_date: rep.application_date || rep.created_at,
-                                        sms_sent_date: rep.sms_sent_date,
-                                        approved_date: rep.approved_date,
-                                        questionnaire_date: rep.questionnaire_date,
-                                    } : null);
-                                    const repTargetId = (rep.id && rep.id !== id) ? rep.id : (rep.user_id && rep.user_id !== id) ? rep.user_id : null;
-
-                                    return (
-                                        <div key={rep.id || idx} className="space-y-4">
-                                            {/* Representative Card Box */}
-                                            <div
-                                                onClick={() => {
-                                                    if (repTargetId) {
-                                                        window.open(`/users/${repTargetId}`, '_blank');
-                                                    }
-                                                }}
-                                                className={`bg-[#F8FAFC] dark:bg-zinc-900 border border-[#E2E8F0] dark:border-zinc-800 rounded-xl p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all ${repTargetId ? 'cursor-pointer hover:border-blue-400 hover:shadow-sm' : ''}`}
-                                            >
-                                                <div className="flex items-center gap-3">
-                                                    {repPhoto ? (
-                                                        <img
-                                                            src={repPhoto}
-                                                            alt={repName}
-                                                            className="w-10 h-10 rounded-full object-cover border border-[#e2e8f0] dark:border-zinc-700 shrink-0"
-                                                        />
-                                                    ) : (
-                                                        <div className="w-10 h-10 rounded-full bg-[#EDE9FE] dark:bg-purple-950/40 text-[#7C3AED] dark:text-purple-400 font-bold text-xs flex items-center justify-center shrink-0">
-                                                            {repInitials}
-                                                        </div>
-                                                    )}
-                                                    <div>
-                                                        <p className="text-[13px] font-bold text-[#0A0A0A] dark:text-[#fafafa]">
-                                                            {repName}
-                                                        </p>
-                                                        <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                                                            {repDisplayId && (
-                                                                <span className="text-[10px] text-[#737373] dark:text-[#a3a3a3]">
-                                                                    {repDisplayId}
-                                                                </span>
-                                                            )}
-                                                            <span className="bg-[#E2E8F0] dark:bg-zinc-800 text-[#475569] dark:text-zinc-300 text-[10px] font-semibold px-2 py-0.5 rounded">
-                                                                {repRole}
-                                                            </span>
-                                                            <span className={`${rep.is_approved || rep.status === "Tasdiqlangan"
-                                                                ? 'bg-[#E6F9F0] dark:bg-[#103020] text-[#00A854] dark:text-[#2ee088]'
-                                                                : 'bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400'
-                                                                } text-[10px] font-semibold px-2 py-0.5 rounded`}>
-                                                                {rep.status || (rep.is_approved ? "Tasdiqlangan" : "Kutilmoqda")}
-                                                            </span>
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                <div className="flex items-center gap-6 sm:gap-8 justify-between sm:justify-end">
-                                                    <div>
-                                                        <p className="text-[10px] text-[#737373] dark:text-[#a3a3a3]">Qarindoshligi</p>
-                                                        <p className="text-[12px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-0.5">{repKinship}</p>
-                                                    </div>
-
-                                                    <div>
-                                                        <p className="text-[10px] text-[#737373] dark:text-[#a3a3a3]">Telefon</p>
-                                                        <p className="text-[12px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-0.5">{repPhone}</p>
-                                                    </div>
-
-                                                    <div>
-                                                        <p className="text-[10px] text-[#737373] dark:text-[#a3a3a3]">Nomzodlari</p>
-                                                        <p className="text-[12px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-0.5">
-                                                            {rep.candidates_count !== undefined ? `${rep.candidates_count} ta` : "1 ta"}
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            {/* Rozilik va sanalar Timeline */}
-                                            {repDates && (
-                                                <div className="mt-4 pt-3 border-t border-[#f0f0f0] dark:border-[#262626]">
-                                                    <div className="flex items-center justify-between mb-3">
-                                                        <div className="flex items-center gap-1.5">
-                                                            <Info className="w-3.5 h-3.5 text-[#737373] dark:text-[#a3a3a3]" />
-                                                            <h4 className="text-[12px] font-bold text-[#525252] dark:text-[#fafafa]">
-                                                                Rozilik va sanalar
-                                                            </h4>
-                                                        </div>
-                                                        <span className="text-[10px] text-[#737373] dark:text-[#a3a3a3]">
-                                                            SMS nomzodning raqamiga boradi, havola 48 soat ishlaydi
-                                                        </span>
-                                                    </div>
-
-                                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-2">
-                                                        <div>
-                                                            <div className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 ${repDates.application_date
-                                                                ? 'bg-[#E6F9F0] dark:bg-[#103020] text-[#00A854] dark:text-[#2ee088]'
-                                                                : 'bg-gray-100 dark:bg-zinc-800 text-gray-400'
-                                                                }`}>
-                                                                {repDates.application_date ? <Check className="w-2.5 h-2.5 stroke-[3]" /> : <Minus className="w-2.5 h-2.5" />}
-                                                            </div>
-                                                            <p className="text-[11px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-1.5">
-                                                                Ariza to'ldirildi
-                                                            </p>
-                                                            <p className="text-[10px] text-[#737373] dark:text-[#a3a3a3] mt-0.5">
-                                                                {repDates.application_date ? dayjs(repDates.application_date).format("DD.MM.YYYY HH:mm") : ""}
-                                                            </p>
-                                                        </div>
-
-                                                        <div>
-                                                            <div className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 ${repDates.sms_sent_date
-                                                                ? 'bg-[#E6F9F0] dark:bg-[#103020] text-[#00A854] dark:text-[#2ee088]'
-                                                                : 'bg-gray-100 dark:bg-zinc-800 text-gray-400'
-                                                                }`}>
-                                                                {repDates.sms_sent_date ? <Check className="w-2.5 h-2.5 stroke-[3]" /> : <Minus className="w-2.5 h-2.5" />}
-                                                            </div>
-                                                            <p className="text-[11px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-1.5">
-                                                                Nomzodga SMS yuborildi
-                                                            </p>
-                                                            <p className="text-[10px] text-[#737373] dark:text-[#a3a3a3] mt-0.5">
-                                                                {repDates.sms_sent_date ? dayjs(repDates.sms_sent_date).format("DD.MM.YYYY HH:mm") : ""}
-                                                            </p>
-                                                        </div>
-
-                                                        <div>
-                                                            <div className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 ${repDates.approved_date
-                                                                ? 'bg-[#E6F9F0] dark:bg-[#103020] text-[#00A854] dark:text-[#2ee088]'
-                                                                : 'bg-gray-100 dark:bg-zinc-800 text-gray-400'
-                                                                }`}>
-                                                                {repDates.approved_date ? <Check className="w-2.5 h-2.5 stroke-[3]" /> : <Minus className="w-2.5 h-2.5" />}
-                                                            </div>
-                                                            <p className="text-[11px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-1.5">
-                                                                Nomzod rozilikni tasdiqladi
-                                                            </p>
-                                                            <p className="text-[10px] text-[#737373] dark:text-[#a3a3a3] mt-0.5">
-                                                                {repDates.approved_date ? dayjs(repDates.approved_date).format("DD.MM.YYYY HH:mm") : ""}
-                                                            </p>
-                                                        </div>
-
-                                                        <div>
-                                                            <div className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 ${repDates.questionnaire_date
-                                                                ? 'bg-[#E6F9F0] dark:bg-[#103020] text-[#00A854] dark:text-[#2ee088]'
-                                                                : 'bg-gray-100 dark:bg-zinc-800 text-gray-400'
-                                                                }`}>
-                                                                {repDates.questionnaire_date ? <Check className="w-2.5 h-2.5 stroke-[3]" /> : <Minus className="w-2.5 h-2.5" />}
-                                                            </div>
-                                                            <p className="text-[11px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-1.5">
-                                                                Anketa to'ldirildi
-                                                            </p>
-                                                            <p className="text-[10px] text-[#737373] dark:text-[#a3a3a3] mt-0.5">
-                                                                {repDates.questionnaire_date ? dayjs(repDates.questionnaire_date).format("DD.MM.YYYY HH:mm") : ""}
-                                                            </p>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-                                    );
-                                })}
-                            </div>
-
+                            {bioText ? (
+                                <p className="text-[12px] text-[#404040] dark:text-[#d4d4d4] leading-relaxed whitespace-pre-line">
+                                    {bioText}
+                                </p>
+                            ) : (
+                                <p className="text-[12px] text-[#737373] dark:text-[#a3a3a3] italic">
+                                    Ma'lumot kiritilmagan
+                                </p>
+                            )}
                         </div>
-                    )}
+
+                        {/* Audio container */}
+                        {voiceIntro && (
+                            <div className="pt-2.5 pr-3.5 pb-2.5 pl-3 rounded-[10px] bg-[#FAFAFA] dark:bg-zinc-900/90 border border-[#E5E5E5] dark:border-zinc-800 flex items-center gap-3.5">
+                                <button
+                                    onClick={togglePlayAudio}
+                                    className="w-8 h-8 rounded-full bg-[#0474F3] hover:bg-[#0360cb] text-white flex items-center justify-center shrink-0 transition-colors shadow-sm cursor-pointer"
+                                >
+                                    {isPlaying ? (
+                                        <Pause className="w-3.5 h-3.5 fill-white" />
+                                    ) : (
+                                        <Play className="w-3.5 h-3.5 fill-white ml-0.5" />
+                                    )}
+                                </button>
+
+                                <div className="min-w-0 shrink-0">
+                                    <p className="text-[12px] font-bold text-[#0A0A0A] dark:text-[#fafafa]">
+                                        Ovozli tanishtiruv
+                                    </p>
+                                    <p className="text-[10px] text-[#737373] dark:text-[#a3a3a3]">
+                                        {dayjs().format("DD.MM.YYYY [kuni yuklangan]")}
+                                    </p>
+                                </div>
+
+                                {/* Waveform visualizer */}
+                                <div
+                                    onClick={(e) => {
+                                        const rect = e.currentTarget.getBoundingClientRect();
+                                        const clickX = e.clientX - rect.left;
+                                        const percent = Math.max(0, Math.min(100, (clickX / rect.width) * 100));
+                                        handleSeekAudio(percent);
+                                    }}
+                                    className="flex-1 flex items-center justify-between h-7 px-2 overflow-hidden cursor-pointer select-none"
+                                    title="O'tkazish uchun bosing"
+                                >
+                                    {WAVEFORM_BARS.map((height, i) => {
+                                        const barProgress = (i / (WAVEFORM_BARS.length - 1)) * 100;
+                                        const isBarActive = (!isPlaying && audioCurrentTime === 0) ? true : (audioProgress >= barProgress);
+                                        return (
+                                            <div
+                                                key={i}
+                                                className={`w-[2.5px] rounded-full transition-all duration-150 ${isBarActive
+                                                    ? 'bg-[#0474F3]'
+                                                    : 'bg-[#CBD5E1] dark:bg-zinc-700 hover:bg-blue-300'
+                                                    }`}
+                                                style={{ height: `${height}px` }}
+                                            />
+                                        );
+                                    })}
+                                </div>
+
+                                <span className="text-[12px] font-mono text-[#737373] dark:text-[#a3a3a3] shrink-0">
+                                    {isPlaying && audioDuration
+                                        ? `${formatAudioTime(audioCurrentTime)} / ${formatAudioTime(audioDuration)}`
+                                        : voiceDurationDisplay}
+                                </span>
+                            </div>
+                        )}
+                    </div>
 
                 </div>
 
-                {/* RIGHT COLUMN (4 cols): Moderatsiya, Tekshiruv, Hisob ma'lumotlari, Tarix */}
-                <div className="lg:col-span-4 space-y-4">
+
+                {/* RIGHT COLUMN (4 cols): Moderatsiya, Tekshiruv, Vakil ma'lumotlari, Hisob ma'lumotlari, Tarix */}
+                <div className="lg:col-span-6 space-y-4">
 
                     {/* Card 1: Moderatsiya */}
                     <div className="bg-white dark:bg-[#141414] rounded-2xl border border-[#e5e5e5] dark:border-[#262626] p-5 shadow-sm space-y-3">
@@ -1183,16 +1037,16 @@ const UsersDetail = () => {
                         <button
                             onClick={handleBlock}
                             disabled={loadingAction}
-                            className={`w-full py-2 px-3.5 border rounded-md text-[12px] font-semibold flex items-center justify-start gap-2 transition-all cursor-pointer ${!isBlocked
-                                    ? 'bg-red-50 dark:bg-red-950/20 text-[#7F1D1D] dark:text-[#ef4444] border-red-200 dark:border-red-900/50'
-                                    : 'bg-white! border-[#e5e5e5]! text-[#0474F3] dark:text-[#0474F3]'
+                            className={`w-full py-2 px-3.5 border border-[#e5e5e5] dark:border-zinc-800 bg-white dark:bg-zinc-900 rounded-full text-[12px] font-semibold flex items-center justify-start gap-2 transition-all cursor-pointer ${!isBlocked
+                                    ? 'text-[#7F1D1D] dark:text-[#ef4444]'
+                                    : 'text-[#0474F3] dark:text-[#0474F3]'
                                 }`}
                         >
                             {loadingAction ? (
-                                <div className="w-3.5 h-3.5 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
+                                <div className={`w-3.5 h-3.5 border-2 border-t-transparent rounded-full animate-spin ${!isBlocked ? 'border-[#7F1D1D]' : 'border-[#0474F3]'}`} />
                             ) : (
                                 <>
-                                    <Info size={16} strokeWidth={3} className={`text-[#0a0a0a] ${isBlocked ? 'text-[#0474F3]!' : ''} `} />
+                                    <Info size={16} strokeWidth={3} className={!isBlocked ? 'text-[#7F1D1D] dark:text-[#ef4444]' : 'text-[#0474F3]'} />
                                     <span>{isBlocked ? "Blokdan chiqarish" : "Profilni bloklash"}</span>
                                 </>
                             )}
@@ -1299,6 +1153,168 @@ const UsersDetail = () => {
                                         {hasGuardian ? "Biriktirilgan" : "Biriktirilmagan"}
                                     </span>
                                 </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Card: Vakil ma'lumotlari (from guardian) */}
+                    <div className="bg-white dark:bg-[#141414] rounded-2xl border border-[#e5e5e5] dark:border-[#262626] p-5 shadow-sm">
+                        <div className="flex items-center gap-2">
+                            <Contact className="w-4 h-4 text-[#737373] dark:text-[#a3a3a3]" />
+                            <h3 className="text-[13px] font-bold text-[#525252] dark:text-[#fafafa]">
+                                Vakil ma'lumotlari
+                            </h3>
+                        </div>
+
+                        {hasVakilData ? (
+                            <>
+                                <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3] mt-2 mb-4 leading-relaxed">
+                                    Vakil — nomzod nomidan anketani to'ldiruvchi va profilni boshqaruvchi qarindosh (amma, xola, amaki, tog'a).
+                                </p>
+
+                                <div className="space-y-4">
+                                    {(Array.isArray(userData?.guardian) ? userData.guardian : [userData?.guardian]).map((rep: any, idx: number) => {
+                                        if (!rep) return null;
+
+                                        const repName = rep.name || rep.full_name || "";
+                                        const repDisplayId = rep.display_id || (rep.id ? `USR-${rep.id.slice(0, 5).toUpperCase()}` : "");
+                                        const repPhoto = rep.photo || rep.main_photo || null;
+                                        const repInitials = repName !== ""
+                                            ? repName.split(" ").filter(Boolean).map((n: string) => n[0]).join("").toUpperCase().slice(0, 2)
+                                            : "VK";
+                                        const repKinship = typeof rep.kinship === 'object' ? rep.kinship?.name : (rep.kinship_name || rep.kinship || "");
+                                        const repPhone = rep.phone || rep.phone_masked || rep.phone_number || "";
+                                        const repRole = rep.candidate_role ? formatCandidateType(rep.candidate_role) : candidateType;
+                                        const repDates = rep.dates || (rep.application_date || rep.sms_sent_date || rep.approved_date || rep.questionnaire_date ? {
+                                            application_date: rep.application_date || rep.created_at,
+                                            sms_sent_date: rep.sms_sent_date,
+                                            approved_date: rep.approved_date,
+                                            questionnaire_date: rep.questionnaire_date,
+                                        } : null);
+                                        const repTargetId = (rep.id && rep.id !== id) ? rep.id : (rep.user_id && rep.user_id !== id) ? rep.user_id : null;
+
+                                        return (
+                                            <div key={rep.id || idx} className="space-y-4">
+                                                {/* Representative Card Box */}
+                                                <div
+                                                    onClick={() => {
+                                                        if (repTargetId) {
+                                                            window.open(`/users/${repTargetId}`, '_blank');
+                                                        }
+                                                    }}
+                                                    className={`bg-[#FAFAFA] dark:bg-zinc-900 border border-[#E5E5E5] dark:border-zinc-800 rounded-[10px] p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 transition-all ${repTargetId ? 'cursor-pointer hover:border-blue-400 hover:shadow-sm' : ''}`}
+                                                >
+                                                    <div className="flex items-center gap-3 min-w-0">
+                                                        {repPhoto ? (
+                                                            <img
+                                                                src={repPhoto}
+                                                                alt={repName}
+                                                                className="w-10 h-10 rounded-full object-cover border border-[#e2e8f0] dark:border-zinc-700 shrink-0"
+                                                            />
+                                                        ) : (
+                                                            <div className="w-10 h-10 rounded-full bg-[#EEEAFB] dark:bg-purple-950/40 text-[#7C3AED] dark:text-purple-400 font-bold text-xs flex items-center justify-center shrink-0">
+                                                                {repInitials}
+                                                            </div>
+                                                        )}
+                                                        <div className="min-w-0">
+                                                            <p className="text-[13px] font-semibold text-[#0A0A0A] dark:text-[#fafafa] truncate">
+                                                                {repName}
+                                                            </p>
+                                                            <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                                                                {repDisplayId && (
+                                                                    <span className="text-[10px] text-[#737373] dark:text-[#a3a3a3]">
+                                                                        {repDisplayId}
+                                                                    </span>
+                                                                )}
+                                                                <span className="bg-[#F5F5F5] dark:bg-zinc-800 text-[#525252] dark:text-zinc-300 text-[11px] font-semibold px-2.5 py-0.5 rounded-full">
+                                                                    {repRole}
+                                                                </span>
+                                                                <span className={`${rep.is_approved || rep.status === "Tasdiqlangan"
+                                                                    ? 'bg-[#ECFDF5] dark:bg-[#103020] text-[#047857] dark:text-[#2ee088]'
+                                                                    : 'bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400'
+                                                                    } text-[11px] font-semibold px-2.5 py-0.5 rounded-full`}>
+                                                                    {rep.status || (rep.is_approved ? "Tasdiqlangan" : "Kutilmoqda")}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="flex items-center gap-4 justify-between sm:justify-end shrink-0">
+                                                        <div>
+                                                            <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">Qarindoshligi</p>
+                                                            <p className="text-[12px] font-semibold text-[#0A0A0A] dark:text-[#fafafa] mt-0.5 truncate">{repKinship}</p>
+                                                        </div>
+
+                                                        <div>
+                                                            <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">Telefon</p>
+                                                            <p className="text-[12px] font-semibold text-[#0A0A0A] dark:text-[#fafafa] mt-0.5 truncate">{repPhone}</p>
+                                                        </div>
+
+                                                        <div>
+                                                            <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">Nomzodlari</p>
+                                                            <p className="text-[12px] font-semibold text-[#0A0A0A] dark:text-[#fafafa] mt-0.5">
+                                                                {rep.candidates_count !== undefined ? `${rep.candidates_count} ta` : "1 ta"}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {/* Rozilik va sanalar Timeline */}
+                                                {repDates && (
+                                                    <div className="pt-3 border-t border-[#f0f0f0] dark:border-[#262626]">
+                                                        <div className="flex items-center gap-1.5 mb-3">
+                                                            <Info className="w-3.5 h-3.5 text-[#737373] dark:text-[#a3a3a3]" />
+                                                            <h4 className="text-[12px] font-bold text-[#525252] dark:text-[#fafafa]">
+                                                                Rozilik va sanalar
+                                                            </h4>
+                                                        </div>
+
+                                                        <div className="flex items-start">
+                                                            {[
+                                                                { done: repDates.application_date, label: "Ariza to'ldirildi", date: repDates.application_date },
+                                                                { done: repDates.sms_sent_date, label: "Nomzodga SMS yuborildi", date: repDates.sms_sent_date },
+                                                                { done: repDates.approved_date, label: "Nomzod rozilikni tasdiqladi", date: repDates.approved_date },
+                                                                { done: repDates.questionnaire_date, label: "Anketa to'ldirildi", date: repDates.questionnaire_date },
+                                                            ].map((step, stepIdx, arr) => (
+                                                                <div key={stepIdx} className={`flex flex-col ${stepIdx < arr.length - 1 ? 'flex-1' : ''}`}>
+                                                                    <div className="flex items-center w-full">
+                                                                        <div className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 ${step.done
+                                                                            ? 'bg-[#E6F9F0] dark:bg-[#103020] text-[#00A854] dark:text-[#2ee088]'
+                                                                            : 'bg-gray-100 dark:bg-zinc-800 text-gray-400'
+                                                                            }`}>
+                                                                            {step.done ? <Check className="w-2.5 h-2.5 stroke-[3]" /> : <Minus className="w-2.5 h-2.5" />}
+                                                                        </div>
+                                                                        {stepIdx < arr.length - 1 && (
+                                                                            <div className="flex-1 h-px bg-[#E5E5E5] dark:bg-zinc-700 mx-1.5" />
+                                                                        )}
+                                                                    </div>
+                                                                    <p className="text-[11px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-1.5 pr-2">
+                                                                        {step.label}
+                                                                    </p>
+                                                                    <p className="text-[10px] text-[#737373] dark:text-[#a3a3a3] mt-0.5">
+                                                                        {step.date ? dayjs(step.date).format("DD.MM.YYYY HH:mm") : ""}
+                                                                    </p>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </>
+                        ) : (
+                            <div className="flex flex-col items-center text-center py-5">
+                                <div className="w-11 h-11 rounded-full bg-[#F5F5F5] dark:bg-zinc-800 flex items-center justify-center mb-3">
+                                    <HugeIcon icon={IdIcon} className="w-5 h-5 text-[#a3a3a3] dark:text-zinc-500" />
+                                </div>
+                                <p className="text-[13px] font-bold text-[#0A0A0A] dark:text-[#fafafa]">
+                                    Vakil biriktirilmagan
+                                </p>
+                                <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3] mt-1.5 leading-relaxed">
+                                    Bu profilni nomzodning o'zi boshqaradi. Vakil biriktirilsa, uning ma'lumotlari va rozilik sanalari shu blokda ko'rinadi.
+                                </p>
                             </div>
                         )}
                     </div>
@@ -1457,13 +1473,9 @@ const UsersDetail = () => {
             {/* Block Modal */}
             {showBlockModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-                    <div className="w-full max-w-[480px] bg-white dark:bg-[#141414] rounded-[24px] border border-[#e5e5e5] dark:border-[#262626] p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+                    <div className="w-full max-w-[480px] bg-white dark:bg-[#141414] rounded-2xl border border-[#e5e5e5] dark:border-[#262626] pt-6 pr-6 pb-[22px] pl-6 shadow-[0px_18px_44px_0px_#0000002E] animate-in fade-in zoom-in-95 duration-200">
 
-                        <div className="w-12 h-12 rounded-full bg-[#FFF0F0] dark:bg-red-950/30 text-[#DC2626] dark:text-red-400 flex items-center justify-center">
-                            <UserMinus className="w-6 h-6" />
-                        </div>
-
-                        <h3 className="text-[16px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-4">
+                        <h3 className="text-[16px] font-bold text-[#0A0A0A] dark:text-[#fafafa]">
                             Profilni bloklashni tasdiqlaysizmi?
                         </h3>
 
@@ -1506,9 +1518,8 @@ const UsersDetail = () => {
                             </button>
                             <button
                                 onClick={handleBlockSubmit}
-                                className="px-5 py-2.5 flex items-center gap-2 bg-[#7F1D1D] hover:bg-[#b91c1c] text-white rounded-lg text-[13px] font-semibold transition-colors cursor-pointer shadow-xs"
+                                className="px-5 py-2.5 bg-[#7F1D1D] hover:bg-[#b91c1c] text-white rounded-lg text-[13px] font-semibold transition-colors cursor-pointer shadow-xs"
                             >
-                                <Check size={16} strokeWidth={2.5} />
                                 Profilni bloklash
                             </button>
                         </div>
@@ -1520,7 +1531,7 @@ const UsersDetail = () => {
             {/* Unblock Modal (matching Image 1) */}
             {showUnblockModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-                    <div className="w-full max-w-[480px] bg-white dark:bg-[#141414] rounded-[24px] border border-[#e5e5e5] dark:border-[#262626] p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+                    <div className="w-full max-w-[480px] bg-white dark:bg-[#141414] rounded-2xl border border-[#e5e5e5] dark:border-[#262626] pt-6 pr-6 pb-[22px] pl-6 shadow-[0px_18px_44px_0px_#0000002E] animate-in fade-in zoom-in-95 duration-200">
 
                         <h3 className="text-[17px] font-bold text-[#0A0A0A] dark:text-[#fafafa]">
                             Blokdan chiqarasizmi?
@@ -1560,21 +1571,18 @@ const UsersDetail = () => {
                             <button
                                 type="button"
                                 onClick={() => setShowUnblockModal(false)}
-                                className="px-5 py-2.5 bg-white dark:bg-zinc-900 border border-[#e5e5e5] dark:border-[#262626] rounded-xl text-[13px] font-semibold flex items-center gap-2 text-[#404040] dark:text-[#e5e5e5] hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                                className="px-5 py-2.5 bg-white dark:bg-zinc-900 border border-[#e5e5e5] dark:border-[#262626] rounded-xl text-[13px] font-semibold text-[#404040] dark:text-[#e5e5e5] hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
                             >
-                                <Check size={16} strokeWidth={2.5} className="text-[#0a0a0a] dark:text-[#fafafa]" />
                                 Bekor qilish
                             </button>
                             <button
                                 type="button"
                                 onClick={handleUnblockSubmit}
                                 disabled={loadingAction}
-                                className="px-5 py-2.5 flex items-center gap-2 bg-[#0474F3] hover:bg-[#0362cf] text-white rounded-xl text-[13px] font-semibold transition-colors cursor-pointer shadow-xs disabled:opacity-50"
+                                className="px-5 py-2.5 flex items-center justify-center gap-2 bg-[#0474F3] hover:bg-[#0362cf] text-white rounded-xl text-[13px] font-semibold transition-colors cursor-pointer shadow-xs disabled:opacity-50"
                             >
-                                {loadingAction ? (
+                                {loadingAction && (
                                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                ) : (
-                                    <Check size={16} strokeWidth={2.5} />
                                 )}
                                 Blokdan chiqarish
                             </button>
