@@ -285,27 +285,23 @@ export const ProfileModals: React.FC<ProfileModalsProps> = ({ isOpen, onClose })
   const [alertInfo, setAlertInfo] = useState<{ title: string; message: string } | null>(null);
 
   // Base profile details
-  const fullName =
-    currentUser?.full_name ||
-    (currentUser?.profile_info
-      ? `${currentUser.profile_info.first_name || ""} ${currentUser.profile_info.last_name || ""}`.trim()
-      : "") ||
-    "Abdulaziz Muxtorov";
+  const fullName = currentUser?.first_name + " " + currentUser?.last_name
 
   const splitNames = fullName.split(" ");
-  const initialFirstName = currentUser?.first_name || currentUser?.profile_info?.first_name || splitNames[0] || "Abdulaziz";
-  const initialLastName = currentUser?.last_name || currentUser?.profile_info?.last_name || splitNames.slice(1).join(" ") || "Muxtorov";
+  const initialFirstName = currentUser?.first_name || currentUser?.profile_info?.first_name || splitNames[0] || "";
+  const initialLastName = currentUser?.last_name || currentUser?.profile_info?.last_name || splitNames.slice(1).join(" ") || "";
   const initialPhone = currentUser?.phone_number
     ? formatUzbekPhone(currentUser.phone_number)
-    : currentUser?.phone
-      ? formatUzbekPhone(currentUser.phone)
-      : "+998 90 123 45 67";
-  const initialUsername = currentUser?.username || "a.muxtorov";
+    : currentUser?.phone_number
+      ? formatUzbekPhone(currentUser.phone_number)
+      : "";
+  const initialUsername = currentUser?.login || "";
   const joinedDate = currentUser?.created_at
     ? dayjs(currentUser.created_at).format("DD.MM.YYYY HH:mm")
-    : "01.01.2026 09:00";
-  const roleName = currentUser?.role_info?.name || currentUser?.role || "Super admin";
+    : "";
+  const roleName = currentUser?.role?.name || currentUser?.role || "";
   const initialPhoto = currentUser?.avatar || currentUser?.main_photo || currentUser?.photo_url || null;
+  const permissionsSummary = currentUser?.permissions_summary
 
   // Edit profile form state
   const [editFirstName, setEditFirstName] = useState(initialFirstName);
@@ -313,6 +309,7 @@ export const ProfileModals: React.FC<ProfileModalsProps> = ({ isOpen, onClose })
   const [editPhone, setEditPhone] = useState(initialPhone);
   const [draftPhoto, setDraftPhoto] = useState<string | null>(initialPhoto);
   const [tempPhoto, setTempPhoto] = useState<string | null>(initialPhoto);
+  const [removeAvatar, setRemoveAvatar] = useState(false);
   const [rawImageToCrop, setRawImageToCrop] = useState<string | null>(null);
   const [isCropOpen, setIsCropOpen] = useState(false);
   const [saveLoading, setSaveLoading] = useState(false);
@@ -338,6 +335,7 @@ export const ProfileModals: React.FC<ProfileModalsProps> = ({ isOpen, onClose })
       setEditPhone(initialPhone);
       setDraftPhoto(initialPhoto);
       setTempPhoto(initialPhoto);
+      setRemoveAvatar(false);
       setSaveError(null);
     }
   }, [isOpen, initialFirstName, initialLastName, initialPhone, initialPhoto]);
@@ -347,7 +345,8 @@ export const ProfileModals: React.FC<ProfileModalsProps> = ({ isOpen, onClose })
     editFirstName.trim() !== initialFirstName.trim() ||
     editLastName.trim() !== initialLastName.trim() ||
     editPhone.trim() !== initialPhone.trim() ||
-    draftPhoto !== initialPhoto;
+    draftPhoto !== initialPhoto ||
+    removeAvatar;
 
   // Initials generator
   const getInitials = (fName: string, lName: string) => {
@@ -483,9 +482,9 @@ export const ProfileModals: React.FC<ProfileModalsProps> = ({ isOpen, onClose })
         if (file) {
           formData.append("avatar", file);
         }
-      } else if (!draftPhoto && initialPhoto) {
-        // Avatar o'chirilgan holatda
-        formData.append("avatar", "");
+      } else if (removeAvatar || (!draftPhoto && initialPhoto)) {
+        // Avatar o'chirish: backend remove_avatar: true kutadi (multipart/form-data)
+        formData.append("remove_avatar", "true");
       }
 
       let response;
@@ -505,7 +504,17 @@ export const ProfileModals: React.FC<ProfileModalsProps> = ({ isOpen, onClose })
 
       const responseData = response?.data?.data || response?.data;
       const newFullName = `${editFirstName.trim()} ${editLastName.trim()}`.trim();
-      const updatedPhoto = responseData?.avatar || responseData?.main_photo || draftPhoto;
+
+      let updatedPhoto: string | null = null;
+      if (responseData?.avatar !== undefined) {
+        updatedPhoto = responseData.avatar;
+      } else if (responseData?.main_photo !== undefined) {
+        updatedPhoto = responseData.main_photo;
+      } else if (responseData?.photo_url !== undefined) {
+        updatedPhoto = responseData.photo_url;
+      } else {
+        updatedPhoto = (removeAvatar || !draftPhoto) ? null : draftPhoto;
+      }
 
       dispatch(
         setCurrentUser({
@@ -528,6 +537,10 @@ export const ProfileModals: React.FC<ProfileModalsProps> = ({ isOpen, onClose })
           },
         })
       );
+
+      setDraftPhoto(updatedPhoto);
+      setTempPhoto(updatedPhoto);
+      setRemoveAvatar(false);
 
       setAlertInfo({
         title: "Profil yangilandi",
@@ -575,6 +588,7 @@ export const ProfileModals: React.FC<ProfileModalsProps> = ({ isOpen, onClose })
 
   const handleCropSaved = (croppedUrl: string) => {
     setTempPhoto(croppedUrl);
+    setRemoveAvatar(false);
     setIsCropOpen(false);
     setRawImageToCrop(null);
   };
@@ -655,7 +669,7 @@ export const ProfileModals: React.FC<ProfileModalsProps> = ({ isOpen, onClose })
                     {roleName}
                   </span>
                   <span className="bg-[#ECFDF5] dark:bg-emerald-950/40 text-[#047857] dark:text-emerald-400 text-[12px] font-medium px-3 py-0.5 rounded-full">
-                    To'liq huquq
+                    {permissionsSummary}
                   </span>
                 </div>
               </div>
@@ -911,7 +925,7 @@ export const ProfileModals: React.FC<ProfileModalsProps> = ({ isOpen, onClose })
                 {roleName}
               </span>
               <span className="bg-[#ECFDF5] dark:bg-emerald-950/40 text-[#047857] dark:text-emerald-400 text-[12px] font-medium px-3 py-0.5 rounded-full">
-                To'liq huquq
+                {permissionsSummary}
               </span>
             </div>
           </div>
@@ -1045,6 +1059,11 @@ export const ProfileModals: React.FC<ProfileModalsProps> = ({ isOpen, onClose })
               type="button"
               onClick={() => {
                 setTempPhoto(draftPhoto);
+                if (draftPhoto === initialPhoto) {
+                  setRemoveAvatar(false);
+                } else if (!draftPhoto && initialPhoto) {
+                  setRemoveAvatar(true);
+                }
                 setActiveModal("edit");
               }}
               className="text-gray-400 hover:text-gray-600 dark:hover:text-zinc-200 transition-colors cursor-pointer p-1"
@@ -1086,8 +1105,8 @@ export const ProfileModals: React.FC<ProfileModalsProps> = ({ isOpen, onClose })
                 <span className="bg-[#F5F5F5] dark:bg-zinc-800 text-[#404040] dark:text-zinc-300 text-[12px] font-medium px-3 py-0.5 rounded-full">
                   {roleName}
                 </span>
-                <span className="bg-[#ECFDF5] dark:bg-emerald-950/40 text-[#047857] dark:text-emerald-400 text-[12px] font-medium px-3 py-0.5 rounded-full">
-                  To'liq huquq
+                <span className="bg-[#ECFDF5] dark:bg-emerald-950/40 text-[#04785  7] dark:text-emerald-400 text-[12px] font-medium px-3 py-0.5 rounded-full">
+                  {permissionsSummary}
                 </span>
               </div>
             </div>
@@ -1102,14 +1121,17 @@ export const ProfileModals: React.FC<ProfileModalsProps> = ({ isOpen, onClose })
           <div className="flex items-center justify-between gap-4 pt-2">
             <button
               type="button"
-              disabled={!tempPhoto}
+              disabled={!tempPhoto && !draftPhoto}
               onClick={() => {
                 setTempPhoto(null);
                 setDraftPhoto(null);
+                if (initialPhoto) {
+                  setRemoveAvatar(true);
+                }
               }}
-              className={`px-4 py-2.5 rounded-xl text-[13px] font-semibold flex items-center gap-2 transition-colors ${tempPhoto
-                  ? "bg-white dark:bg-zinc-900 border border-[#e5e5e5] dark:border-[#262626] text-[#7F1D1D] dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 cursor-pointer"
-                  : "bg-gray-100 dark:bg-zinc-800/60 border border-transparent text-gray-400 dark:text-zinc-600 cursor-not-allowed opacity-60"
+              className={`px-4 py-2.5 rounded-xl text-[13px] font-semibold flex items-center gap-2 transition-colors ${tempPhoto || draftPhoto
+                ? "bg-white dark:bg-zinc-900 border border-[#e5e5e5] dark:border-[#262626] text-[#7F1D1D] dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 cursor-pointer"
+                : "bg-gray-100 dark:bg-zinc-800/60 border border-transparent text-gray-400 dark:text-zinc-600 cursor-not-allowed opacity-60"
                 }`}
             >
               <Trash2 className="w-4 h-4" />
@@ -1121,6 +1143,11 @@ export const ProfileModals: React.FC<ProfileModalsProps> = ({ isOpen, onClose })
                 type="button"
                 onClick={() => {
                   setTempPhoto(draftPhoto);
+                  if (draftPhoto === initialPhoto) {
+                    setRemoveAvatar(false);
+                  } else if (!draftPhoto && initialPhoto) {
+                    setRemoveAvatar(true);
+                  }
                   setActiveModal("edit");
                 }}
                 className="px-4 py-2.5 bg-white dark:bg-zinc-900 border border-[#e5e5e5] dark:border-[#262626] rounded-xl text-[13px] font-medium text-[#0A0A0A] dark:text-white hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer flex items-center gap-1.5"
@@ -1133,6 +1160,11 @@ export const ProfileModals: React.FC<ProfileModalsProps> = ({ isOpen, onClose })
                 type="button"
                 onClick={() => {
                   setDraftPhoto(tempPhoto);
+                  if (!tempPhoto && initialPhoto) {
+                    setRemoveAvatar(true);
+                  } else if (tempPhoto) {
+                    setRemoveAvatar(false);
+                  }
                   setActiveModal("edit");
                 }}
                 className="px-4 py-2.5 bg-[#0070F3] hover:bg-[#0060df] text-white rounded-xl text-[13px] font-semibold flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"

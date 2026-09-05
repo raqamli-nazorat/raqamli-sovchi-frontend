@@ -287,16 +287,16 @@ const Sidebar = ({ collapsed, onToggle }: SidebarProps) => {
           onClick={() => setShowProfileModal(true)}
           className={`flex items-center gap-2.5 rounded-xl px-2 py-2 hover:bg-gray-50 dark:hover:bg-gray-800/60 cursor-pointer transition-colors ${collapsed ? "justify-center" : ""}`}
         >
-          {currentUser?.main_photo || currentUser?.photo_url || currentUser?.profile_info?.main_photo ? (
+          {currentUser?.avatar || currentUser?.photo_url || currentUser?.profile_info?.main_photo ? (
             <img
-              src={currentUser?.main_photo || currentUser?.photo_url || currentUser?.profile_info?.main_photo}
-              alt={currentUser?.full_name || "User"}
+              src={currentUser?.avatar || currentUser?.photo_url || currentUser?.profile_info?.main_photo}
+              alt={currentUser?.first_name + " " + currentUser?.last_name || "User"}
               className="w-8 h-8 rounded-full object-cover shrink-0"
             />
           ) : (
             <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center shrink-0">
               <span className="text-[11px] font-bold text-blue-600 dark:text-blue-400">
-                {currentUser?.full_name?.split(" ").map((i: string) => i?.slice(0, 1)).join("") || "US"}
+                {currentUser?.first_name?.slice(0,1) + currentUser?.last_name?.slice(0,1) || "US"}
               </span>
             </div>
           )}
@@ -304,9 +304,9 @@ const Sidebar = ({ collapsed, onToggle }: SidebarProps) => {
             <>
               <div className="flex-1 min-w-0">
                 <p className="text-[12px] font-semibold text-gray-800 dark:text-gray-200 truncate leading-tight">
-                  {currentUser?.full_name || currentUser?.profile_info?.first_name + " " + currentUser?.profile_info?.last_name}
+                  {currentUser?.full_name || currentUser?.first_name + " " + currentUser?.last_name}
                 </p>
-                <p className="text-[10px] text-gray-400 truncate">{currentUser?.role_info?.name || currentUser?.role}</p>
+                <p className="text-[10px] text-gray-400 truncate">{currentUser?.role?.name}</p>
               </div>
               <button className="p-1 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
                 <HugeiconsIcon icon={MoreHorizontalFreeIcons} size={14} strokeWidth={2} />
