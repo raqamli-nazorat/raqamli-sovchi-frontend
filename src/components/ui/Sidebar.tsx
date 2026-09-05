@@ -21,6 +21,7 @@ import {
   SidebarLeft01Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeIcon } from "./HugeIcon";
+import { ProfileModals } from "./ProfileModals";
 
 interface MenuChild {
   label: string;
@@ -103,7 +104,8 @@ const Sidebar = ({ collapsed, onToggle }: SidebarProps) => {
     return item.badge;
   };
 
-  const currentUser = useSelector((state: any) => state.references.currentUser)
+  const currentUser = useSelector((state: any) => state.references.currentUser);
+  const [showProfileModal, setShowProfileModal] = useState(false);
 
   return (
     <aside
@@ -282,7 +284,7 @@ const Sidebar = ({ collapsed, onToggle }: SidebarProps) => {
       <div className="border-t border-gray-100 dark:border-gray-800 p-3 space-y-1">
         {/* User row */}
         <div
-          onClick={() => navigate("/profile")}
+          onClick={() => setShowProfileModal(true)}
           className={`flex items-center gap-2.5 rounded-xl px-2 py-2 hover:bg-gray-50 dark:hover:bg-gray-800/60 cursor-pointer transition-colors ${collapsed ? "justify-center" : ""}`}
         >
           {currentUser?.main_photo || currentUser?.photo_url || currentUser?.profile_info?.main_photo ? (
@@ -313,6 +315,12 @@ const Sidebar = ({ collapsed, onToggle }: SidebarProps) => {
           )}
         </div>
       </div>
+
+      {/* ── Profile Modals (Mening profilim, Parolni o'zgartirish, Profilni tahrirlash, Profil surati) ── */}
+      <ProfileModals
+        isOpen={showProfileModal}
+        onClose={() => setShowProfileModal(false)}
+      />
     </aside>
   );
 };

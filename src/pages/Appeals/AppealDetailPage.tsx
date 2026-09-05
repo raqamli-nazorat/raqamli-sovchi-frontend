@@ -33,11 +33,22 @@ import {
 import dayjs from "dayjs";
 import { HugeIcon } from "@/components/ui/HugeIcon";
 import { LockIcon } from "@hugeicons/core-free-icons";
+import { useHeader } from "../../components/Layout/Layout";
 
 const AppealDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const { setHeaderTitle, setHeaderSubtitle } = useHeader();
+
+  useEffect(() => {
+    setHeaderTitle("Shikoyat tafsiloti");
+    setHeaderSubtitle("");
+    return () => {
+      setHeaderTitle(undefined);
+      setHeaderSubtitle(undefined);
+    };
+  }, [setHeaderTitle, setHeaderSubtitle]);
 
   const [complaint, setComplaint] = useState<ComplaintDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -385,7 +396,7 @@ const AppealDetailPage = () => {
         <div>
           <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">Holati</p>
           <p
-            className={`text-[16px] font-bold mt-1 ${status === "approved"
+            className={`text-[16px] font-semibold mt-1 ${status === "approved"
                 ? "text-[#059669] dark:text-[#10B981]"
                 : status === "rejected"
                   ? "text-[#DC2626] dark:text-red-400"
@@ -398,21 +409,21 @@ const AppealDetailPage = () => {
 
         <div>
           <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">Qoidabuzarlik darajasi</p>
-          <p className="text-[16px] font-bold text-[#991B1B] dark:text-red-400 mt-1">
+          <p className="text-[16px] font-semibold text-[#991B1B] dark:text-red-400 mt-1">
             {analysis.level || "Yuqori"}
           </p>
         </div>
 
         <div>
           <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">Shikoyatlar soni</p>
-          <p className="text-[16px] font-bold text-[#0A0A0A] dark:text-white mt-1">
+          <p className="text-[16px] font-semibold text-[#0A0A0A] dark:text-white mt-1">
             {complaint.previous_complaints_count ? `${complaint.previous_complaints_count} ta` : analysis.reports || "3 ta"}
           </p>
         </div>
 
         <div>
           <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">Yaratilgan</p>
-          <p className="text-[16px] font-bold text-[#0A0A0A] dark:text-white mt-1">
+          <p className="text-[16px] font-semibold text-[#0A0A0A] dark:text-white mt-1">
             {complaint.created_at ? dayjs(complaint.created_at).format("DD.MM.YYYY HH:mm") : "14.07.2026 09:14"}
           </p>
         </div>

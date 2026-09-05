@@ -93,16 +93,6 @@ const UsersPage = () => {
     return count;
   }, [appliedFilters]);
 
-  // Human-readable label for the currently applied "type" filter (used in the empty state message)
-  const activeFilterLabel = useMemo(() => {
-    if (!appliedFilters.candidate_type) return null;
-    const t = appliedFilters.candidate_type.toLowerCase();
-    if (t === "kuyov" || t === "groom") return "Kuyov";
-    if (t === "kelin" || t === "bride") return "Kelin";
-    if (t === "vakil" || t === "representative") return "Vakil";
-    return appliedFilters.candidate_type;
-  }, [appliedFilters.candidate_type]);
-
   // Fetch Users data
   const fetchUsers = async (pageNumber: number, isInitial: boolean = false) => {
     if (isFetchingRef.current && !isInitial) return;
@@ -272,6 +262,35 @@ const UsersPage = () => {
     return type.charAt(0).toUpperCase() + type.slice(1);
   };
 
+  const formatRole = (role?: string | null, candidateType?: string | null) => {
+    if (role) {
+      const r = role.toLowerCase();
+      if (r === "vakil" || r === "representative") return "Vakil";
+      if (r === "user" || r === "nomzod") return "Nomzod";
+      return role;
+    }
+    if (candidateType?.toLowerCase() === "vakil" || candidateType?.toLowerCase() === "representative") {
+      return "Vakil";
+    }
+    return "Nomzod";
+  };
+
+  const formatAuthProvider = (provider?: string | null) => {
+    if (!provider) return "Telefon raqami";
+    const p = provider.toLowerCase();
+    if (p === "phone" || p === "phone_number" || p.includes("telefon")) return "Telefon raqami";
+    if (p === "telegram") return "Telegram";
+    if (p === "google") return "Google";
+    if (p === "representative" || p === "vakil" || p.includes("vakil")) return "Vakil orqali";
+    return provider;
+  };
+
+  const formatDateTime = (dateStr?: string | null) => {
+    if (!dateStr) return "—";
+    const d = dayjs(dateStr);
+    return d.isValid() ? d.format("DD.MM.YYYY HH:mm") : "—";
+  };
+
   const handleClearAllFilters = () => {
     setAppliedFilters({});
     setSearchParams((prev) => {
@@ -325,11 +344,10 @@ const UsersPage = () => {
         {/* Filter Button */}
         <button
           onClick={() => setIsFilterModalOpen(true)}
-          className={`flex items-center gap-2 h-9 px-4 rounded-lg border text-[13.5px] font-medium transition-colors cursor-pointer shrink-0 shadow-2xs ${
-            activeFiltersCount > 0
+          className={`flex items-center gap-2 h-9 px-4 rounded-lg border text-[13.5px] font-medium transition-colors cursor-pointer shrink-0 shadow-2xs ${activeFiltersCount > 0
               ? "bg-[#0474F3]/10 border-[#0474F3] text-[#0474F3] dark:bg-[#0474F3]/20"
               : "bg-white dark:bg-[#141414] border-[#e5e5e5] dark:border-[#262626] text-[#0A0A0A] dark:text-[#fafafa] hover:bg-gray-50 dark:hover:bg-zinc-800"
-          }`}
+            }`}
         >
           <SlidersHorizontal size={16} className="stroke-[2]" />
           <span>Filtr</span>
@@ -347,197 +365,254 @@ const UsersPage = () => {
         onScroll={handleScroll}
         className="bg-white dark:bg-[#141414] overflow-auto max-h-[calc(100vh-130px)]"
       >
-          <table className="w-full text-left border-collapse min-w-max">
-            {/* Table Header */}
-            <thead className="sticky top-0 z-10 bg-[#fafafa] dark:bg-[#141414]">
-              <tr className="border-b border-[#F5F5F5] dark:border-[#262626] text-[12px] font-normal text-[#737373] dark:text-[#a3a3a3] whitespace-nowrap">
-                <th className="py-4 pl-6 pr-3 font-normal">Foydalanuvchi</th>
-                <th className="py-4 px-3 font-normal">Turi</th>
-                <th className="py-4 px-3 font-normal">Hudud</th>
-                <th className="py-4 px-3 font-normal">Anketa</th>
-                <th className="py-4 px-3 font-normal">Holati</th>
-                <th className="py-4 pl-2 pr-6 text-right font-normal"></th>
-              </tr>
-            </thead>
+        <table className="w-full text-left border-collapse min-w-max">
+          {/* Table Header */}
+          <thead className="sticky top-0 z-10 bg-[#fafafa] dark:bg-[#141414]">
+            <tr className="border-b border-[#F5F5F5] dark:border-[#262626] text-[12px] font-normal text-[#737373] dark:text-[#a3a3a3] whitespace-nowrap">
+              <th className="py-4 pl-6 pr-2 font-normal">#</th>
+              <th className="py-4 px-3 font-normal">Foydalanuvchi</th>
+              <th className="py-4 px-3 font-normal">ID</th>
+              <th className="py-4 px-3 font-normal">Viloyat</th>
+              <th className="py-4 px-3 font-normal">Tuman</th>
+              <th className="py-4 px-3 font-normal">Turi</th>
+              <th className="py-4 px-3 font-normal">Roli</th>
+              <th className="py-4 px-3 font-normal">Ro'yxatdan o'tgan usul</th>
+              <th className="py-4 px-3 font-normal">So'rovnoma</th>
+              <th className="py-4 px-3 font-normal">Holati</th>
+              <th className="py-4 px-3 font-normal">Yaratilgan</th>
+              <th className="py-4 px-3 font-normal">Yangilangan</th>
+              <th className="py-4 pl-2 pr-6 text-right font-normal"></th>
+            </tr>
+          </thead>
 
-            {/* Table Body */}
-            <tbody className="divide-y divide-[#F5F5F5] dark:divide-[#262626]">
-              {loading && page === 1 ? (
-                // Shimmer loading skeletons
-                Array.from({ length: 10 }).map((_, i) => (
-                  <tr key={i} className="animate-pulse">
-                    <td className="py-4 pl-6 pr-3">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-zinc-800" />
-                        <div className="w-32 h-4 bg-gray-200 dark:bg-zinc-800 rounded" />
-                      </div>
-                    </td>
-                    <td className="py-4 px-3">
-                      <div className="w-16 h-4 bg-gray-200 dark:bg-zinc-800 rounded" />
-                    </td>
-                    <td className="py-4 px-3">
-                      <div className="w-24 h-4 bg-gray-200 dark:bg-zinc-800 rounded" />
-                    </td>
-                    <td className="py-4 px-3">
-                      <div className="w-20 h-4 bg-gray-200 dark:bg-zinc-800 rounded" />
-                    </td>
-                    <td className="py-4 px-3">
-                      <div className="w-24 h-6 bg-gray-200 dark:bg-zinc-800 rounded-full" />
-                    </td>
-                    <td className="py-4 pl-2 pr-6">
-                      <div className="w-4 h-4 bg-gray-200 dark:bg-zinc-800 rounded ml-auto" />
-                    </td>
-                  </tr>
-                ))
-              ) : users.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="py-16 text-center">
-                    <div className="flex flex-col items-center justify-center">
-                      <div className="w-14 h-14 bg-gray-50 dark:bg-zinc-900 rounded-full flex items-center justify-center mb-3.5 border border-gray-100 dark:border-zinc-800">
-                        <Search size={22} className="text-gray-400 dark:text-gray-500" />
-                      </div>
-                      <h3 className="text-[15px] font-semibold text-gray-900 dark:text-white mb-1">
-                        {error ? "Xatolik yuz berdi" : "Natija topilmadi"}
-                      </h3>
-                      <p className="text-[13px] text-gray-500 dark:text-gray-400 max-w-sm">
-                        {error
-                          ? error
-                          : search && activeFilterLabel
-                            ? `«${search}» bo'yicha «${activeFilterLabel}» filtrida hech narsa yo'q. ID, ism yoki telefonni tekshirib ko'ring.`
-                            : search
-                              ? `«${search}» bo'yicha hech narsa yo'q. ID, ism yoki telefonni tekshirib ko'ring.`
-                              : activeFilterLabel
-                                ? `«${activeFilterLabel}» filtrida hech narsa yo'q. ID, ism yoki telefonni tekshirib ko'ring.`
-                                : "Kiritilgan qidiruv yoki filtr bo'yicha hech qanday foydalanuvchi topilmadi."}
-                      </p>
-                      {(search || activeFiltersCount > 0) && (
-                        <button
-                          onClick={handleClearAllFilters}
-                          className="mt-4 flex items-center gap-2 px-4 py-2 border border-[#E5E5E5] dark:border-[#262626] rounded-xl text-[12.5px] font-semibold text-[#404040] dark:text-[#E5E5E5] bg-white dark:bg-[#141414] hover:bg-gray-50 dark:hover:bg-zinc-800 transition-all cursor-pointer"
-                        >
-                          <X size={14} className="stroke-[2.5]" />
-                          Filtrlarni tozalash
-                        </button>
-                      )}
+          {/* Table Body */}
+          <tbody className="divide-y divide-[#F5F5F5] dark:divide-[#262626]">
+            {loading && page === 1 ? (
+              // Shimmer loading skeletons
+              Array.from({ length: 10 }).map((_, i) => (
+                <tr key={i} className="animate-pulse">
+                  <td className="py-4 pl-6 pr-2">
+                    <div className="w-4 h-4 bg-gray-200 dark:bg-zinc-800 rounded" />
+                  </td>
+                  <td className="py-4 px-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-zinc-800" />
+                      <div className="w-32 h-4 bg-gray-200 dark:bg-zinc-800 rounded" />
                     </div>
                   </td>
+                  <td className="py-4 px-3">
+                    <div className="w-20 h-4 bg-gray-200 dark:bg-zinc-800 rounded" />
+                  </td>
+                  <td className="py-4 px-3">
+                    <div className="w-16 h-4 bg-gray-200 dark:bg-zinc-800 rounded" />
+                  </td>
+                  <td className="py-4 px-3">
+                    <div className="w-16 h-4 bg-gray-200 dark:bg-zinc-800 rounded" />
+                  </td>
+                  <td className="py-4 px-3">
+                    <div className="w-12 h-4 bg-gray-200 dark:bg-zinc-800 rounded" />
+                  </td>
+                  <td className="py-4 px-3">
+                    <div className="w-12 h-4 bg-gray-200 dark:bg-zinc-800 rounded" />
+                  </td>
+                  <td className="py-4 px-3">
+                    <div className="w-24 h-4 bg-gray-200 dark:bg-zinc-800 rounded" />
+                  </td>
+                  <td className="py-4 px-3">
+                    <div className="w-20 h-4 bg-gray-200 dark:bg-zinc-800 rounded" />
+                  </td>
+                  <td className="py-4 px-3">
+                    <div className="w-24 h-6 bg-gray-200 dark:bg-zinc-800 rounded-full" />
+                  </td>
+                  <td className="py-4 px-3">
+                    <div className="w-24 h-4 bg-gray-200 dark:bg-zinc-800 rounded" />
+                  </td>
+                  <td className="py-4 px-3">
+                    <div className="w-24 h-4 bg-gray-200 dark:bg-zinc-800 rounded" />
+                  </td>
+                  <td className="py-4 pl-2 pr-6">
+                    <div className="w-4 h-4 bg-gray-200 dark:bg-zinc-800 rounded ml-auto" />
+                  </td>
                 </tr>
-              ) : (
-                users.map((user, index) => {
-                  const statusStyles = getStatusStyles(user.status, user.is_blocked);
-                  const fullName =
-                    user.full_name ||
-                    (user.profile_info?.first_name
-                      ? `${user.profile_info.first_name} ${user.profile_info.last_name || ""}`.trim()
-                      : "") ||
-                    user.phone_number ||
-                    "";
-                  const displayId = user.display_id || "";
-                  const regionName =
-                    user.region_name || user.profile_info?.region_info?.name || "";
-                  const districtName =
-                    user.district_name || user.profile_info?.district_info?.name || "";
-                  const candidateType = formatCandidateType(
-                    user.candidate_type || user.profile_info?.candidate_type
-                  );
-                  const completion = user.questionnaire_percent ?? 0;
-                  const avatarImage =
-                    user.main_photo || "";
-                  const initials = getInitials(fullName, user.phone_number);
+              ))
+            ) : users.length === 0 ? (
+              <tr>
+                <td colSpan={13} className="py-16 text-center">
+                  <div className="flex flex-col items-center justify-center">
+                    <div className="w-14 h-14 bg-gray-50 dark:bg-zinc-900 rounded-full flex items-center justify-center mb-3.5 border border-gray-100 dark:border-zinc-800">
+                      <Search size={22} className="text-gray-400 dark:text-gray-500" />
+                    </div>
+                    <h3 className="text-[15px] font-semibold text-gray-900 dark:text-white mb-1">
+                      {error ? "Xatolik yuz berdi" : "Natija topilmadi"}
+                    </h3>
+                    <p className="text-[13px] text-gray-500 dark:text-gray-400 max-w-sm">
+                      {error || "Kiritilgan qidiruv yoki filtr bo'yicha hech qanday foydalanuvchi topilmadi."}
+                    </p>
+                    {(search || activeFiltersCount > 0) && (
+                      <button
+                        onClick={handleClearAllFilters}
+                        className="mt-4 flex items-center gap-2 px-4 py-2 border border-[#E5E5E5] dark:border-[#262626] rounded-xl text-[12.5px] font-semibold text-[#404040] dark:text-[#E5E5E5] bg-white dark:bg-[#141414] hover:bg-gray-50 dark:hover:bg-zinc-800 transition-all cursor-pointer"
+                      >
+                        <X size={14} className="stroke-[2.5]" />
+                        Filtrlarni tozalash
+                      </button>
+                    )}
+                  </div>
+                </td>
+              </tr>
+            ) : (
+              users.map((user, index) => {
+                const statusStyles = getStatusStyles(user.status, user.is_blocked);
+                const fullName =
+                  user.full_name ||
+                  (user.profile_info?.first_name
+                    ? `${user.profile_info.first_name} ${user.profile_info.last_name || ""}`.trim()
+                    : "") ||
+                  user.phone_number ||
+                  "";
+                const displayId = user.display_id || "";
+                const regionName =
+                  user.region_name || user.profile_info?.region_info?.name || "";
+                const districtName =
+                  user.district_name || user.profile_info?.district_info?.name || "";
+                const candidateType = formatCandidateType(
+                  user.candidate_type || user.profile_info?.candidate_type
+                );
+                const roleName = formatRole(
+                  user.role_name || user.role_info?.name,
+                  user.candidate_type || user.profile_info?.candidate_type
+                );
+                const registeredMethod = formatAuthProvider(
+                  user.auth_provider || user.registered_method
+                );
+                const completion = user.questionnaire_percent ?? 0;
+                const createdAt = formatDateTime(user.created_at);
+                const updatedAt = formatDateTime(user.updated_at || user.created_at);
+                const avatarImage =
+                  user.main_photo || "";
+                const initials = getInitials(fullName, user.phone_number);
 
-                  const hududdName = [regionName, districtName].filter(Boolean).join(", ");
+                return (
+                  <tr
+                    key={user.id || index}
+                    onClick={() => navigate(`/users/details/${user.id}`)}
+                    className="hover:bg-gray-50/70 dark:hover:bg-zinc-900/40 cursor-pointer transition-colors text-[13px] whitespace-nowrap"
+                  >
+                    {/* # */}
+                    <td className="py-3.5 pl-6 pr-2 text-[#404040] dark:text-[#a3a3a3] font-normal">
+                      {index + 1}
+                    </td>
 
-                  return (
-                    <tr
-                      key={user.id || index}
-                      onClick={() => navigate(`/users/details/${user.id}`)}
-                      className="hover:bg-gray-50/70 dark:hover:bg-zinc-900/40 cursor-pointer transition-colors text-[13px] whitespace-nowrap"
-                    >
-                      {/* Foydalanuvchi */}
-                      <td className="py-3.5 pl-6 pr-3">
-                        <div className="flex items-center gap-3">
-                          {avatarImage ? (
-                            <img
-                              src={avatarImage}
-                              alt={fullName}
-                              className="w-7.5 h-7.5 rounded-full object-cover shrink-0"
-                            />
-                          ) : (
-                            <div
-                              className={`w-7.5 h-7.5 rounded-full flex items-center justify-center font-bold text-[11.5px] shrink-0 ${statusStyles.bg} ${statusStyles.text}`}
-                            >
-                              {initials}
-                            </div>
-                          )}
-                          <div className="min-w-0">
-                            <p className="font-semibold text-[13px] text-[#0A0A0A] dark:text-[#fafafa] truncate">
-                              {fullName}
-                            </p>
-                            {displayId && (
-                              <div className="inline-flex items-center gap-1 group/id">
-                                <span className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">{displayId}</span>
-                                <button
-                                  type="button"
-                                  onClick={(e) => handleCopyId(e, displayId, user.id)}
-                                  className="p-0.5 rounded hover:bg-gray-100 dark:hover:bg-zinc-800 text-gray-400 hover:text-gray-700 dark:hover:text-zinc-200 transition-colors opacity-0 group-hover/id:opacity-100 focus:opacity-100 group-hover:opacity-100 cursor-pointer"
-                                  title="Nusxa olish"
-                                >
-                                  {copiedId === user.id ? (
-                                    <Check className="w-3 h-3 text-emerald-500 stroke-[2.5]" />
-                                  ) : (
-                                    <Copy className="w-3 h-3 stroke-[2]" />
-                                  )}
-                                </button>
-                              </div>
-                            )}
+                    {/* Foydalanuvchi */}
+                    <td className="py-3.5 px-3">
+                      <div className="flex items-center gap-3">
+                        {avatarImage ? (
+                          <img
+                            src={avatarImage}
+                            alt={fullName}
+                            className="w-7.5 h-7.5 rounded-full object-cover shrink-0"
+                          />
+                        ) : (
+                          <div
+                            className={`w-7.5 h-7.5 rounded-full flex items-center justify-center font-bold text-[11.5px] shrink-0 ${statusStyles.bg} ${statusStyles.text}`}
+                          >
+                            {initials}
                           </div>
-                        </div>
-                      </td>
-
-                      {/* Turi */}
-                      <td className="py-3.5 px-3 text-[#404040] dark:text-[#fafafa] font-normal">
-                        {candidateType}
-                      </td>
-
-                      {/* Hudud */}
-                      <td className="py-3.5 px-3 text-[#404040] dark:text-[#fafafa] font-normal">
-                        {hududdName}
-                      </td>
-
-                      {/* Anketa */}
-                      <td className="py-3.5 px-3">
-                        <div className="flex items-center gap-2.5">
-                          <div className="w-14 bg-[#E5E5E5] dark:bg-zinc-800 h-1.5 rounded-full overflow-hidden shrink-0">
-                            <div
-                              className="bg-[#0474F3] h-full transition-all duration-500 rounded-full"
-                              style={{ width: `${completion}%` }}
-                            />
-                          </div>
-                          <span className="text-[12px] font-normal text-[#737373] dark:text-[#a3a3a3]">
-                            {completion}%
-                          </span>
-                        </div>
-                      </td>
-
-                      {/* Holati */}
-                      <td className="py-3.5 px-3">
-                        <span
-                          className={`inline-block px-2.5 py-1 rounded-full text-[11.5px] font-medium tracking-wide ${statusStyles.bg} ${statusStyles.text}`}
-                        >
-                          {statusStyles.label}
+                        )}
+                        <span className="font-semibold text-[#13px] text-[#0A0A0A] dark:text-[#fafafa] truncate">
+                          {fullName}
                         </span>
-                      </td>
+                      </div>
+                    </td>
 
-                      {/* Action Chevron */}
-                      <td className="py-3.5 pl-2 pr-6 text-right text-[#6B6B6B] hover:text-gray-600 dark:hover:text-zinc-300 transition-colors">
-                        <ChevronRight size={16} />
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
+                    {/* ID */}
+                    <td className="py-3.5 px-3 text-[#404040] dark:text-[#a3a3a3] font-normal">
+                      <div className="inline-flex items-center gap-1.5 group/id">
+                        <span>{displayId}</span>
+                        <button
+                          type="button"
+                          onClick={(e) => handleCopyId(e, displayId, user.id)}
+                          className="p-1 rounded hover:bg-gray-100 dark:hover:bg-zinc-800 text-gray-400 hover:text-gray-700 dark:hover:text-zinc-200 transition-colors opacity-0 group-hover/id:opacity-100 focus:opacity-100 group-hover:opacity-100 cursor-pointer"
+                          title="Nusxa olish"
+                        >
+                          {copiedId === user.id ? (
+                            <Check className="w-3.5 h-3.5 text-emerald-500 stroke-[2.5]" />
+                          ) : (
+                            <Copy className="w-3.5 h-3.5 stroke-[2]" />
+                          )}
+                        </button>
+                      </div>
+                    </td>
+
+                    {/* Viloyat */}
+                    <td className="py-3.5 px-3 text-[#404040] dark:text-[#fafafa] font-normal">
+                      {regionName}
+                    </td>
+
+                    {/* Tuman */}
+                    <td className="py-3.5 px-3 text-[#404040] dark:text-[#a3a3a3] font-normal">
+                      {districtName}
+                    </td>
+
+                    {/* Turi */}
+                    <td className="py-3.5 px-3 text-[#404040] dark:text-[#fafafa] font-normal">
+                      {candidateType}
+                    </td>
+
+                    {/* Roli */}
+                    <td className="py-3.5 px-3 text-[#404040] dark:text-[#a3a3a3] font-normal">
+                      {roleName}
+                    </td>
+
+                    {/* Ro'yxatdan o'tgan usul */}
+                    <td className="py-3.5 px-3 text-[#404040] dark:text-[#fafafa] font-normal">
+                      {registeredMethod}
+                    </td>
+
+                    {/* So'rovnoma */}
+                    <td className="py-3.5 px-3">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-14 bg-[#E5E5E5] dark:bg-zinc-800 h-1.5 rounded-full overflow-hidden shrink-0">
+                          <div
+                            className="bg-[#0474F3] h-full transition-all duration-500 rounded-full"
+                            style={{ width: `${completion}%` }}
+                          />
+                        </div>
+                        <span className="text-[12px] font-normal text-[#737373] dark:text-[#a3a3a3]">
+                          {completion}%
+                        </span>
+                      </div>
+                    </td>
+
+                    {/* Holati */}
+                    <td className="py-3.5 px-3">
+                      <span
+                        className={`inline-block px-2.5 py-1 rounded-full text-[11.5px] font-medium tracking-wide ${statusStyles.bg} ${statusStyles.text}`}
+                      >
+                        {statusStyles.label}
+                      </span>
+                    </td>
+
+                    {/* Yaratilgan */}
+                    <td className="py-3.5 px-3 text-[#404040] dark:text-[#fafafa] font-normal whitespace-nowrap">
+                      {createdAt}
+                    </td>
+
+                    {/* Yangilangan */}
+                    <td className="py-3.5 px-3 text-[#404040] dark:text-[#fafafa] font-normal whitespace-nowrap">
+                      {updatedAt}
+                    </td>
+
+                    {/* Action Chevron */}
+                    <td className="py-3.5 pl-2 pr-6 text-right text-[#6B6B6B] hover:text-gray-600 dark:hover:text-zinc-300 transition-colors">
+                      <ChevronRight size={16} />
+                    </td>
+                  </tr>
+                );
+              })
+            )}
+          </tbody>
+        </table>
 
         {/* Loading More Spinner */}
         {loadingMore && (
