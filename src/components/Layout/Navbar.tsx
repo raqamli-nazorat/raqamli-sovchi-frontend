@@ -22,7 +22,7 @@ const getPageInfo = (pathname: string, appeal?: Appeal) => {
   if (pathname.startsWith("/appeals/")) {
     return {
       title: "Shikoyat tafsiloti",
-      subtitle: appeal ? `${appeal.id} · ${appeal.tag} · ${appeal.time}` : "Shikoyat bo'yicha batafsil",
+      subtitle: "",
     };
   }
   // Ma'lumotnomalar sahifalari aniq sarlavhani useHeader orqali o'zi o'rnatadi

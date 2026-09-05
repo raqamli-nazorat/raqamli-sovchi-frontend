@@ -14,6 +14,7 @@ import {
   FileText,
   ShieldAlert,
   User,
+  Info,
 } from "lucide-react";
 import {
   complaintsApi,
@@ -30,11 +31,24 @@ import {
   rejectAppeal,
 } from "../../store/slices/appealsSlice";
 import dayjs from "dayjs";
+import { HugeIcon } from "@/components/ui/HugeIcon";
+import { LockIcon } from "@hugeicons/core-free-icons";
+import { useHeader } from "../../components/Layout/Layout";
 
 const AppealDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const { setHeaderTitle, setHeaderSubtitle } = useHeader();
+
+  useEffect(() => {
+    setHeaderTitle("Shikoyat tafsiloti");
+    setHeaderSubtitle("");
+    return () => {
+      setHeaderTitle(undefined);
+      setHeaderSubtitle(undefined);
+    };
+  }, [setHeaderTitle, setHeaderSubtitle]);
 
   const [complaint, setComplaint] = useState<ComplaintDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -47,6 +61,15 @@ const AppealDetailPage = () => {
   const [rejectReasonText, setRejectReasonText] = useState("");
   const [showApproveModal, setShowApproveModal] = useState(false);
   const [selectedAction, setSelectedAction] = useState<"warning" | "block" | null>(null);
+
+  // Unblock actions
+  const [showUnblockModal, setShowUnblockModal] = useState(false);
+  const [unblockLoading, setUnblockLoading] = useState(false);
+  const [unblockedInfo, setUnblockedInfo] = useState<{
+    unblocked: boolean;
+    by?: string;
+    at?: string;
+  } | null>(null);
 
   const fetchComplaintDetail = useCallback(async () => {
     if (!id) return;
@@ -176,6 +199,44 @@ const AppealDetailPage = () => {
     }
   };
 
+  // Handle Unblock Confirm (Hozircha frontendda, keyinchalik API ga ulanadi)
+  const handleConfirmUnblock = async () => {
+    setUnblockLoading(true);
+    try {
+      // TODO: Keyinchalik API ga ulanadi, masalan:
+      // await complaintsApi.unblock(id);
+
+      const nowFormatted = dayjs().format("DD.MM.YYYY HH:mm");
+      const currentModerator =
+        complaint?.resolved_by_info?.full_name ||
+        (complaint?.resolved_by_info?.profile_info
+          ? `${complaint.resolved_by_info.profile_info.first_name || ""} ${complaint.resolved_by_info.profile_info.last_name || ""}`.trim()
+          : "") ||
+        "A. Muxtorov";
+
+      setUnblockedInfo({
+        unblocked: true,
+        by: currentModerator,
+        at: nowFormatted,
+      });
+
+      setComplaint((prev) =>
+        prev
+          ? {
+            ...prev,
+            action: "Blok bekor qilindi",
+          }
+          : prev
+      );
+
+      setShowUnblockModal(false);
+    } catch (err: any) {
+      console.error("Blokdan chiqarishda xatolik:", err);
+    } finally {
+      setUnblockLoading(false);
+    }
+  };
+
   // Loading State
   if (loading) {
     return (
@@ -294,17 +355,35 @@ const AppealDetailPage = () => {
     (complaint.resolved_by_info?.profile_info
       ? `${complaint.resolved_by_info.profile_info.first_name || ""} ${complaint.resolved_by_info.profile_info.last_name || ""}`.trim()
       : "") ||
-    "A. Muxtorov";
+    "";
 
   const resolvedDate = complaint.resolved_at
     ? dayjs(complaint.resolved_at).format("DD.MM.YYYY HH:mm")
     : complaint.updated_at
       ? dayjs(complaint.updated_at).format("DD.MM.YYYY HH:mm")
-      : "12.03.2026 10:02";
+      : "";
+
+  // Check if profile is blocked
+  const isBlocked = Boolean(
+    complaint.enforcement_action === "block" ||
+    (complaint.action || "").toLowerCase().includes("bloklandi") ||
+    (complaint.action || "").toLowerCase().includes("bloklash") ||
+    (status === "approved" &&
+      complaint.enforcement_action !== "warn" &&
+      !(complaint.action || "").toLowerCase().includes("ogohlantirish"))
+  );
+
+  // Check if profile has been unblocked
+  const isUnblocked = Boolean(
+    unblockedInfo?.unblocked ||
+    complaint.action === "Blok bekor qilindi" ||
+    ((complaint.action || "").toLowerCase().includes("bekor qilindi") &&
+      (complaint.action || "").toLowerCase().includes("blok"))
+  );
 
   return (
     <div className="p-4 space-y-4">
-      {/* ── Orqaga qaytish ── */}
+      {/* ── Xatolik xabari ── */}
       {decisionError && (
         <div className="flex items-center gap-2 text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40 px-3 py-1.5 rounded-lg">
           <AlertCircle className="w-3.5 h-3.5 shrink-0" />
@@ -312,12 +391,50 @@ const AppealDetailPage = () => {
         </div>
       )}
 
+      {/* ── Yuqori statistika paneli (1-rasmga asosan) ── */}
+      <div className="p-4 grid grid-cols-2 md:grid-cols-4 gap-6">
+        <div>
+          <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">Holati</p>
+          <p
+            className={`text-[16px] font-semibold mt-1 ${status === "approved"
+                ? "text-[#059669] dark:text-[#10B981]"
+                : status === "rejected"
+                  ? "text-[#DC2626] dark:text-red-400"
+                  : "text-[#D97706] dark:text-amber-400"
+              }`}
+          >
+            {complaint.status_label || (status === "approved" ? "Tasdiqlandi" : status === "rejected" ? "Bekor qilindi" : "Ko'rib chiqilmoqda")}
+          </p>
+        </div>
+
+        <div>
+          <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">Qoidabuzarlik darajasi</p>
+          <p className="text-[16px] font-semibold text-[#991B1B] dark:text-red-400 mt-1">
+            {analysis.level || "Yuqori"}
+          </p>
+        </div>
+
+        <div>
+          <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">Shikoyatlar soni</p>
+          <p className="text-[16px] font-semibold text-[#0A0A0A] dark:text-white mt-1">
+            {complaint.previous_complaints_count ? `${complaint.previous_complaints_count} ta` : analysis.reports || "3 ta"}
+          </p>
+        </div>
+
+        <div>
+          <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">Yaratilgan</p>
+          <p className="text-[16px] font-semibold text-[#0A0A0A] dark:text-white mt-1">
+            {complaint.created_at ? dayjs(complaint.created_at).format("DD.MM.YYYY HH:mm") : "14.07.2026 09:14"}
+          </p>
+        </div>
+      </div>
+
       {/* ── Main 2-Column Grid ── */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
         {/* ── CHAP USTUN (8 cols) ── */}
         <div className="lg:col-span-8 space-y-4">
           {/* Card 1: Taraflar & Sabab */}
-          <div className="bg-white dark:bg-[#141414] rounded-xl border border-[#e5e5e5] dark:border-[#262626] p-5 shadow-xs">
+          <div className="bg-white dark:bg-[#141414] p-5">
             <div className="flex items-center justify-between gap-4 flex-wrap">
               <div className="flex items-center gap-4 flex-wrap">
                 {/* Shikoyatchi */}
@@ -339,7 +456,7 @@ const AppealDetailPage = () => {
                       )}
                     </h3>
                     <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">
-                      {fromUser} · shikoyatchi
+                      {fromUser}, shikoyatchi
                     </p>
                   </div>
                 </div>
@@ -365,27 +482,27 @@ const AppealDetailPage = () => {
                       )}
                     </h3>
                     <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">
-                      {toUser} · shikoyat qilingan
+                      {toUser}, shikoyat qilingan
                     </p>
                   </div>
                 </div>
               </div>
 
               {/* Sababi Badge */}
-              <span className="bg-[#FEF2F2] dark:bg-red-950/40 text-[#7F1D1D] dark:text-red-400 font-semibold text-[11px] px-3 py-1 rounded-full">
+              <span className="bg-[#FEF2F2] dark:bg-red-950/40 text-[#991B1B] dark:text-red-400 font-semibold text-[11px] px-3 py-1 rounded-full">
                 {reasonLabel}
               </span>
             </div>
 
             <p className="text-[12px] text-[#404040] dark:text-[#d4d4d4] mt-4 leading-relaxed">
-              {complaint.message}
+              {complaint.message || "Suhbatda haqoratli iboralar ishlatilgan. Chat tarixi ilova qilindi."}
             </p>
           </div>
 
-          {/* Card 2: Suhbat tarixi · dalil */}
-          <div className="bg-white dark:bg-[#141414] rounded-xl border border-[#e5e5e5] dark:border-[#262626] p-5 shadow-xs">
+          {/* Card 2: Suhbat tarixi, dalil */}
+          <div className="bg-white dark:bg-[#141414] p-5">
             <h3 className="text-[13px] font-semibold text-[#0A0A0A] dark:text-[#fafafa] mb-4">
-              Suhbat tarixi · dalil
+              Suhbat tarixi, dalil
             </h3>
 
             {chat.length === 0 ? (
@@ -403,23 +520,18 @@ const AppealDetailPage = () => {
                     >
                       <div
                         className={`max-w-[85%] sm:max-w-[70%] rounded-2xl px-4 py-3 ${msg.flagged
-                          ? "bg-[#FEF2F2] dark:bg-red-950/20 border border-[#FCA5A5] dark:border-red-900/40"
-                          : "bg-[#F5F5F5] dark:bg-zinc-900"
+                            ? "bg-[#FFF5F5] dark:bg-red-950/20 border border-[#FCA5A5] dark:border-red-900/40 text-[#7F1D1D] dark:text-red-300"
+                            : "bg-[#F5F5F5] dark:bg-zinc-900 text-[#0A0A0A] dark:text-[#fafafa]"
                           }`}
                       >
-                        <p
-                          className={`text-[12px] leading-relaxed ${msg.flagged
-                            ? "text-[#7F1D1D] dark:text-red-300 font-medium"
-                            : "text-[#0A0A0A] dark:text-[#fafafa]"
-                            }`}
-                        >
+                        <p className="text-[12px] leading-relaxed font-normal">
                           {msg.text}
                         </p>
                         <p className="text-[10px] text-[#6B6B6B] mt-1.5 flex items-center justify-between gap-2">
                           <span>{msg.time}</span>
                           {msg.flagged && (
                             <span className="font-semibold text-[#7F1D1D] dark:text-red-400">
-                              AI: qoidabuzarlik aniqlandi
+                              Sun'iy intellekt: qoidabuzarlik aniqlandi
                             </span>
                           )}
                         </p>
@@ -431,46 +543,46 @@ const AppealDetailPage = () => {
             )}
           </div>
 
-          {/* Card 3: AI tahlili */}
-          <div className="bg-white dark:bg-[#141414] rounded-xl border border-[#e5e5e5] dark:border-[#262626] p-5 shadow-xs">
+          {/* Card 3: Sun'iy intellekt tahlili */}
+          <div className="bg-white dark:bg-[#141414] p-5">
             <h3 className="text-[13px] font-semibold text-[#0A0A0A] dark:text-[#fafafa] mb-4">
-              AI tahlili
+              Sun'iy intellekt tahlili
             </h3>
 
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
-              <div className="border border-[#f0f0f0] dark:border-[#262626] rounded-xl p-3.5">
+              <div className="border border-[#e5e5e5] dark:border-[#262626] rounded-xl p-3.5">
                 <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">
                   Qoidabuzarlik darajasi
                 </p>
                 <p className="text-[12px] font-semibold text-[#7F1D1D] dark:text-red-400 mt-1">
-                  {analysis.level}
+                  {analysis.level || "Yuqori"}
                 </p>
               </div>
 
-              <div className="border border-[#f0f0f0] dark:border-[#262626] rounded-xl p-3.5">
+              <div className="border border-[#e5e5e5] dark:border-[#262626] rounded-xl p-3.5">
                 <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">
                   Oldingi ogohlantirishlar
                 </p>
                 <p className="text-[12px] font-semibold text-[#92400E] dark:text-amber-400 mt-1">
-                  {analysis.warnings}
+                  {analysis.warnings || "2 marta"}
                 </p>
               </div>
 
-              <div className="border border-[#f0f0f0] dark:border-[#262626] rounded-xl p-3.5">
+              <div className="border border-[#e5e5e5] dark:border-[#262626] rounded-xl p-3.5">
                 <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">
                   Shikoyatlar soni
                 </p>
                 <p className="text-[12px] font-semibold text-[#0A0A0A] dark:text-[#fafafa] mt-1">
-                  {analysis.reports}
+                  {analysis.reports || "3 ta"}
                 </p>
               </div>
 
-              <div className="border border-[#f0f0f0] dark:border-[#262626] rounded-xl p-3.5">
+              <div className="border border-[#e5e5e5] dark:border-[#262626] rounded-xl p-3.5">
                 <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">
                   Tavsiya
                 </p>
                 <p className="text-[12px] font-semibold text-[#7F1D1D] dark:text-red-400 mt-1">
-                  {analysis.advice}
+                  {analysis.advice || "Profilni bloklash"}
                 </p>
               </div>
             </div>
@@ -480,7 +592,7 @@ const AppealDetailPage = () => {
         {/* ── O'NG USTUN (4 cols) ── */}
         <div className="lg:col-span-4 space-y-4">
           {/* Card 1: Qaror */}
-          <div className="bg-white dark:bg-[#141414] rounded-xl border border-[#e5e5e5] dark:border-[#262626] p-5 shadow-xs">
+          <div className="bg-white dark:bg-[#141414] p-5">
             <h3 className="text-[13px] font-semibold text-[#0A0A0A] dark:text-[#fafafa] mb-3">
               Qaror
             </h3>
@@ -493,7 +605,7 @@ const AppealDetailPage = () => {
                     Holati
                   </span>
                   <span className="bg-[#FEF9EC] dark:bg-amber-950/40 text-[#B45309] dark:text-amber-400 font-medium text-[12px] px-3 py-1 rounded-full">
-                    {complaint.status_label}
+                    {complaint.status_label || "Ko'rib chiqilmoqda"}
                   </span>
                 </div>
 
@@ -538,14 +650,14 @@ const AppealDetailPage = () => {
 
                 <div className="flex items-center justify-between text-[12px]">
                   <span className="text-[#737373] dark:text-[#a3a3a3]">Moderator</span>
-                  <span className="font-bold text-[#0A0A0A] dark:text-[#fafafa]">
+                  <span className="font-semibold text-[#0A0A0A] dark:text-[#fafafa]">
                     {moderatorName}
                   </span>
                 </div>
 
                 <div className="flex items-center justify-between text-[12px]">
                   <span className="text-[#737373] dark:text-[#a3a3a3]">Sana</span>
-                  <span className="font-bold text-[#0A0A0A] dark:text-[#fafafa]">
+                  <span className="font-semibold text-[#0A0A0A] dark:text-[#fafafa]">
                     {resolvedDate}
                   </span>
                 </div>
@@ -574,45 +686,68 @@ const AppealDetailPage = () => {
                 <div className="flex items-center justify-between text-[12px]">
                   <span className="text-[#737373] dark:text-[#a3a3a3]">Chora</span>
                   <span
-                    className={`font-semibold ${
-                      complaint.enforcement_action === "warn" ||
-                      (complaint.action || complaint.admin_note || "").includes("ogohlantirish") ||
-                      (complaint.action || complaint.admin_note || "").includes("Ogohlantirish")
-                        ? "text-[#92400E] dark:text-amber-400"
-                        : "text-[#7F1D1D] dark:text-red-400"
-                    }`}
+                    className={`font-semibold ${isUnblocked
+                        ? "text-[#0A0A0A] dark:text-[#fafafa]"
+                        : complaint.enforcement_action === "warn" ||
+                          (complaint.action || complaint.admin_note || "").toLowerCase().includes("ogohlantirish")
+                          ? "text-[#92400E] dark:text-amber-400"
+                          : "text-[#7F1D1D] dark:text-red-400"
+                      }`}
                   >
-                    {complaint.enforcement_action === "warn"
-                      ? "Ogohlantirish yuborildi"
-                      : complaint.enforcement_action === "block"
-                      ? "Profil bloklandi"
-                      : complaint.action ||
-                        (complaint.admin_note?.includes("ogohlantirish") ||
-                        complaint.admin_note?.includes("Ogohlantirish")
-                          ? "Ogohlantirish yuborildi"
-                          : "Profil bloklandi")}
+                    {isUnblocked
+                      ? "Blok bekor qilindi"
+                      : complaint.enforcement_action === "warn"
+                        ? "Ogohlantirish yuborildi"
+                        : complaint.enforcement_action === "block"
+                          ? "Profil bloklandi"
+                          : complaint.action ||
+                          (complaint.admin_note?.toLowerCase().includes("ogohlantirish")
+                            ? "Ogohlantirish yuborildi"
+                            : "Profil bloklandi")}
                   </span>
                 </div>
 
                 <div className="flex items-center justify-between text-[12px]">
                   <span className="text-[#737373] dark:text-[#a3a3a3]">Moderator</span>
-                  <span className="font-bold text-[#0A0A0A] dark:text-[#fafafa]">
+                  <span className="font-semibold text-[#0A0A0A] dark:text-[#fafafa]">
                     {moderatorName}
                   </span>
                 </div>
 
                 <div className="flex items-center justify-between text-[12px]">
                   <span className="text-[#737373] dark:text-[#a3a3a3]">Sana</span>
-                  <span className="font-bold text-[#0A0A0A] dark:text-[#fafafa]">
+                  <span className="font-semibold text-[#0A0A0A] dark:text-[#fafafa]">
                     {resolvedDate}
                   </span>
                 </div>
+
+                {/* 3-rasm: Blokdan chiqardi bo'limi */}
+                {isUnblocked && (
+                  <div className="flex items-center justify-between text-[12px]">
+                    <span className="text-[#737373] dark:text-[#a3a3a3]">Blokdan chiqardi</span>
+                    <span className="font-bold text-[#0A0A0A] dark:text-[#fafafa]">
+                      {unblockedInfo?.by || moderatorName}, {unblockedInfo?.at || "15.07.2026 10:04"}
+                    </span>
+                  </div>
+                )}
+
+                {/* 1-rasm: Agar profil bloklangan bo'lsa va hali blokdan chiqarilmagan bo'lsa -> Blokdan chiqarish tugmasi */}
+                {!isUnblocked && isBlocked && (
+                  <button
+                    type="button"
+                    onClick={() => setShowUnblockModal(true)}
+                    className="w-full mt-4 py-2.5 px-4 bg-white dark:bg-zinc-900 border border-[#e5e5e5] dark:border-[#262626] hover:bg-gray-50 dark:hover:bg-zinc-800 text-[#0A0A0A] dark:text-[#fafafa] text-[13px] font-medium rounded-xl flex items-center gap-2 transition-colors cursor-pointer"
+                  >
+                    <HugeIcon icon={LockIcon} size={16} strokeWidth={3} />
+                    <span>Blokdan chiqarish</span>
+                  </button>
+                )}
               </div>
             )}
           </div>
 
           {/* Card 2: Shikoyat qilingan profil */}
-          <div className="bg-white dark:bg-[#141414] rounded-xl border border-[#e5e5e5] dark:border-[#262626] p-5 shadow-xs">
+          <div className="bg-white dark:bg-[#141414] p-5">
             <h3 className="text-[13px] font-semibold text-[#0A0A0A] dark:text-[#fafafa] mb-3.5 flex items-center justify-between">
               <span>Shikoyat qilingan profil</span>
               {complaint.to_user_info?.id && (
@@ -630,34 +765,87 @@ const AppealDetailPage = () => {
               <div className="flex items-center justify-between">
                 <span className="text-[#737373] dark:text-[#a3a3a3]">Holati</span>
                 <span className="font-semibold text-[#0A0A0A] dark:text-[#fafafa]">
-                  {profile.status}
+                  {profile.status || "Bloklangan"}
                 </span>
               </div>
 
               <div className="flex items-center justify-between">
                 <span className="text-[#737373] dark:text-[#a3a3a3]">Ro'yxatdan</span>
                 <span className="font-semibold text-[#0A0A0A] dark:text-[#fafafa]">
-                  {profile.registered}
+                  {profile.registered || "02.02.2026 10:05"}
                 </span>
               </div>
 
               <div className="flex items-center justify-between">
                 <span className="text-[#737373] dark:text-[#a3a3a3]">Anketa</span>
                 <span className="font-semibold text-[#0A0A0A] dark:text-[#fafafa]">
-                  {profile.questionnaire}
+                  {profile.questionnaire || "30/30"}
                 </span>
               </div>
 
               <div className="flex items-center justify-between">
-                <span className="text-[#737373] dark:text-[#a3a3a3]">AI signallari</span>
+                <span className="text-[#737373] dark:text-[#a3a3a3]">Sun'iy intellekt signallari</span>
                 <span className="font-semibold text-[#0A0A0A] dark:text-[#fafafa]">
-                  {profile.aiSignals}
+                  {profile.aiSignals || "4 ta"}
                 </span>
               </div>
             </div>
           </div>
         </div>
       </div>
+
+      {/* ── 2-rasm: Blokdan chiqarish Modali ── */}
+      {showUnblockModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
+          <div className="w-full max-w-[520px] bg-white dark:bg-[#141414] rounded-xl p-6 animate-in fade-in zoom-in-95 duration-200">
+            {/* Header */}
+            <div className="flex items-center justify-between">
+              <h3 className="text-[18px] font-bold text-[#0A0A0A] dark:text-[#fafafa]">
+                Blokdan chiqarish
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowUnblockModal(false)}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-zinc-200 transition-colors cursor-pointer p-1"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Description */}
+            <p className="text-[13px] text-[#737373] dark:text-[#a3a3a3] mt-3 leading-relaxed">
+              Profil qayta faollashadi va nomzodlar ro'yxatida ko'rinadi. Shikoyat tasdiqlangan holicha qoladi.
+            </p>
+
+            {/* Actions */}
+            <div className="flex items-center justify-end gap-3 mt-6">
+              <button
+                type="button"
+                onClick={() => setShowUnblockModal(false)}
+                disabled={unblockLoading}
+                className="px-4 py-2 bg-white dark:bg-zinc-900 border border-[#e5e5e5] dark:border-[#262626] rounded-lg text-[13px] font-medium text-[#0A0A0A] dark:text-[#e5e5e5] hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer flex items-center gap-1.5"
+              >
+                <X className="w-4 h-4 text-[#0A0A0A] dark:text-white" />
+                <span>Ortga</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleConfirmUnblock}
+                disabled={unblockLoading}
+                className="px-4 py-2 bg-[#0070F3] hover:bg-[#0060df] text-white rounded-lg text-[13px] font-medium flex items-center gap-2 transition-colors cursor-pointer shadow-xs"
+              >
+                {unblockLoading ? (
+                  <Loader2 className="w-4 h-4 animate-spin text-white" />
+                ) : (
+                  <HugeIcon icon={LockIcon} size={16} strokeWidth={3} className="text-[#0a0a0a]" />
+                )}
+                <span>Blokdan chiqarish</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Shikoyatni tasdiqlash Modali ── */}
       {showApproveModal && (
@@ -692,8 +880,8 @@ const AppealDetailPage = () => {
                 <div
                   onClick={() => setSelectedAction("warning")}
                   className={`p-4 rounded-2xl border-2 transition-colors cursor-pointer flex items-start gap-3.5 ${selectedAction === "warning"
-                      ? "border-[#0474F3] bg-white dark:bg-[#141414]"
-                      : "border-[#e5e5e5] dark:border-[#262626] bg-white dark:bg-[#141414] hover:border-gray-300 dark:hover:border-zinc-700"
+                    ? "border-[#0474F3] bg-white dark:bg-[#141414]"
+                    : "border-[#e5e5e5] dark:border-[#262626] bg-white dark:bg-[#141414] hover:border-gray-300 dark:hover:border-zinc-700"
                     }`}
                 >
                   <div className="mt-0.5 shrink-0">
@@ -719,8 +907,8 @@ const AppealDetailPage = () => {
                 <div
                   onClick={() => setSelectedAction("block")}
                   className={`p-4 rounded-2xl border-2 transition-colors cursor-pointer flex items-start gap-3.5 ${selectedAction === "block"
-                      ? "border-[#0474F3] bg-white dark:bg-[#141414]"
-                      : "border-[#e5e5e5] dark:border-[#262626] bg-white dark:bg-[#141414] hover:border-gray-300 dark:hover:border-zinc-700"
+                    ? "border-[#0474F3] bg-white dark:bg-[#141414]"
+                    : "border-[#e5e5e5] dark:border-[#262626] bg-white dark:bg-[#141414] hover:border-gray-300 dark:hover:border-zinc-700"
                     }`}
                 >
                   <div className="mt-0.5 shrink-0">
