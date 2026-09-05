@@ -29,6 +29,7 @@ import {
   upsertComplaintDetail,
   approveAppeal,
   rejectAppeal,
+  unblockAppeal,
 } from "../../store/slices/appealsSlice";
 import dayjs from "dayjs";
 import { HugeIcon } from "@/components/ui/HugeIcon";
@@ -43,7 +44,7 @@ const AppealDetailPage = () => {
 
   useEffect(() => {
     setHeaderTitle("Shikoyat tafsiloti");
-    setHeaderSubtitle("");
+    setHeaderSubtitle("Shikoyat ma'lumotlarini ko'rib chiqish va qaror qabul qilish");
     return () => {
       setHeaderTitle(undefined);
       setHeaderSubtitle(undefined);
@@ -65,6 +66,7 @@ const AppealDetailPage = () => {
   // Unblock actions
   const [showUnblockModal, setShowUnblockModal] = useState(false);
   const [unblockLoading, setUnblockLoading] = useState(false);
+  const [unblockError, setUnblockError] = useState<string | null>(null);
   const [unblockedInfo, setUnblockedInfo] = useState<{
     unblocked: boolean;
     by?: string;
@@ -199,39 +201,71 @@ const AppealDetailPage = () => {
     }
   };
 
-  // Handle Unblock Confirm (Hozircha frontendda, keyinchalik API ga ulanadi)
+  // Handle Unblock Confirm
   const handleConfirmUnblock = async () => {
+    if (!id || unblockLoading) return;
     setUnblockLoading(true);
+    setUnblockError(null);
+    setDecisionError(null);
     try {
-      // TODO: Keyinchalik API ga ulanadi, masalan:
-      // await complaintsApi.unblock(id);
+      const res = await complaintsApi.unblock(id);
 
       const nowFormatted = dayjs().format("DD.MM.YYYY HH:mm");
       const currentModerator =
+        res?.resolved_by_info?.full_name ||
         complaint?.resolved_by_info?.full_name ||
         (complaint?.resolved_by_info?.profile_info
           ? `${complaint.resolved_by_info.profile_info.first_name || ""} ${complaint.resolved_by_info.profile_info.last_name || ""}`.trim()
           : "") ||
-        "A. Muxtorov";
+        "Admin";
 
       setUnblockedInfo({
         unblocked: true,
         by: currentModerator,
-        at: nowFormatted,
+        at: res?.unblocked_at
+          ? dayjs(res.unblocked_at).format("DD.MM.YYYY HH:mm")
+          : nowFormatted,
       });
 
-      setComplaint((prev) =>
-        prev
+      setComplaint((prev) => {
+        if (!prev) return prev;
+        const updatedToUserInfo = prev.to_user_info
           ? {
-            ...prev,
-            action: "Blok bekor qilindi",
-          }
-          : prev
+              ...prev.to_user_info,
+              profile_info: prev.to_user_info.profile_info
+                ? {
+                    ...prev.to_user_info.profile_info,
+                    is_blocked: false,
+                  }
+                : prev.to_user_info.profile_info,
+            }
+          : prev.to_user_info;
+
+        return {
+          ...prev,
+          ...(typeof res === "object" && res?.id ? res : {}),
+          action: "Blok bekor qilindi",
+          to_user_info: updatedToUserInfo,
+        };
+      });
+
+      dispatch(
+        unblockAppeal({
+          id,
+          moderator: currentModerator,
+          resolvedAt: nowFormatted,
+        })
       );
 
       setShowUnblockModal(false);
     } catch (err: any) {
       console.error("Blokdan chiqarishda xatolik:", err);
+      const apiErr =
+        err.response?.data?.error?.errorMsg ||
+        err.response?.data?.detail ||
+        err.response?.data?.message ||
+        err.message;
+      setUnblockError(apiErr || "Blokdan chiqarishda xatolik yuz berdi.");
     } finally {
       setUnblockLoading(false);
     }
@@ -363,23 +397,61 @@ const AppealDetailPage = () => {
       ? dayjs(complaint.updated_at).format("DD.MM.YYYY HH:mm")
       : "";
 
-  // Check if profile is blocked
-  const isBlocked = Boolean(
-    complaint.enforcement_action === "block" ||
-    (complaint.action || "").toLowerCase().includes("bloklandi") ||
-    (complaint.action || "").toLowerCase().includes("bloklash") ||
-    (status === "approved" &&
-      complaint.enforcement_action !== "warn" &&
-      !(complaint.action || "").toLowerCase().includes("ogohlantirish"))
-  );
+  // Find block/unblock event from history
+  const blockHistory = complaint.block_history || [];
+  const latestBlockEvent =
+    blockHistory.length > 0 ? blockHistory[blockHistory.length - 1] : null;
+  const latestUnblockEvent = [...blockHistory]
+    .reverse()
+    .find(
+      (h) =>
+        h.event_type === "user_unblocked" ||
+        (h.label || "").toLowerCase().includes("blokdan")
+    );
 
   // Check if profile has been unblocked
   const isUnblocked = Boolean(
     unblockedInfo?.unblocked ||
-    complaint.action === "Blok bekor qilindi" ||
-    ((complaint.action || "").toLowerCase().includes("bekor qilindi") &&
-      (complaint.action || "").toLowerCase().includes("blok"))
+      latestBlockEvent?.event_type === "user_unblocked" ||
+      (latestBlockEvent?.label || "").toLowerCase().includes("blokdan") ||
+      (latestUnblockEvent &&
+        (!latestBlockEvent || latestBlockEvent.event_type !== "user_blocked")) ||
+      complaint.action === "Blok bekor qilindi" ||
+      complaint.action === "unblocked" ||
+      complaint.enforcement_action === "unblocked" ||
+      (complaint.profile_snapshot?.is_blocked === false &&
+        complaint.enforcement_action === "block" &&
+        blockHistory.length > 0) ||
+      ((complaint.action || "").toLowerCase().includes("bekor qilindi") &&
+        (complaint.action || "").toLowerCase().includes("blok")) ||
+      (complaint.action || "").toLowerCase().includes("unblock")
   );
+
+  // Check if profile is blocked
+  const isBlocked = Boolean(
+    !isUnblocked &&
+      (complaint.enforcement_action === "block" ||
+        latestBlockEvent?.event_type === "user_blocked" ||
+        (complaint.action || "").toLowerCase().includes("bloklandi") ||
+        (complaint.action || "").toLowerCase().includes("bloklash") ||
+        (status === "approved" &&
+          complaint.enforcement_action !== "warn" &&
+          !(complaint.action || "").toLowerCase().includes("ogohlantirish")))
+  );
+
+  const unblockActor =
+    unblockedInfo?.by ||
+    latestUnblockEvent?.actor ||
+    moderatorName ||
+    "Admin";
+
+  const unblockDate =
+    unblockedInfo?.at ||
+    (latestUnblockEvent?.date
+      ? dayjs(latestUnblockEvent.date).format("DD.MM.YYYY HH:mm")
+      : null) ||
+    resolvedDate ||
+    "";
 
   return (
     <div className="p-4 space-y-4">
@@ -409,15 +481,25 @@ const AppealDetailPage = () => {
 
         <div>
           <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">Qoidabuzarlik darajasi</p>
-          <p className="text-[16px] font-semibold text-[#991B1B] dark:text-red-400 mt-1">
-            {analysis.level || "Yuqori"}
+          <p
+            className={`text-[16px] font-semibold mt-1 ${
+              (analysis.level || "").toLowerCase().includes("past")
+                ? "text-[#059669] dark:text-[#10B981]"
+                : (analysis.level || "").toLowerCase().includes("o'rta") || (analysis.level || "").toLowerCase().includes("orta")
+                ? "text-[#D97706] dark:text-amber-400"
+                : "text-[#991B1B] dark:text-red-400"
+            }`}
+          >
+            {analysis.level || "Past"}
           </p>
         </div>
 
         <div>
           <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">Shikoyatlar soni</p>
           <p className="text-[16px] font-semibold text-[#0A0A0A] dark:text-white mt-1">
-            {complaint.previous_complaints_count ? `${complaint.previous_complaints_count} ta` : analysis.reports || "3 ta"}
+            {complaint.previous_complaints_count !== undefined && complaint.previous_complaints_count !== null
+              ? `${complaint.previous_complaints_count} ta`
+              : analysis.reports || "0 ta"}
           </p>
         </div>
 
@@ -554,8 +636,16 @@ const AppealDetailPage = () => {
                 <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">
                   Qoidabuzarlik darajasi
                 </p>
-                <p className="text-[12px] font-semibold text-[#7F1D1D] dark:text-red-400 mt-1">
-                  {analysis.level || "Yuqori"}
+                <p
+                  className={`text-[12px] font-semibold mt-1 ${
+                    (analysis.level || "").toLowerCase().includes("past")
+                      ? "text-[#059669] dark:text-[#10B981]"
+                      : (analysis.level || "").toLowerCase().includes("o'rta") || (analysis.level || "").toLowerCase().includes("orta")
+                      ? "text-[#D97706] dark:text-amber-400"
+                      : "text-[#7F1D1D] dark:text-red-400"
+                  }`}
+                >
+                  {analysis.level || "Past"}
                 </p>
               </div>
 
@@ -564,7 +654,7 @@ const AppealDetailPage = () => {
                   Oldingi ogohlantirishlar
                 </p>
                 <p className="text-[12px] font-semibold text-[#92400E] dark:text-amber-400 mt-1">
-                  {analysis.warnings || "2 marta"}
+                  {analysis.warnings || "0 marta"}
                 </p>
               </div>
 
@@ -573,7 +663,7 @@ const AppealDetailPage = () => {
                   Shikoyatlar soni
                 </p>
                 <p className="text-[12px] font-semibold text-[#0A0A0A] dark:text-[#fafafa] mt-1">
-                  {analysis.reports || "3 ta"}
+                  {analysis.reports || "0 ta"}
                 </p>
               </div>
 
@@ -581,8 +671,8 @@ const AppealDetailPage = () => {
                 <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">
                   Tavsiya
                 </p>
-                <p className="text-[12px] font-semibold text-[#7F1D1D] dark:text-red-400 mt-1">
-                  {analysis.advice || "Profilni bloklash"}
+                <p className="text-[12px] font-semibold text-[#0A0A0A] dark:text-[#fafafa] mt-1">
+                  {analysis.advice || "Qo'shimcha tekshiruv"}
                 </p>
               </div>
             </div>
@@ -696,14 +786,15 @@ const AppealDetailPage = () => {
                   >
                     {isUnblocked
                       ? "Blok bekor qilindi"
-                      : complaint.enforcement_action === "warn"
-                        ? "Ogohlantirish yuborildi"
-                        : complaint.enforcement_action === "block"
-                          ? "Profil bloklandi"
-                          : complaint.action ||
-                          (complaint.admin_note?.toLowerCase().includes("ogohlantirish")
-                            ? "Ogohlantirish yuborildi"
-                            : "Profil bloklandi")}
+                      : complaint.enforcement_action_label ||
+                        (complaint.enforcement_action === "warn"
+                          ? "Ogohlantirish yuborildi"
+                          : complaint.enforcement_action === "block"
+                            ? "Profil bloklandi"
+                            : complaint.action ||
+                            (complaint.admin_note?.toLowerCase().includes("ogohlantirish")
+                              ? "Ogohlantirish yuborildi"
+                              : "Profil bloklandi"))}
                   </span>
                 </div>
 
@@ -726,7 +817,7 @@ const AppealDetailPage = () => {
                   <div className="flex items-center justify-between text-[12px]">
                     <span className="text-[#737373] dark:text-[#a3a3a3]">Blokdan chiqardi</span>
                     <span className="font-bold text-[#0A0A0A] dark:text-[#fafafa]">
-                      {unblockedInfo?.by || moderatorName}, {unblockedInfo?.at || "15.07.2026 10:04"}
+                      {unblockActor}{unblockDate ? `, ${unblockDate}` : ""}
                     </span>
                   </div>
                 )}
@@ -735,7 +826,10 @@ const AppealDetailPage = () => {
                 {!isUnblocked && isBlocked && (
                   <button
                     type="button"
-                    onClick={() => setShowUnblockModal(true)}
+                    onClick={() => {
+                      setUnblockError(null);
+                      setShowUnblockModal(true);
+                    }}
                     className="w-full mt-4 py-2.5 px-4 bg-white dark:bg-zinc-900 border border-[#e5e5e5] dark:border-[#262626] hover:bg-gray-50 dark:hover:bg-zinc-800 text-[#0A0A0A] dark:text-[#fafafa] text-[13px] font-medium rounded-xl flex items-center gap-2 transition-colors cursor-pointer"
                   >
                     <HugeIcon icon={LockIcon} size={16} strokeWidth={3} />
@@ -764,15 +858,25 @@ const AppealDetailPage = () => {
             <div className="space-y-2.5 text-[12px]">
               <div className="flex items-center justify-between">
                 <span className="text-[#737373] dark:text-[#a3a3a3]">Holati</span>
-                <span className="font-semibold text-[#0A0A0A] dark:text-[#fafafa]">
-                  {profile.status || "Bloklangan"}
+                <span
+                  className={`font-semibold ${
+                    isUnblocked || profile.status === "Tasdiqlangan" || profile.status === "Faol"
+                      ? "text-[#059669] dark:text-[#10B981]"
+                      : "text-[#7F1D1D] dark:text-red-400"
+                  }`}
+                >
+                  {isUnblocked
+                    ? profile.status === "Bloklangan"
+                      ? "Faol"
+                      : profile.status || "Faol"
+                    : profile.status || "Bloklangan"}
                 </span>
               </div>
 
               <div className="flex items-center justify-between">
                 <span className="text-[#737373] dark:text-[#a3a3a3]">Ro'yxatdan</span>
                 <span className="font-semibold text-[#0A0A0A] dark:text-[#fafafa]">
-                  {profile.registered || "02.02.2026 10:05"}
+                  {profile.registered || "01.01.2026"}
                 </span>
               </div>
 
@@ -786,7 +890,7 @@ const AppealDetailPage = () => {
               <div className="flex items-center justify-between">
                 <span className="text-[#737373] dark:text-[#a3a3a3]">Sun'iy intellekt signallari</span>
                 <span className="font-semibold text-[#0A0A0A] dark:text-[#fafafa]">
-                  {profile.aiSignals || "4 ta"}
+                  {profile.aiSignals || "0 ta"}
                 </span>
               </div>
             </div>
@@ -816,6 +920,14 @@ const AppealDetailPage = () => {
             <p className="text-[13px] text-[#737373] dark:text-[#a3a3a3] mt-3 leading-relaxed">
               Profil qayta faollashadi va nomzodlar ro'yxatida ko'rinadi. Shikoyat tasdiqlangan holicha qoladi.
             </p>
+
+            {/* Error */}
+            {unblockError && (
+              <div className="mt-3 flex items-center gap-2 text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40 p-2.5 rounded-lg">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{unblockError}</span>
+              </div>
+            )}
 
             {/* Actions */}
             <div className="flex items-center justify-end gap-3 mt-6">

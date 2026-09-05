@@ -1,4 +1,5 @@
 import { axiosAPI } from "./axiosAPI";
+import dayjs from "dayjs";
 
 // ── OpenAPI / Swagger: Complaint Schemas & Endpoints ──
 // GET    /api/v1/accounts/complaints/             → Shikoyatlar ro'yxatini olish
@@ -82,6 +83,13 @@ export interface ComplaintListItem {
   to_user_info?: ComplaintUserInfo | null;
 }
 
+export interface BlockHistoryItem {
+  event_type: "user_blocked" | "user_unblocked" | string;
+  label?: string;
+  actor?: string;
+  date?: string;
+}
+
 export interface ComplaintDetail {
   id: string;
   reason: ComplaintReason | string;
@@ -92,12 +100,14 @@ export interface ComplaintDetail {
   status_label?: string;
   action?: string | null;
   enforcement_action?: string | null;
+  enforcement_action_label?: string | null;
   admin_note?: string | null;
   resolved_at?: string | null;
   conversation_excerpt?: any;
   profile_snapshot?: any;
   ai_analysis?: any;
   previous_complaints_count?: string | number;
+  block_history?: BlockHistoryItem[];
   created_at: string;
   updated_at?: string;
   from_user_info?: ComplaintUserInfo | null;
@@ -199,6 +209,15 @@ export const complaintsApi = {
     body: ComplaintDecisionRequest
   ): Promise<ComplaintDecision> => {
     const payload = unwrap(await axiosAPI.post(`${BASE}${id}/decision/`, body));
+    return payload;
+  },
+
+  // Shikoyat bo'yicha profilni blokdan chiqarish
+  unblock: async (
+    id: string,
+    body: Record<string, any> = {}
+  ): Promise<any> => {
+    const payload = unwrap(await axiosAPI.post(`${BASE}${id}/unblock/`, body));
     return payload;
   },
 
@@ -328,14 +347,14 @@ export const parseAiAnalysis = (
   const fallbackReports =
     previousCount !== undefined && previousCount !== null
       ? `${previousCount} ta`
-      : "1 ta";
+      : "0 ta";
 
   if (!raw) {
     return {
-      level: "O'rta",
+      level: "Past",
       warnings: "0 marta",
       reports: fallbackReports,
-      advice: "Qo'shimcha tekshirish",
+      advice: "Qo'shimcha tekshiruv",
     };
   }
 
@@ -346,7 +365,7 @@ export const parseAiAnalysis = (
     } catch {
       return {
         level: raw.length > 50 ? "Yuqori" : "O'rta",
-        warnings: "1 marta",
+        warnings: "0 marta",
         reports: fallbackReports,
         advice: raw,
       };
@@ -354,27 +373,37 @@ export const parseAiAnalysis = (
   }
 
   if (typeof data === "object" && data !== null) {
+    const warningsCount = data.previous_warnings_count ?? data.warnings;
+    const complaintsCount = data.complaints_count ?? data.reports;
+    const recAction =
+      data.recommended_action ||
+      data.advice ||
+      data.recommendation ||
+      data.summary;
+
     return {
-      level: data.level || data.risk_level || data.severity || "O'rta",
-      warnings: data.warnings
-        ? typeof data.warnings === "number"
-          ? `${data.warnings} marta`
-          : String(data.warnings)
-        : "0 marta",
-      reports: data.reports
-        ? typeof data.reports === "number"
-          ? `${data.reports} ta`
-          : String(data.reports)
-        : fallbackReports,
-      advice: data.advice || data.recommendation || data.summary || "Qo'shimcha tekshirish",
+      level: data.level || data.risk_level || data.severity || "Past",
+      warnings:
+        warningsCount !== undefined && warningsCount !== null
+          ? typeof warningsCount === "number"
+            ? `${warningsCount} marta`
+            : String(warningsCount)
+          : "0 marta",
+      reports:
+        complaintsCount !== undefined && complaintsCount !== null
+          ? typeof complaintsCount === "number"
+            ? `${complaintsCount} ta`
+            : String(complaintsCount)
+          : fallbackReports,
+      advice: recAction || "Qo'shimcha tekshiruv",
     };
   }
 
   return {
-    level: "O'rta",
+    level: "Past",
     warnings: "0 marta",
     reports: fallbackReports,
-    advice: "Qo'shimcha tekshirish",
+    advice: "Qo'shimcha tekshiruv",
   };
 };
 
@@ -399,24 +428,52 @@ export const parseProfileSnapshot = (
   }
 
   const userProfile = toUser?.profile_info;
+  const isBlocked = data?.is_blocked ?? userProfile?.is_blocked ?? false;
+
+  // Registered date formatting
+  let registeredStr = "01.01.2026";
+  const rawDate =
+    data?.joined_at ||
+    data?.registered ||
+    (toUser && (toUser as any).created_at);
+  if (rawDate) {
+    registeredStr = dayjs(rawDate).isValid()
+      ? dayjs(rawDate).format("DD.MM.YYYY HH:mm")
+      : String(rawDate).slice(0, 10);
+  }
+
+  // Questionnaire formatting
+  let questionnaireStr = "30/30";
+  if (data?.questionnaire_progress) {
+    const { answered = 0, total = 30, percentage } = data.questionnaire_progress;
+    questionnaireStr =
+      percentage !== undefined
+        ? `${answered}/${total} · ${percentage}%`
+        : `${answered}/${total}`;
+  } else if (data?.completion_percentage !== undefined) {
+    questionnaireStr = `${data.completion_percentage}%`;
+  } else if (data?.questionnaire || data?.completion) {
+    questionnaireStr = String(data.questionnaire || data.completion);
+  }
+
+  // AI signals formatting
+  let aiSignalsStr = "0 ta";
+  if (data?.ai_signals_count !== undefined) {
+    aiSignalsStr = `${data.ai_signals_count} ta`;
+  } else if (
+    data?.aiSignals ||
+    data?.ai_signals ||
+    data?.signals_count !== undefined
+  ) {
+    const val = data?.aiSignals || data?.ai_signals || data?.signals_count;
+    aiSignalsStr = typeof val === "number" ? `${val} ta` : String(val);
+  }
 
   return {
-    status:
-      data?.status ||
-      (userProfile?.is_blocked ? "Bloklangan" : "Faol"),
-    registered:
-      data?.registered ||
-      (toUser && (toUser as any).created_at
-        ? (toUser as any).created_at.slice(0, 10)
-        : "01.01.2026"),
-    questionnaire:
-      data?.questionnaire ||
-      data?.completion ||
-      "30/30 · 100%",
-    aiSignals:
-      data?.aiSignals ||
-      data?.ai_signals ||
-      (data?.signals_count !== undefined ? `${data.signals_count} ta` : "2 ta"),
+    status: isBlocked ? "Bloklangan" : data?.status || "Faol",
+    registered: registeredStr,
+    questionnaire: questionnaireStr,
+    aiSignals: aiSignalsStr,
   };
 };
 
