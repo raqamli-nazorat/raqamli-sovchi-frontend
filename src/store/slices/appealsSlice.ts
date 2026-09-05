@@ -104,13 +104,32 @@ export const mapComplaintToAppeal = (item: ComplaintListItem | ComplaintDetail):
     ? dayjs(detail.resolved_at).format("DD.MM.YYYY HH:mm")
     : undefined;
 
-  const action =
-    detail.action ||
-    (detail.admin_note?.toLowerCase().includes("blok")
-      ? "Profil bloklandi"
-      : detail.admin_note?.toLowerCase().includes("ogohlantirish")
-      ? "Ogohlantirish yuborildi"
-      : undefined);
+  const blockHistory = detail.block_history || [];
+  const latestBlockEvent =
+    blockHistory.length > 0 ? blockHistory[blockHistory.length - 1] : null;
+  const isUnblockedFromHistory =
+    (latestBlockEvent &&
+      (latestBlockEvent.event_type === "user_unblocked" ||
+        (latestBlockEvent.label || "").toLowerCase().includes("blokdan"))) ||
+    (detail.profile_snapshot?.is_blocked === false &&
+      detail.enforcement_action === "block" &&
+      blockHistory.length > 0) ||
+    detail.action === "Blok bekor qilindi" ||
+    detail.action === "unblocked";
+
+  const action = isUnblockedFromHistory
+    ? "Blok bekor qilindi"
+    : detail.action ||
+      (detail.enforcement_action_label ||
+        (detail.enforcement_action === "warn"
+          ? "Ogohlantirish yuborildi"
+          : detail.enforcement_action === "block"
+          ? "Profil bloklandi"
+          : detail.admin_note?.toLowerCase().includes("blok")
+          ? "Profil bloklandi"
+          : detail.admin_note?.toLowerCase().includes("ogohlantirish")
+          ? "Ogohlantirish yuborildi"
+          : undefined));
 
   return {
     id: String(item.id),
@@ -201,6 +220,19 @@ const appealsSlice = createSlice({
         (a) => a.status === "pending" || a.status === "in_review"
       ).length;
     },
+    unblockAppeal: (
+      state,
+      {
+        payload,
+      }: PayloadAction<{ id: string; moderator?: string; resolvedAt?: string }>
+    ) => {
+      const item = state.items.find((a) => a.id === payload.id);
+      if (item) {
+        item.action = "Blok bekor qilindi";
+        if (payload.moderator) item.moderator = payload.moderator;
+        if (payload.resolvedAt) item.resolvedAt = payload.resolvedAt;
+      }
+    },
   },
 });
 
@@ -209,6 +241,7 @@ export const {
   upsertComplaintDetail,
   approveAppeal,
   rejectAppeal,
+  unblockAppeal,
 } = appealsSlice.actions;
 
 export default appealsSlice.reducer;
