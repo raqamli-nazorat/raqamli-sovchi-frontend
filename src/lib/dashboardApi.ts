@@ -57,3 +57,23 @@ export const getDashboardSummary = async (): Promise<DashboardSummaryData> => {
   const payload: any = response?.data;
   return payload?.data ?? payload;
 };
+
+export interface SidebarCountsData {
+  users?: number;
+  ai_signals?: number;
+  complaints_open?: number;
+  questions?: number;
+  psychologists?: number;
+}
+
+export interface SidebarCountsResponse {
+  data: SidebarCountsData;
+  error: any;
+  success: boolean;
+}
+
+export const getSidebarCounts = async (): Promise<SidebarCountsData> => {
+  const response = await axiosAPI.get<SidebarCountsResponse>("dashboard/sidebar/");
+  const payload: any = response?.data;
+  return payload?.data ?? payload;
+};

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -22,6 +22,8 @@ import {
 } from "@hugeicons/core-free-icons";
 import { HugeIcon } from "./HugeIcon";
 import { ProfileModals } from "./ProfileModals";
+
+import { getSidebarCounts, type SidebarCountsData } from "../../lib/dashboardApi";
 
 interface MenuChild {
   label: string;
@@ -53,22 +55,21 @@ const MENU_GROUPS: { label: string; items: MenuItem[] }[] = [
     label: "UMUMIY",
     items: [
       { label: "Boshqaruv paneli", path: "/", icon: DashboardSquare01FreeIcons, badge: null, end: true },
-      { label: "Foydalanuvchilar", path: "/users", icon: UserGroupIcon, badge: 12480, end: false },
+      { label: "Foydalanuvchilar", path: "/users", icon: UserGroupIcon, badge: null, end: false },
     ],
   },
   {
     label: "NAZORAT",
     items: [
-      // { label: "Profil moderatsiyasi", path: "/profile-moderation", icon: UserCheck01Icon, badge: 4, end: false },
-      { label: "AI moderator", path: "/ai-chat", icon: AiBrain01FreeIcons, badge: 18, end: false },
-      { label: "Shikoyatlar", path: "/appeals", icon: Flag02Icon, badge: 4, end: false },
+      { label: "AI moderator", path: "/ai-chat", icon: AiBrain01FreeIcons, badge: null, end: false },
+      { label: "Shikoyatlar", path: "/appeals", icon: Flag02Icon, badge: null, end: false },
     ],
   },
   {
     label: "KONTENT",
     items: [
       { label: "Anketa savollari", path: "/questions", icon: Task01FreeIcons, badge: null, end: false },
-      { label: "Psixologlar", path: "/psychologists", icon: StethoscopeIcon, badge: 3, end: false },
+      { label: "Psixologlar", path: "/psychologists", icon: StethoscopeIcon, badge: null, end: false },
       {
         label: "Ma'lumotnomalar",
         path: "/references",
@@ -95,13 +96,50 @@ const Sidebar = ({ collapsed, onToggle }: SidebarProps) => {
   const location = useLocation();
   const navigate = useNavigate();
   const [refsOpen, setRefsOpen] = useState(location.pathname.startsWith("/references"));
-  const appealsInReviewCount = useSelector(
-    (state: any) => state.appeals.items.filter((a: Appeal) => a.status === "in_review").length
-  );
+  const [sidebarCounts, setSidebarCounts] = useState<SidebarCountsData | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchCounts = async () => {
+      try {
+        const data = await getSidebarCounts();
+        if (isMounted && data) {
+          setSidebarCounts(data);
+        }
+      } catch (err) {
+        console.error("Sidebar counts fetch error:", err);
+      }
+    };
+
+    fetchCounts();
+
+    const handleReload = () => {
+      fetchCounts();
+    };
+    window.addEventListener("sidebar-reload", handleReload);
+
+    return () => {
+      isMounted = false;
+      window.removeEventListener("sidebar-reload", handleReload);
+    };
+  }, []);
 
   const badgeFor = (item: { path: string; badge: number | null }) => {
-    if (item.path === "/appeals") return appealsInReviewCount > 0 ? appealsInReviewCount : null;
-    return item.badge;
+    if (!sidebarCounts) return null;
+    switch (item.path) {
+      case "/users":
+        return typeof sidebarCounts.users === "number" ? sidebarCounts.users : null;
+      case "/ai-chat":
+        return typeof sidebarCounts.ai_signals === "number" ? sidebarCounts.ai_signals : null;
+      case "/appeals":
+        return typeof sidebarCounts.complaints_open === "number" ? sidebarCounts.complaints_open : null;
+      case "/questions":
+        return typeof sidebarCounts.questions === "number" ? sidebarCounts.questions : null;
+      case "/psychologists":
+        return typeof sidebarCounts.psychologists === "number" ? sidebarCounts.psychologists : null;
+      default:
+        return item.badge;
+    }
   };
 
   const currentUser = useSelector((state: any) => state.references.currentUser);
