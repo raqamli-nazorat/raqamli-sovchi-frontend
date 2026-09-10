@@ -129,6 +129,8 @@ const RefFormModal = ({
   const [permData, setPermData] = useState<(Permission | PermissionGroupResp)[]>([]);
   const [permsLoading, setPermsLoading] = useState(false);
 
+  const hasSavol = title === "Savol" || title === "savol" ? true : false;
+
   const baseline = useMemo(
     () => JSON.stringify({ ...emptyValues(fields), ...initialValues }),
     [fields, initialValues]
@@ -239,7 +241,7 @@ const RefFormModal = ({
     if (!permsLoading && permData.length > 0 && result.length === 0) {
       console.warn(
         "[roles] Ruxsatlar keldi, lekin hech biri view/add/change/delete amaliga mos kelmadi. " +
-          "Backend codename'larini tekshiring:",
+        "Backend codename'larini tekshiring:",
         permData
       );
     }
@@ -352,7 +354,7 @@ const RefFormModal = ({
 
   // ── Maydonlarni chizish: ketma-ket span'lilar bitta qatorga ──
   const rows: React.ReactNode[] = [];
-  for (let i = 0; i < fields.length; ) {
+  for (let i = 0; i < fields.length;) {
     const f = fields[i];
     if (f.span) {
       const group: RefField[] = [];
@@ -371,9 +373,8 @@ const RefFormModal = ({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
       <div
-        className={`w-full ${
-          hasPermissions ? "max-w-[680px] h-[85vh]" : "max-w-[460px] max-h-[90vh]"
-        } bg-white dark:bg-[#141414] rounded-[20px] border border-[#e5e5e5] dark:border-[#262626] shadow-2xl animate-in fade-in zoom-in-95 duration-200 flex flex-col`}
+        className={`w-full ${hasPermissions ? "max-w-[680px] h-[85vh]" : hasSavol ? "max-w-[600px] max-h-[90vh]" : "max-w-[460px] max-h-[90vh]"
+          } bg-white dark:bg-[#141414] rounded-[20px] border border-[#e5e5e5] dark:border-[#262626] shadow-2xl animate-in fade-in zoom-in-95 duration-200 flex flex-col`}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-6 pt-6 pb-4 shrink-0">
@@ -388,9 +389,8 @@ const RefFormModal = ({
 
         {/* Body — permissions modalida yuqori qism qotib turadi, faqat ro'yxat scroll bo'ladi */}
         <div
-          className={`px-6 pb-2 space-y-4 min-h-0 ${
-            hasPermissions ? "flex flex-col flex-1 overflow-hidden" : "overflow-y-auto"
-          }`}
+          className={`px-6 pb-2 space-y-4 min-h-0 ${hasPermissions ? "flex flex-col flex-1 overflow-hidden" : "overflow-y-auto"
+            }`}
         >
           {rows}
         </div>
