@@ -47,6 +47,7 @@ const UsersPage = () => {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [paginationError, setPaginationError] = useState<string | null>(null);
 
   const [searchParams, setSearchParams] = useSearchParams();
   const search = searchParams.get("search") || "";
@@ -68,6 +69,8 @@ const UsersPage = () => {
 
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const isFetchingRef = useRef(false);
+  const pageRef = useRef(1);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   // Sync search state with debounced search
   useEffect(() => {
@@ -96,14 +99,23 @@ const UsersPage = () => {
   // Fetch Users data
   const fetchUsers = async (pageNumber: number, isInitial: boolean = false) => {
     if (isFetchingRef.current && !isInitial) return;
+
+    if (isInitial && abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
     isFetchingRef.current = true;
 
     if (isInitial) {
       setLoading(true);
       setError(null);
+      setPaginationError(null);
       setHasMore(true);
     } else {
       setLoadingMore(true);
+      setPaginationError(null);
     }
 
     try {
@@ -135,30 +147,75 @@ const UsersPage = () => {
         params.updated_at_before = dayjs(appliedFilters.updated_at_before).format("YYYY-MM-DDTHH:mm:ss");
       }
 
-      const response = await axiosAPI.get(`accounts/users/`, { params });
+      const response = await axiosAPI.get(`accounts/users/`, {
+        params,
+        signal: controller.signal,
+      });
       const data = response.data?.data ?? response.data;
 
       if (response.data?.success !== false && data) {
-        const results: UserResult[] = Array.isArray(data.results) ? data.results : Array.isArray(data) ? data : [];
+        const results: UserResult[] = Array.isArray(data.results)
+          ? data.results
+          : Array.isArray(data)
+          ? data
+          : [];
+        const count = typeof data.count === "number" ? data.count : null;
 
-        // If backend returned results
-        if (results.length > 0 || pageNumber > 1) {
-          if (isInitial) {
-            setUsers(results);
-          } else {
-            setUsers((prev) => {
-              const existingIds = new Set(prev.map((u: UserResult) => u.id));
-              const newResults = results.filter((u: UserResult) => !existingIds.has(u.id));
-              return [...prev, ...newResults];
-            });
-          }
-          setHasMore(data.next !== null && results.length > 0);
+        if (isInitial) {
+          setUsers(results);
+          setPage(1);
+          pageRef.current = 1;
+        } else {
+          setUsers((prev) => {
+            const existingIds = new Set(prev.map((u: UserResult) => u.id));
+            const newResults = results.filter((u: UserResult) => !existingIds.has(u.id));
+            return [...prev, ...newResults];
+          });
+          setPage(pageNumber);
+          pageRef.current = pageNumber;
         }
+
+        // Aniq pagination mavjudligini tekshirish
+        const hasNextUrl = Boolean(data.next);
+        const hasItems = results.length > 0;
+        let isCountReached = false;
+        if (count !== null) {
+          const totalAccumulated = isInitial ? results.length : users.length + results.length;
+          if (totalAccumulated >= count) {
+            isCountReached = true;
+          }
+        }
+
+        const canLoadMore = hasNextUrl && hasItems && !isCountReached;
+        setHasMore(canLoadMore);
       } else {
         throw new Error(response.data?.error || "Foydalanuvchilarni yuklashda xatolik yuz berdi");
       }
     } catch (err: any) {
-      console.warn("Users fetch notice (falling back to sample dataset if empty):", err);
+      if (err?.name === "CanceledError" || err?.code === "ERR_CANCELED" || err?.message === "canceled") {
+        return;
+      }
+
+      const status = err?.response?.status;
+      const errMsg =
+        err?.response?.data?.error?.errorMsg ||
+        err?.response?.data?.detail ||
+        err?.message ||
+        "Foydalanuvchilarni yuklashda xatolik yuz berdi";
+
+      if (isInitial) {
+        setError(errMsg);
+        setUsers([]);
+        setHasMore(false);
+      } else {
+        // Agar status 404 bo'lsa (DRF sahifalar tugaganda "Invalid page" qaytaradi)
+        if (status === 404) {
+          setHasMore(false);
+        } else {
+          // Boshqa xatolik yuz berganda cheksiz loop bo'lmasligi uchun paginationError qo'yamiz
+          setPaginationError(errMsg);
+        }
+      }
     } finally {
       setLoading(false);
       setLoadingMore(false);
@@ -169,28 +226,44 @@ const UsersPage = () => {
   // Trigger search / filter changes
   useEffect(() => {
     setPage(1);
+    pageRef.current = 1;
     if (tableContainerRef.current) {
       tableContainerRef.current.scrollTop = 0;
     }
     fetchUsers(1, true);
+
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
   }, [debouncedSearch, appliedFilters]);
 
-  // Handle page increment for pagination
-  useEffect(() => {
-    if (page > 1) {
-      fetchUsers(page, false);
+  // Load more trigger
+  const loadMore = () => {
+    if (loading || loadingMore || !hasMore || isFetchingRef.current || paginationError) {
+      return;
     }
-  }, [page]);
+    const nextPage = pageRef.current + 1;
+    fetchUsers(nextPage, false);
+  };
+
+  // Retry loading pagination page
+  const handleRetryPagination = () => {
+    setPaginationError(null);
+    const nextPage = pageRef.current + 1;
+    fetchUsers(nextPage, false);
+  };
 
   // Scroll handler for Infinite Scroll Pagination
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
     const container = e.currentTarget;
-    if (loading || loadingMore || !hasMore || isFetchingRef.current) return;
-    const threshold = 100;
+    if (loading || loadingMore || !hasMore || isFetchingRef.current || paginationError) return;
+    const threshold = 150;
     const isNearBottom =
       container.scrollHeight - container.scrollTop - container.clientHeight < threshold;
     if (isNearBottom) {
-      setPage((prev) => prev + 1);
+      loadMore();
     }
   };
 
@@ -448,14 +521,23 @@ const UsersPage = () => {
                     <p className="text-[13px] text-gray-500 dark:text-gray-400 max-w-sm">
                       {error || "Kiritilgan qidiruv yoki filtr bo'yicha hech qanday foydalanuvchi topilmadi."}
                     </p>
-                    {(search || activeFiltersCount > 0) && (
+                    {error ? (
                       <button
-                        onClick={handleClearAllFilters}
-                        className="mt-4 flex items-center gap-2 px-4 py-2 border border-[#E5E5E5] dark:border-[#262626] rounded-xl text-[12.5px] font-semibold text-[#404040] dark:text-[#E5E5E5] bg-white dark:bg-[#141414] hover:bg-gray-50 dark:hover:bg-zinc-800 transition-all cursor-pointer"
+                        onClick={() => fetchUsers(1, true)}
+                        className="mt-4 flex items-center gap-2 px-4 py-2 bg-[#0474F3] text-white rounded-xl text-[12.5px] font-semibold hover:bg-[#0360d9] transition-all cursor-pointer shadow-2xs"
                       >
-                        <X size={14} className="stroke-[2.5]" />
-                        Filtrlarni tozalash
+                        Qayta urinish
                       </button>
+                    ) : (
+                      (search || activeFiltersCount > 0) && (
+                        <button
+                          onClick={handleClearAllFilters}
+                          className="mt-4 flex items-center gap-2 px-4 py-2 border border-[#E5E5E5] dark:border-[#262626] rounded-xl text-[12.5px] font-semibold text-[#404040] dark:text-[#E5E5E5] bg-white dark:bg-[#141414] hover:bg-gray-50 dark:hover:bg-zinc-800 transition-all cursor-pointer"
+                        >
+                          <X size={14} className="stroke-[2.5]" />
+                          Filtrlarni tozalash
+                        </button>
+                      )
                     )}
                   </div>
                 </td>
@@ -618,6 +700,21 @@ const UsersPage = () => {
         {loadingMore && (
           <div className="h-10 w-full flex items-center justify-center py-6">
             <div className="w-5 h-5 border-2 border-[#0474F3] border-t-transparent rounded-full animate-spin" />
+          </div>
+        )}
+
+        {/* Pagination Error & Retry */}
+        {paginationError && !loadingMore && (
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 py-3.5 px-4 bg-rose-50/80 dark:bg-rose-950/30 border-t border-rose-100 dark:border-rose-900/40">
+            <span className="text-[12.5px] text-rose-600 dark:text-rose-400">
+              {paginationError}
+            </span>
+            <button
+              onClick={handleRetryPagination}
+              className="px-3 py-1 bg-white dark:bg-zinc-800 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800 rounded-md text-[12px] font-medium hover:bg-rose-50 dark:hover:bg-rose-900/40 transition-colors cursor-pointer"
+            >
+              Qayta urinish
+            </button>
           </div>
         )}
       </div>
