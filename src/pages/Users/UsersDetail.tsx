@@ -22,7 +22,20 @@ import {
 } from 'lucide-react';
 import dayjs from 'dayjs';
 import { HugeIcon } from '@/components/ui/HugeIcon';
-import { IdIcon, Shield01Icon, UserBlock01Icon } from '@hugeicons/core-free-icons';
+import {
+    CheckmarkBadge01Icon,
+    Note01Icon,
+    UserAccountIcon,
+    Globe02Icon,
+    Location01Icon,
+    File01Icon,
+    PlayIcon,
+    PauseIcon,
+    InformationCircleIcon,
+    UserBlock01Icon,
+    IdIcon,
+    Shield01Icon,
+} from '@hugeicons/core-free-icons';
 
 // ── Types ─────────────────────────────────────────────────────────────
 
@@ -469,6 +482,29 @@ const UsersDetail = () => {
         ? dayjs(userData.account.created_at).format("DD.MM.YYYY HH:mm")
         : (userData?.created_at ? dayjs(userData.created_at).format("DD.MM.YYYY HH:mm") : "");
 
+    // Top Card 4: Ro'yxatdan o'tgan sana (if blocked) vs Oxirgi faollik (if unblocked)
+    const card4Title = isBlocked ? "Ro'yxatdan o'tgan sana" : "Oxirgi faollik";
+    const card4Value = isBlocked
+        ? (userData?.account?.created_at
+            ? dayjs(userData.account.created_at).format("DD.MM.YYYY HH:mm")
+            : (userData?.created_at ? dayjs(userData.created_at).format("DD.MM.YYYY HH:mm") : ""))
+        : (userData?.last_active
+            ? dayjs(userData.last_active).format("DD.MM.YYYY HH:mm")
+            : (userData?.account?.created_at ? dayjs(userData.account.created_at).format("DD.MM.YYYY HH:mm") : ""));
+
+    // Block display info for profile header
+    const blockReasonValue = (userData as any)?.account?.block_reason || (userData as any)?.block_reason || (userData as any)?.account?.blocked_reason;
+    const rawReasonLabel = BLOCK_REASONS.find(r => r.value === blockReasonValue)?.label || blockReasonValue;
+    const blockedReasonDisplay = rawReasonLabel || "";
+
+    const blockedByName = (userData as any)?.account?.blocked_by?.name || (userData as any)?.account?.blocked_by || (userData as any)?.blocked_by?.name || (userData as any)?.blocked_by || "";
+    const blockedAtDate = (userData as any)?.account?.blocked_at || (userData as any)?.blocked_at || (userData as any)?.account?.deactivated_at;
+    const blockedAtFormatted = blockedAtDate ? dayjs(blockedAtDate).format("DD.MM.YYYY HH:mm") : "";
+    const blockedByAndDateDisplay = `${blockedByName} ${blockedAtFormatted}`;
+
+    const defaultBio = "";
+    const displayBio = bioText || defaultBio;
+
     // Shaxsiy ma'lumotlar
     const personal = userData?.personal;
     const calculatedAge = personal?.age ?? (personal?.birth_date ? dayjs().diff(dayjs(personal.birth_date), 'year') : (userData?.age ?? null));
@@ -646,789 +682,362 @@ const UsersDetail = () => {
                 </div>
             )}
 
-            {/* Top summary stat bar */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                <div className="bg-[#FAFAFA] dark:bg-zinc-900 rounded-xl py-3.5 px-[18px]">
-                    <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">Holati</p>
-                    <p className={`text-[16px] font-semibold mt-1.5 ${isBlocked
-                        ? 'text-[#7F1D1D] dark:text-[#ff6b6b]'
-                        : isVerified
-                            ? 'text-[#00A854] dark:text-[#2ee088]'
-                            : 'text-[#0084FF] dark:text-[#66b3ff]'
-                        }`}>
-                        {isBlocked ? "Bloklangan" : (userData?.status || (isVerified ? "Tasdiqlangan" : "Tekshiruvda"))}
-                    </p>
+            {/* Top summary stat bar matching Image 1 & 2 & 3 */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+                {/* Card 1: Holati */}
+                <div className="bg-[#EBFDF5] dark:bg-[#0c2a1a] rounded-2xl py-3.5 px-4 flex items-center justify-between border border-[#D1FADF]/60 dark:border-emerald-900/30 shadow-2xs">
+                    <div className="space-y-1">
+                        <div className="flex items-center gap-1.5">
+                            <span className="text-[12px] font-medium text-[#475467] dark:text-[#a3a3a3]">Holati</span>
+                            <HugeIcon icon={CheckmarkBadge01Icon} size={15} className="text-[#079455] dark:text-[#2ee088]" />
+                        </div>
+                        <p className={`text-[17px] font-bold ${isBlocked ? 'text-[#7F1D1D] dark:text-[#ff6b6b]' : 'text-[#101828] dark:text-[#fafafa]'}`}>
+                            {isBlocked ? "Bloklangan" : (userData?.status || (isVerified ? "Tasdiqlangan" : "Tekshiruvda"))}
+                        </p>
+                    </div>
+                    <img src="/card_i_1.svg" alt="Holati" className="w-12 h-12 object-contain select-none" />
                 </div>
 
-                <div className="bg-[#FAFAFA] dark:bg-zinc-900 rounded-xl py-3.5 px-[18px]">
-                    <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">So'rovnoma</p>
-                    <p className="text-[16px] font-semibold text-[#0A0A0A] dark:text-[#fafafa] mt-1.5">
-                        {questionnaireProgressText}
-                    </p>
+                {/* Card 2: So'rovnoma */}
+                <div className="bg-[#FEFCE8] dark:bg-[#2a270c] rounded-2xl py-3.5 px-4 flex items-center justify-between border border-[#FEF08A]/60 dark:border-yellow-900/30 shadow-2xs">
+                    <div className="space-y-1">
+                        <div className="flex items-center gap-1.5">
+                            <span className="text-[12px] font-medium text-[#475467] dark:text-[#a3a3a3]">So'rovnoma</span>
+                            <HugeIcon icon={Note01Icon} size={15} className="text-[#CA8A04] dark:text-yellow-400" />
+                        </div>
+                        <p className="text-[17px] font-bold text-[#101828] dark:text-[#fafafa]">
+                            {totalAnswered > 0 ? `${totalAnswered}/${TOTAL_QUESTIONNAIRE_QUESTIONS} savol` : "30/30 savol"}
+                        </p>
+                    </div>
+                    <img src="/card_i_2.svg" alt="So'rovnoma" className="w-12 h-12 object-contain select-none" />
                 </div>
 
-                <div className="bg-[#FAFAFA] dark:bg-zinc-900 rounded-xl py-3.5 px-[18px]">
-                    <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">Boshqaruv</p>
-                    <p className="text-[16px] font-semibold text-[#0A0A0A] dark:text-[#fafafa] mt-1.5">
-                        {managementType}
-                    </p>
+                {/* Card 3: Boshqaruv */}
+                <div className="bg-[#FAF5FF] dark:bg-[#251033] rounded-2xl py-3.5 px-4 flex items-center justify-between border border-[#F3E8FF]/60 dark:border-purple-900/30 shadow-2xs">
+                    <div className="space-y-1">
+                        <div className="flex items-center gap-1.5">
+                            <span className="text-[12px] font-medium text-[#475467] dark:text-[#a3a3a3]">Boshqaruv</span>
+                            <HugeIcon icon={UserAccountIcon} size={15} className="text-[#9333EA] dark:text-purple-400" />
+                        </div>
+                        <p className="text-[17px] font-bold text-[#101828] dark:text-[#fafafa]">
+                            {managementType}
+                        </p>
+                    </div>
+                    <img src="/card_i_3.svg" alt="Boshqaruv" className="w-12 h-12 object-contain select-none" />
                 </div>
 
-                <div className="bg-[#FAFAFA] dark:bg-zinc-900 rounded-xl py-3.5 px-[18px]">
-                    <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">Oxirgi faollik</p>
-                    <p className="text-[16px] font-semibold text-[#0A0A0A] dark:text-[#fafafa] mt-1.5">
-                        {lastActive}
-                    </p>
+                {/* Card 4: Oxirgi faollik (unblocked) / Ro'yxatdan o'tgan sana (blocked) */}
+                <div className="bg-[#F0F9FF] dark:bg-[#0c2438] rounded-2xl py-3.5 px-4 flex items-center justify-between border border-[#BAE6FD]/60 dark:border-sky-900/30 shadow-2xs">
+                    <div className="space-y-1">
+                        <div className="flex items-center gap-1.5">
+                            <span className="text-[12px] font-medium text-[#475467] dark:text-[#a3a3a3]">{card4Title}</span>
+                            <HugeIcon icon={Globe02Icon} size={15} className="text-[#0284C7] dark:text-sky-400" />
+                        </div>
+                        <p className="text-[17px] font-bold text-[#101828] dark:text-[#fafafa]">
+                            {card4Value}
+                        </p>
+                    </div>
+                    <img src="/card_i_4.svg" alt="Activity" className="w-12 h-12 object-contain select-none" />
                 </div>
             </div>
 
-            {/* Main Layout Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+            {/* Main Profile Card (Header, Shaxsiy ma'lumotlar, Manzil va aloqa, O'zi haqida) */}
+            <div className="bg-white dark:bg-[#141414] rounded-2xl border border-[#E5E5E5] dark:border-zinc-800 p-5 sm:p-6 space-y-6 shadow-xs">
 
-                {/* LEFT COLUMN (8 cols): Main Profile Card, Anketa natijasi, O'zi haqida */}
-                <div className="lg:col-span-6 space-y-4">
-
-                    {/* Card 1: Header + Shaxsiy ma'lumotlar + Manzil va aloqa */}
-                    <div className="bg-white dark:bg-[#141414] p-4">
-
-                        {/* Top Profile Header */}
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-
-                            <div className="flex items-center gap-3.5">
-                                {mainPhotoUrl ? (
-                                    <img
-                                        src={mainPhotoUrl}
-                                        alt={fullName}
-                                        onClick={() => setSelectedPhotoModal(mainPhotoUrl)}
-                                        className="w-14 h-14 rounded-full object-cover border border-[#e5e5e5] dark:border-[#262626] shrink-0 cursor-pointer hover:opacity-90 transition-opacity"
-                                    />
-                                ) : (
-                                    <div className="w-14 h-14 rounded-full bg-[#E0F2FE] dark:bg-sky-950/50 text-[#0284C7] dark:text-sky-400 font-bold text-base flex items-center justify-center shrink-0 border border-sky-100 dark:border-sky-900/40">
-                                        {initials}
-                                    </div>
-                                )}
-
-                                <div>
-                                    <div className="flex items-center gap-2 flex-wrap">
-                                        <h2 className="text-[17px] font-bold text-[#0A0A0A] dark:text-[#fafafa]">
-                                            {fullName}
-                                        </h2>
-                                        <span className="bg-[#F5F5F5] dark:bg-zinc-800 text-[#737373] dark:text-zinc-400 text-[11px] font-medium px-2 py-0.5 rounded">
-                                            {displayId}
-                                        </span>
-                                    </div>
-
-                                    {/* Badges */}
-                                    <div className="flex items-center gap-1.5 mt-2 flex-wrap">
-                                        <span className="bg-[#F5F5F5] dark:bg-zinc-800 text-[#404040] dark:text-zinc-300 text-[11px] font-medium px-2.5 py-0.5 rounded-full">
-                                            {candidateType}
-                                        </span>
-
-                                        <span className="bg-[#F5F5F5] dark:bg-zinc-800 text-[#404040] dark:text-zinc-300 text-[11px] font-medium px-2.5 py-0.5 rounded-full">
-                                            {managementType}
-                                        </span>
-
-                                        <span className={`${isBlocked
-                                            ? 'bg-[#FEF2F2] text-[#7F1D1D] dark:bg-[#3d1414] dark:text-[#ff6b6b]'
-                                            : isVerified
-                                                ? 'bg-[#E6F9F0] text-[#00A854] dark:bg-[#103020] dark:text-[#2ee088]'
-                                                : 'bg-[#EAF5FF] text-[#0084FF] dark:bg-[#10243d] dark:text-[#66b3ff]'
-                                            } text-[11px] font-semibold px-2.5 py-0.5 rounded-full`}>
-                                            {isBlocked ? "Bloklangan" : (userData?.status || (isVerified ? "Tasdiqlangan" : "Tekshiruvda"))}
-                                        </span>
-
-                                        {intentLabel && (
-                                            <span className="bg-[#F5F5F5] dark:bg-zinc-800 text-[#404040] dark:text-zinc-300 text-[11px] font-medium px-2.5 py-0.5 rounded-full">
-                                                {intentLabel}
-                                            </span>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Dates */}
-                            <div className="text-left sm:text-right shrink-0 text-[11px] text-[#737373] dark:text-[#a3a3a3] space-y-0.5">
-                                <p>Ro'yxatdan o'tgan sana: {regDate}</p>
-                                <p>Oxirgi faollik: {lastActive}</p>
-                            </div>
-                        </div>
-
-                        {/* Divider */}
-                        <div className="border-t-2 border-[#f0f0f0] dark:border-[#262626] my-5" />
-
-                        {/* Section: Shaxsiy ma'lumotlar */}
-                        <div>
-                            <div className="flex items-center gap-2 mb-3.5">
-                                <IdCard className="w-4 h-4 text-[#737373] dark:text-[#a3a3a3]" />
-                                <h3 className="text-[13px] font-bold text-[#525252] dark:text-[#fafafa]">
-                                    Shaxsiy ma'lumotlar
-                                </h3>
-                            </div>
-
-                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-y-4 gap-x-6">
-                                <div>
-                                    <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">Yoshi</p>
-                                    <p className="text-[13px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-0.5">{ageText}</p>
-                                </div>
-
-                                <div>
-                                    <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">Tug'ilgan sanasi</p>
-                                    <p className="text-[13px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-0.5">{birthDate}</p>
-                                </div>
-
-                                <div>
-                                    <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">Bo'yi va vazni</p>
-                                    <p className="text-[13px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-0.5">{heightWeight}</p>
-                                </div>
-
-                                <div>
-                                    <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">Millati</p>
-                                    <p className="text-[13px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-0.5">{nationality}</p>
-                                </div>
-
-                                <div>
-                                    <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">Ta'lim darajasi</p>
-                                    <p className="text-[13px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-0.5">{education}</p>
-                                </div>
-
-                                <div>
-                                    <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">Kasbi</p>
-                                    <p className="text-[13px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-0.5">{profession}</p>
-                                </div>
-
-                                <div>
-                                    <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">Oilaviy holati</p>
-                                    <p className="text-[13px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-0.5">{maritalStatus}</p>
-                                </div>
-
-                                <div>
-                                    <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">Farzandlari</p>
-                                    <p className="text-[13px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-0.5">{children}</p>
-                                </div>
-
-                                <div>
-                                    <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">Sog'lig'i</p>
-                                    <p className="text-[13px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-0.5">{healthStatus}</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Divider */}
-                        <div className="border-t-2 border-[#f0f0f0] dark:border-[#262626] my-5" />
-
-                        {/* Section: Manzil va aloqa */}
-                        <div>
-                            <div className="flex items-center gap-2 mb-3.5">
-                                <MapPin className="w-4 h-4 text-[#737373] dark:text-[#a3a3a3]" />
-                                <h3 className="text-[13px] font-bold text-[#525252] dark:text-[#fafafa]">
-                                    Manzil va aloqa
-                                </h3>
-                            </div>
-
-                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-y-4 gap-x-6">
-                                <div>
-                                    <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">Viloyat</p>
-                                    <p className="text-[13px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-0.5">{regionName}</p>
-                                </div>
-
-                                <div>
-                                    <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">Tuman</p>
-                                    <p className="text-[13px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-0.5">{districtName}</p>
-                                </div>
-
-                                <div>
-                                    <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">Joylashuv</p>
-                                    <p className="text-[13px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-0.5">{mahallaName}</p>
-                                </div>
-
-                                <div>
-                                    <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">Telefon</p>
-                                    <p className="text-[13px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-0.5">{phoneNumber}</p>
-                                </div>
-
-                                <div>
-                                    <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">Email</p>
-                                    <p className="text-[13px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-0.5">{email}</p>
-                                </div>
-
-                                <div>
-                                    <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">Ro'yxatdan o'tgan usuli</p>
-                                    <p className="text-[13px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-0.5">{regMethod}</p>
-                                </div>
-                            </div>
-                        </div>
-
-                    </div>
-
-                    {/* Card 2: Anketa natijasi */}
-                    <div className="bg-white dark:bg-[#141414] p-4">
-                        <div className="flex items-center justify-between mb-5">
-                            <div className="flex items-center gap-2">
-                                <FileText className="w-4 h-4 text-[#737373] dark:text-[#a3a3a3]" />
-                                <h3 className="text-[13px] font-bold text-[#525252] dark:text-[#fafafa]">
-                                    Anketa natijasi
-                                </h3>
-                            </div>
-                            <span className="text-[11px] font-medium text-[#737373] dark:text-[#a3a3a3]">
-                                {totalAnswered > 0 ? `${totalAnswered} ta savolga javob berilgan` : "To'ldirilmagan"}
-                            </span>
-                        </div>
-
-                        {/* Sections from API */}
-                        {questionnaireSections.length > 0 ? (
-                            <div className="space-y-4">
-                                {questionnaireSections.map((sec, idx) => {
-                                    const percent = sec.max_score > 0 ? Math.round((sec.score / sec.max_score) * 100) : 0;
-                                    return (
-                                        <div key={idx} className="space-y-1.5">
-                                            <div className="flex justify-between items-center text-[12px]">
-                                                <span className="text-[#404040] dark:text-zinc-300 font-medium">
-                                                    {sec.name}
-                                                </span>
-                                                <div className="flex items-center gap-2 font-medium">
-                                                    <span className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">
-                                                        {sec.answered} ta savol
-                                                    </span>
-                                                    <span className="font-bold text-[#0A0A0A] dark:text-[#fafafa]">
-                                                        {sec.score} / {sec.max_score}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                            <div className="w-full bg-[#F1F5F9] dark:bg-zinc-800 h-2 rounded-full overflow-hidden">
-                                                <div
-                                                    className="bg-[#0474F3] h-full rounded-full transition-all duration-500"
-                                                    style={{ width: `${percent}%` }}
-                                                />
-                                            </div>
-                                        </div>
-                                    );
-                                })}
-                            </div>
+                {/* Top Profile Header */}
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                    {/* Left: Avatar + Name + Badges */}
+                    <div className="flex items-center gap-4">
+                        {mainPhotoUrl ? (
+                            <img
+                                src={mainPhotoUrl}
+                                alt={fullName}
+                                onClick={() => setSelectedPhotoModal(mainPhotoUrl)}
+                                className="w-14 h-14 sm:w-16 sm:h-16 rounded-full object-cover border border-[#e5e5e5] dark:border-[#262626] shrink-0 cursor-pointer hover:opacity-90 transition-opacity"
+                            />
                         ) : (
-                            <div className="space-y-1.5">
-                                <div className="flex justify-between items-center text-[12px]">
-                                    <span className="text-[#404040] dark:text-zinc-300 font-medium">
-                                        Anketa to'liqligi
-                                    </span>
-                                    <span className="font-bold text-[#0A0A0A] dark:text-[#fafafa]">
-                                        {userData?.completion_percentage ?? 0}%
-                                    </span>
-                                </div>
-                                <div className="w-full bg-[#F1F5F9] dark:bg-zinc-800 h-2 rounded-full overflow-hidden">
-                                    <div
-                                        className="bg-[#0474F3] h-full rounded-full transition-all duration-500"
-                                        style={{ width: `${userData?.completion_percentage ?? 0}%` }}
-                                    />
-                                </div>
+                            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-[#E0F2FE] dark:bg-sky-950/50 text-[#0284C7] dark:text-sky-400 font-bold text-lg flex items-center justify-center shrink-0 border border-sky-100 dark:border-sky-900/40">
+                                {initials}
                             </div>
                         )}
-                    </div>
 
-                    {/* Card 3: O'zi haqida */}
-                    <div className="bg-white dark:bg-[#141414] p-4 space-y-4">
                         <div>
-                            <div className="flex items-center gap-2 mb-2.5">
-                                <Info className="w-4 h-4 text-[#737373] dark:text-[#a3a3a3]" />
-                                <h3 className="text-[13px] font-bold text-[#525252] dark:text-[#fafafa]">
-                                    O'zi haqida
-                                </h3>
-                            </div>
-
-                            {bioText ? (
-                                <p className="text-[12px] text-[#404040] dark:text-[#d4d4d4] leading-relaxed whitespace-pre-line">
-                                    {bioText}
-                                </p>
-                            ) : (
-                                <p className="text-[12px] text-[#737373] dark:text-[#a3a3a3] italic">
-                                    Ma'lumot kiritilmagan
-                                </p>
-                            )}
-                        </div>
-
-                        {/* Audio container */}
-                        {voiceIntro && (
-                            <div className="pt-2.5 pr-3.5 pb-2.5 pl-3 rounded-[10px] bg-[#FAFAFA] dark:bg-zinc-900/90 border border-[#E5E5E5] dark:border-zinc-800 flex items-center gap-3.5">
-                                <button
-                                    onClick={togglePlayAudio}
-                                    className="w-8 h-8 rounded-full bg-[#0474F3] hover:bg-[#0360cb] text-white flex items-center justify-center shrink-0 transition-colors shadow-sm cursor-pointer"
-                                >
-                                    {isPlaying ? (
-                                        <Pause className="w-3.5 h-3.5 fill-white" />
-                                    ) : (
-                                        <Play className="w-3.5 h-3.5 fill-white ml-0.5" />
-                                    )}
-                                </button>
-
-                                <div className="min-w-0 shrink-0">
-                                    <p className="text-[12px] font-bold text-[#0A0A0A] dark:text-[#fafafa]">
-                                        Ovozli tanishtiruv
-                                    </p>
-                                    <p className="text-[10px] text-[#737373] dark:text-[#a3a3a3]">
-                                        {dayjs().format("DD.MM.YYYY [kuni yuklangan]")}
-                                    </p>
-                                </div>
-
-                                {/* Waveform visualizer */}
-                                <div
-                                    onClick={(e) => {
-                                        const rect = e.currentTarget.getBoundingClientRect();
-                                        const clickX = e.clientX - rect.left;
-                                        const percent = Math.max(0, Math.min(100, (clickX / rect.width) * 100));
-                                        handleSeekAudio(percent);
-                                    }}
-                                    className="flex-1 flex items-center justify-between h-7 px-2 overflow-hidden cursor-pointer select-none"
-                                    title="O'tkazish uchun bosing"
-                                >
-                                    {WAVEFORM_BARS.map((height, i) => {
-                                        const barProgress = (i / (WAVEFORM_BARS.length - 1)) * 100;
-                                        const isBarActive = (!isPlaying && audioCurrentTime === 0) ? true : (audioProgress >= barProgress);
-                                        return (
-                                            <div
-                                                key={i}
-                                                className={`w-[2.5px] rounded-full transition-all duration-150 ${isBarActive
-                                                    ? 'bg-[#0474F3]'
-                                                    : 'bg-[#CBD5E1] dark:bg-zinc-700 hover:bg-blue-300'
-                                                    }`}
-                                                style={{ height: `${height}px` }}
-                                            />
-                                        );
-                                    })}
-                                </div>
-
-                                <span className="text-[12px] font-mono text-[#737373] dark:text-[#a3a3a3] shrink-0">
-                                    {isPlaying && audioDuration
-                                        ? `${formatAudioTime(audioCurrentTime)} / ${formatAudioTime(audioDuration)}`
-                                        : voiceDurationDisplay}
+                            <div className="flex items-center gap-2 flex-wrap">
+                                <h2 className="text-[17px] sm:text-[18px] font-bold text-[#0A0A0A] dark:text-[#fafafa]">
+                                    {fullName}
+                                </h2>
+                                <span className="bg-[#F5F5F5] dark:bg-zinc-800 text-[#737373] dark:text-zinc-400 text-[11px] font-medium px-2 py-0.5 rounded">
+                                    {displayId}
                                 </span>
                             </div>
-                        )}
+
+                            {/* Badges */}
+                            <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+                                <span className="bg-[#F5F5F5] dark:bg-zinc-800 text-[#404040] dark:text-zinc-300 text-[11px] font-medium px-2.5 py-0.5 rounded-full">
+                                    {candidateType}
+                                </span>
+
+                                <span className="bg-[#F5F5F5] dark:bg-zinc-800 text-[#404040] dark:text-zinc-300 text-[11px] font-medium px-2.5 py-0.5 rounded-full">
+                                    {managementType}
+                                </span>
+
+                                <span className={`${isBlocked
+                                    ? 'bg-[#FEF2F2] text-[#7F1D1D] dark:bg-[#3d1414] dark:text-[#ff6b6b]'
+                                    : isVerified
+                                        ? 'bg-[#E6F9F0] text-[#00A854] dark:bg-[#103020] dark:text-[#2ee088]'
+                                        : 'bg-[#EAF5FF] text-[#0084FF] dark:bg-[#10243d] dark:text-[#66b3ff]'
+                                    } text-[11px] font-semibold px-2.5 py-0.5 rounded-full`}>
+                                    {isBlocked ? "Bloklangan" : (userData?.status || (isVerified ? "Tasdiqlangan" : "Tekshiruvda"))}
+                                </span>
+
+                                {intentLabel && (
+                                    <span className="bg-[#F5F5F5] dark:bg-zinc-800 text-[#404040] dark:text-zinc-300 text-[11px] font-medium px-2.5 py-0.5 rounded-full">
+                                        {intentLabel}
+                                    </span>
+                                )}
+                            </div>
+                        </div>
                     </div>
 
+                    {/* Right: Registration Date & Block action button (or Unblock button if blocked) */}
+                    <div className="flex items-center gap-4 sm:gap-6 flex-wrap lg:flex-nowrap shrink-0">
+                        {!isBlocked ? (
+                            <>
+                                {createdAtFormatted && (
+                                    <span className="text-[12px] text-[#737373] dark:text-[#a3a3a3]">
+                                        Ro'yxatdan o'tgan sana: {createdAtFormatted}
+                                    </span>
+                                )}
+                                <button
+                                    onClick={handleBlock}
+                                    disabled={loadingAction}
+                                    className="px-3.5 py-2 border border-[#E5E5E5] dark:border-zinc-800 bg-white dark:bg-zinc-900 rounded-lg text-[13px] font-medium text-[#DC2626] dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 transition-all cursor-pointer shadow-xs flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                                >
+                                    {loadingAction ? (
+                                        <div className="w-4 h-4 border-2 border-[#DC2626] border-t-transparent rounded-full animate-spin" />
+                                    ) : (
+                                        <HugeIcon icon={UserBlock01Icon} size={16} strokeWidth={2} className="text-[#DC2626] dark:text-red-400" />
+                                    )}
+                                    <span>Profilni bloklash</span>
+                                </button>
+                            </>
+                        ) : (
+                            <>
+                                <div className="text-[12px] space-y-0.5">
+                                    <div className="flex items-center gap-4">
+                                        <span className="text-[#737373] dark:text-[#a3a3a3] w-14">Sabab</span>
+                                        <span className="font-semibold text-[#0A0A0A] dark:text-[#fafafa]">{blockedReasonDisplay}</span>
+                                    </div>
+                                    <div className="flex items-center gap-4">
+                                        <span className="text-[#737373] dark:text-[#a3a3a3] w-14">Bloklandi</span>
+                                        <span className="font-semibold text-[#0A0A0A] dark:text-[#fafafa]">{blockedByAndDateDisplay}</span>
+                                    </div>
+                                </div>
+                            <button
+                                onClick={handleBlock}
+                                disabled={loadingAction}
+                                className="px-4 py-2 border border-[#E5E5E5] dark:border-zinc-800 bg-white dark:bg-zinc-900 rounded-lg text-[13px] font-medium text-[#0474F3] hover:bg-blue-50 dark:hover:bg-blue-950/20 transition-all cursor-pointer shadow-xs flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                            >
+                                {loadingAction ? (
+                                    <div className="w-4 h-4 border-2 border-[#0474F3] border-t-transparent rounded-full animate-spin" />
+                                ) : (
+                                    <HugeIcon icon={InformationCircleIcon} size={17} strokeWidth={2} className="text-[#0474F3]" />
+                                )}
+                                <span>Blokdan chiqarish</span>
+                            </button>
+                            </>
+                        )}
+                    </div>
                 </div>
 
-
-                {/* RIGHT COLUMN (4 cols): Moderatsiya, Tekshiruv, Vakil ma'lumotlari, Hisob ma'lumotlari, Tarix */}
-                <div className="lg:col-span-6 space-y-4">
-
-                    {/* Card 1: Moderatsiya */}
-                    <div className="bg-white dark:bg-[#141414] p-4 space-y-3">
+                {/* Middle Row: Shaxsiy ma'lumotlar (left) + Manzil va aloqa (right) */}
+                <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 pt-1">
+                    {/* Shaxsiy ma'lumotlar */}
+                    <div className="xl:col-span-7 space-y-3.5">
                         <div className="flex items-center gap-2">
-                            <HugeIcon icon={Shield01Icon} className="w-4 h-4 text-[#737373] dark:text-[#a3a3a3]" />
+                            <HugeIcon icon={IdIcon} size={16} className="text-[#737373] dark:text-[#a3a3a3]" />
                             <h3 className="text-[13px] font-bold text-[#525252] dark:text-[#fafafa]">
-                                Moderatsiya
+                                Shaxsiy ma'lumotlar
                             </h3>
                         </div>
 
-                        <div className="flex items-center bg-[#FAFAFA] dark:bg-zinc-900 rounded-lg justify-between px-3.5 h-[39px]">
-                            <span className="text-[12px] font-medium text-[#737373] dark:text-[#a3a3a3]">
-                                Joriy holati
-                            </span>
-                            <span className={`${isBlocked
-                                ? 'bg-[#FEF2F2] text-[#7F1D1D] dark:bg-[#3d1414] dark:text-[#ff6b6b]'
-                                : isVerified
-                                    ? 'bg-[#E6F9F0] text-[#00A854] dark:bg-[#103020] dark:text-[#2ee088]'
-                                    : 'bg-[#EAF5FF] text-[#0084FF] dark:bg-[#10243d] dark:text-[#66b3ff]'
-                                } px-2.5 py-0.5 text-[11px] font-bold rounded-md`}>
-                                {isBlocked ? "Bloklangan" : (userData?.status || (isVerified ? "Tasdiqlangan" : "Tekshiruvda"))}
-                            </span>
-                        </div>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-y-4 gap-x-4">
+                            <div>
+                                <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">Yoshi</p>
+                                <p className="text-[13px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-0.5">{ageText || "—"}</p>
+                            </div>
 
-                        {/* Profilni bloklash / blokdan chiqarish button */}
-                        <button
-                            onClick={handleBlock}
-                            disabled={loadingAction}
-                            className={`w-full py-2 px-3.5 border border-[#e5e5e5] dark:border-zinc-800 bg-white dark:bg-zinc-900 rounded-lg text-[12px] font-semibold flex items-center justify-start gap-2 transition-all cursor-pointer ${!isBlocked
-                                ? 'text-[#7F1D1D] dark:text-[#ef4444]'
-                                : 'text-[#0474F3] dark:text-[#0474F3]'
-                                }`}
-                        >
-                            {loadingAction ? (
-                                <div className={`w-3.5 h-3.5 border-2 border-t-transparent rounded-full animate-spin ${!isBlocked ? 'border-[#7F1D1D]' : 'border-[#0474F3]'}`} />
-                            ) : (
-                                <>
-                                    {
-                                        isBlocked ?
-                                            <Info size={16} strokeWidth={3} className='text-[#0474F3]' />
-                                            : <HugeIcon icon={UserBlock01Icon} size={16} strokeWidth={3} className='text-[#0a0a0a]' />
-                                    }
-                                    <span>{isBlocked ? "Blokdan chiqarish" : "Profilni bloklash"}</span>
-                                </>
-                            )}
-                        </button>
-                    </div>
+                            <div>
+                                <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">Tug'ilgan sanasi</p>
+                                <p className="text-[13px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-0.5">{birthDate || "—"}</p>
+                            </div>
 
-                    {/* Card 2: Tekshiruv (from /history/ API) */}
-                    <div className="bg-white dark:bg-[#141414] p-4">
-                        <div className="flex items-center justify-between mb-3">
-                            <div className="flex items-center gap-2">
-                                <Check className="w-4 h-4 text-[#737373] dark:text-[#a3a3a3]" />
-                                <h3 className="text-[13px] font-bold text-[#525252] dark:text-[#fafafa]">
-                                    Tekshiruv
-                                </h3>
+                            <div>
+                                <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">Bo'yi va vazni</p>
+                                <p className="text-[13px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-0.5">{heightWeight || "—"}</p>
+                            </div>
+
+                            <div>
+                                <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">Millati</p>
+                                <p className="text-[13px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-0.5">{nationality || "—"}</p>
+                            </div>
+
+                            <div>
+                                <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">Ta'lim darajasi</p>
+                                <p className="text-[13px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-0.5">{education || "—"}</p>
+                            </div>
+
+                            <div>
+                                <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">Kasbi</p>
+                                <p className="text-[13px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-0.5">{profession || "—"}</p>
+                            </div>
+
+                            <div>
+                                <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">Oilaviy holati</p>
+                                <p className="text-[13px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-0.5">{maritalStatus || "—"}</p>
+                            </div>
+
+                            <div>
+                                <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">Farzandlari</p>
+                                <p className="text-[13px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-0.5">{children || "—"}</p>
+                            </div>
+
+                            <div>
+                                <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">Sog'lig'i</p>
+                                <p className="text-[13px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-0.5">{healthStatus || "—"}</p>
                             </div>
                         </div>
-
-                        {loadingHistory ? (
-                            <div className="py-4 flex justify-center">
-                                <div className="w-5 h-5 border-2 border-[#0474F3] border-t-transparent rounded-full animate-spin" />
-                            </div>
-                        ) : historyList.length > 0 ? (
-                            <div className="space-y-3">
-                                {historyList.map((item, idx) => (
-                                    <div key={idx} className="flex items-center justify-between text-[12px] gap-2">
-                                        <div className="flex items-center gap-2.5 min-w-0">
-                                            <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${item.is_done
-                                                ? 'bg-[#E6F9F0] dark:bg-[#103020] text-[#00A854] dark:text-[#2ee088]'
-                                                : 'bg-amber-50 dark:bg-amber-950/30 text-amber-500'
-                                                }`}>
-                                                {item.is_done ? (
-                                                    <Check className="w-3 h-3 stroke-[2.5]" />
-                                                ) : (
-                                                    <Clock className="w-3 h-3" />
-                                                )}
-                                            </div>
-                                            <div className="min-w-0">
-                                                <p className="text-[#0A0A0A] dark:text-[#fafafa] font-medium truncate">
-                                                    {item.label}
-                                                </p>
-                                                <p className="text-[10px] text-[#737373] dark:text-[#a3a3a3] truncate">
-                                                    {item.actor} • {dayjs(item.date).format("DD.MM.YYYY HH:mm")}
-                                                </p>
-                                            </div>
-                                        </div>
-
-                                        <span className={`shrink-0 text-[10px] font-semibold px-2 py-0.5 rounded ${item.is_done
-                                            ? 'bg-[#E6F9F0] dark:bg-[#103020] text-[#00A854] dark:text-[#2ee088]'
-                                            : 'bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400'
-                                            }`}>
-                                            {item.is_done ? "Bajarildi" : "Kutilmoqda"}
-                                        </span>
-                                    </div>
-                                ))}
-                            </div>
-                        ) : (
-                            <div className="space-y-2.5">
-                                <div className="flex items-center justify-between text-[12px]">
-                                    <div className="flex items-center gap-2">
-                                        <Check className="w-3.5 h-3.5 text-[#00A854] stroke-[2.5]" />
-                                        <span className="text-[#404040] dark:text-zinc-300">Telefon raqami</span>
-                                    </div>
-                                    <span className="text-[#0A0A0A] dark:text-[#fafafa] font-medium">
-                                        {contact?.phone_masked || userData?.phone_number ? "Tasdiqlangan" : ""}
-                                    </span>
-                                </div>
-
-                                <div className="flex items-center justify-between text-[12px]">
-                                    <div className="flex items-center gap-2">
-                                        <Check className="w-3.5 h-3.5 text-[#00A854] stroke-[2.5]" />
-                                        <span className="text-[#404040] dark:text-zinc-300">Selfi</span>
-                                    </div>
-                                    <span className="text-[#0A0A0A] dark:text-[#fafafa] font-medium">
-                                        {isVerified ? "Tasdiqlangan" : "Kutilmoqda"}
-                                    </span>
-                                </div>
-
-                                <div className="flex items-center justify-between text-[12px]">
-                                    <div className="flex items-center gap-2">
-                                        <Check className="w-3.5 h-3.5 text-[#00A854] stroke-[2.5]" />
-                                        <span className="text-[#404040] dark:text-zinc-300">Anketa</span>
-                                    </div>
-                                    <span className="text-[#0A0A0A] dark:text-[#fafafa] font-medium">
-                                        {totalAnswered > 0 ? `${totalAnswered} ta javob` : ""}
-                                    </span>
-                                </div>
-
-                                <div className="flex items-center justify-between text-[12px]">
-                                    <div className="flex items-center gap-2">
-                                        <Check className="w-3.5 h-3.5 text-[#00A854] stroke-[2.5]" />
-                                        <span className="text-[#404040] dark:text-zinc-300">Halollik qasami</span>
-                                    </div>
-                                    <span className="text-[#0A0A0A] dark:text-[#fafafa] font-medium">
-                                        {isVerified ? "Qabul qilingan" : "Kutilmoqda"}
-                                    </span>
-                                </div>
-
-                                <div className="flex items-center justify-between text-[12px]">
-                                    <div className="flex items-center gap-2">
-                                        <Check className="w-3.5 h-3.5 text-[#00A854] stroke-[2.5]" />
-                                        <span className="text-[#404040] dark:text-zinc-300">Vakil</span>
-                                    </div>
-                                    <span className="text-[#0A0A0A] dark:text-[#fafafa] font-medium">
-                                        {hasGuardian ? "Biriktirilgan" : "Biriktirilmagan"}
-                                    </span>
-                                </div>
-                            </div>
-                        )}
                     </div>
 
-                    {/* Card: Vakil ma'lumotlari (from guardian) */}
-                    {hasVakilData && (
-                        <div className="bg-white dark:bg-[#141414] p-4">
-                            <div className="flex items-center gap-2">
-                                <Contact className="w-4 h-4 text-[#737373] dark:text-[#a3a3a3]" />
-                                <h3 className="text-[13px] font-bold text-[#525252] dark:text-[#fafafa]">
-                                    Vakil ma'lumotlari
-                                </h3>
+                    {/* Manzil va aloqa */}
+                    <div className="xl:col-span-5 space-y-3.5">
+                        <div className="flex items-center gap-2">
+                            <HugeIcon icon={Location01Icon} size={16} className="text-[#737373] dark:text-[#a3a3a3]" />
+                            <h3 className="text-[13px] font-bold text-[#525252] dark:text-[#fafafa]">
+                                Manzil va aloqa
+                            </h3>
+                        </div>
+
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-y-4 gap-x-4">
+                            <div>
+                                <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">Viloyat</p>
+                                <p className="text-[13px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-0.5">{regionName || "—"}</p>
                             </div>
 
-                            <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3] mt-2 mb-4 leading-relaxed">
-                                Vakil — nomzod nomidan anketani to'ldiruvchi va profilni boshqaruvchi qarindosh (amma, xola, amaki, tog'a).
+                            <div>
+                                <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">Tuman</p>
+                                <p className="text-[13px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-0.5">{districtName || "—"}</p>
+                            </div>
+
+                            <div>
+                                <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">Joylashuv</p>
+                                <p className="text-[13px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-0.5">{mahallaName || "—"}</p>
+                            </div>
+
+                            <div>
+                                <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">Telefon</p>
+                                <p className="text-[13px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-0.5">{phoneNumber || "—"}</p>
+                            </div>
+
+                            <div>
+                                <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">Email</p>
+                                <p className="text-[13px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-0.5 truncate">{email || "—"}</p>
+                            </div>
+
+                            <div>
+                                <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">Ro'yxatdan o'tgan usuli</p>
+                                <p className="text-[13px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-0.5">{regMethod || "—"}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Bottom Row: O'zi haqida (Bio + Audio player) */}
+                <div className="space-y-3 pt-1">
+                    <div className="flex items-center gap-2">
+                        <HugeIcon icon={InformationCircleIcon} size={16} className="text-[#737373] dark:text-[#a3a3a3]" />
+                        <h3 className="text-[13px] font-bold text-[#525252] dark:text-[#fafafa]">
+                            O'zi haqida
+                        </h3>
+                    </div>
+
+                    {displayBio ? (
+                        /* Bio container */
+                        <div className="border border-[#E5E5E5] dark:border-zinc-800 rounded-xl p-3.5 flex items-center gap-3.5 bg-white dark:bg-[#141414]">
+                            <div className="w-9 h-9 rounded-full bg-[#0474F3] text-white flex items-center justify-center shrink-0 shadow-xs">
+                                <HugeIcon icon={File01Icon} size={17} strokeWidth={2} className="text-white" />
+                            </div>
+                            <p className="text-[13px] text-[#404040] dark:text-[#d4d4d4] leading-relaxed">
+                                {displayBio}
                             </p>
+                        </div>
+                    ) : null}
 
-                            <div className="space-y-4">
-                                {(Array.isArray(userData?.guardian) ? userData.guardian : [userData?.guardian]).map((rep: any, idx: number) => {
-                                    if (!rep) return null;
+                    {voiceIntro ? (
+                        /* Audio container */
+                        <div className="border border-[#E5E5E5] dark:border-zinc-800 rounded-xl p-3 sm:p-3.5 flex items-center gap-3.5 bg-white dark:bg-[#141414]">
+                            <button
+                                onClick={togglePlayAudio}
+                                className="w-9 h-9 rounded-full bg-[#0474F3] hover:bg-[#0360cb] text-white flex items-center justify-center shrink-0 transition-colors shadow-xs cursor-pointer"
+                            >
+                                {isPlaying ? (
+                                    <HugeIcon icon={PauseIcon} size={16} strokeWidth={2.5} className="text-white fill-white" />
+                                ) : (
+                                    <HugeIcon icon={PlayIcon} size={16} strokeWidth={2.5} className="text-white fill-white ml-0.5" />
+                                )}
+                            </button>
 
-                                    const repName = rep.name || rep.full_name || "";
-                                    const repDisplayId = rep.display_id || (rep.id ? `USR-${rep.id.slice(0, 5).toUpperCase()}` : "");
-                                    const repPhoto = rep.photo || rep.main_photo || null;
-                                    const repInitials = repName !== ""
-                                        ? repName.split(" ").filter(Boolean).map((n: string) => n[0]).join("").toUpperCase().slice(0, 2)
-                                        : "VK";
-                                    const repKinship = typeof rep.kinship === 'object' ? rep.kinship?.name : (rep.kinship_name || rep.kinship || "");
-                                    const repPhone = rep.phone || rep.phone_masked || rep.phone_number || "";
-                                    const repRole = rep.candidate_role ? formatCandidateType(rep.candidate_role) : candidateType;
-                                    const repDates = rep.dates || (rep.application_date || rep.sms_sent_date || rep.approved_date || rep.questionnaire_date ? {
-                                        application_date: rep.application_date || rep.created_at,
-                                        sms_sent_date: rep.sms_sent_date,
-                                        approved_date: rep.approved_date,
-                                        questionnaire_date: rep.questionnaire_date,
-                                    } : null);
-                                    const repTargetId = (rep.id && rep.id !== id) ? rep.id : (rep.user_id && rep.user_id !== id) ? rep.user_id : null;
+                            <div className="min-w-0 shrink-0">
+                                <p className="text-[13px] font-bold text-[#0A0A0A] dark:text-[#fafafa]">
+                                    Ovozli tanishtiruv
+                                </p>
+                                <p className="text-[10px] text-[#737373] dark:text-[#a3a3a3]">
+                                    {createdAtFormatted ? `${createdAtFormatted.split(" ")[0]} kuni yuklangan` : ""}
+                                </p>
+                            </div>
 
+                            {/* Waveform visualizer */}
+                            <div
+                                onClick={(e) => {
+                                    const rect = e.currentTarget.getBoundingClientRect();
+                                    const clickX = e.clientX - rect.left;
+                                    const percent = Math.max(0, Math.min(100, (clickX / rect.width) * 100));
+                                    handleSeekAudio(percent);
+                                }}
+                                className="flex-1 flex items-center justify-between h-7 px-3 overflow-hidden cursor-pointer select-none"
+                                title="O'tkazish uchun bosing"
+                            >
+                                {WAVEFORM_BARS.map((height, i) => {
+                                    const barProgress = (i / (WAVEFORM_BARS.length - 1)) * 100;
+                                    const isBarActive = isPlaying || audioCurrentTime > 0
+                                        ? (audioProgress >= barProgress)
+                                        : true;
                                     return (
-                                        <div key={rep.id || idx} className="space-y-4">
-                                            {/* Representative Card Box */}
-                                            <div
-                                                className={`bg-[#FAFAFA] dark:bg-zinc-900 border border-[#E5E5E5] dark:border-zinc-800 rounded-[10px] p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 transition-all`}
-                                            >
-                                                <div className="flex items-center gap-3 min-w-0">
-                                                    {repPhoto ? (
-                                                        <img
-                                                            src={repPhoto}
-                                                            alt={repName}
-                                                            className="w-10 h-10 rounded-full object-cover border border-[#e2e8f0] dark:border-zinc-700 shrink-0"
-                                                        />
-                                                    ) : (
-                                                        <div className="w-10 h-10 rounded-full bg-[#EEEAFB] dark:bg-purple-950/40 text-[#7C3AED] dark:text-purple-400 font-bold text-xs flex items-center justify-center shrink-0">
-                                                            {repInitials}
-                                                        </div>
-                                                    )}
-                                                    <div className="min-w-0">
-                                                        <p className="text-[13px] font-semibold text-[#0A0A0A] dark:text-[#fafafa] truncate">
-                                                            {repName}
-                                                        </p>
-                                                        <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                                                            {repDisplayId && (
-                                                                <span className="text-[10px] text-[#737373] dark:text-[#a3a3a3]">
-                                                                    {repDisplayId}
-                                                                </span>
-                                                            )}
-                                                            <span className="bg-[#F5F5F5] dark:bg-zinc-800 text-[#525252] dark:text-zinc-300 text-[11px] font-semibold px-2.5 py-0.5 rounded-full">
-                                                                {repRole}
-                                                            </span>
-                                                            <span className={`${rep.is_approved || rep.status === "Tasdiqlangan"
-                                                                ? 'bg-[#ECFDF5] dark:bg-[#103020] text-[#047857] dark:text-[#2ee088]'
-                                                                : 'bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400'
-                                                                } text-[11px] font-semibold px-2.5 py-0.5 rounded-full`}>
-                                                                {rep.status || (rep.is_approved ? "Tasdiqlangan" : "Kutilmoqda")}
-                                                            </span>
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                <div className="flex items-center gap-4 justify-between sm:justify-end shrink-0">
-                                                    <div>
-                                                        <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">Qarindoshligi</p>
-                                                        <p className="text-[12px] font-semibold text-[#0A0A0A] dark:text-[#fafafa] mt-0.5 truncate">{repKinship}</p>
-                                                    </div>
-
-                                                    <div>
-                                                        <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">Telefon</p>
-                                                        <p className="text-[12px] font-semibold text-[#0A0A0A] dark:text-[#fafafa] mt-0.5 truncate">{repPhone}</p>
-                                                    </div>
-
-                                                    <div>
-                                                        <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">Nomzodlari</p>
-                                                        <p className="text-[12px] font-semibold text-[#0A0A0A] dark:text-[#fafafa] mt-0.5">
-                                                            {rep.candidates_count !== undefined ? `${rep.candidates_count} ta` : "1 ta"}
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            {/* Rozilik va sanalar Timeline */}
-                                            {repDates && (
-                                                <div className="pt-3 border-t border-[#f0f0f0] dark:border-[#262626]">
-                                                    <div className="flex items-center gap-1.5 mb-3">
-                                                        <Info className="w-3.5 h-3.5 text-[#737373] dark:text-[#a3a3a3]" />
-                                                        <h4 className="text-[12px] font-bold text-[#525252] dark:text-[#fafafa]">
-                                                            Rozilik va sanalar
-                                                        </h4>
-                                                    </div>
-
-                                                    <div className="flex items-start">
-                                                        {[
-                                                            { done: repDates.application_date, label: "Ariza to'ldirildi", date: repDates.application_date },
-                                                            { done: repDates.sms_sent_date, label: "Nomzodga SMS yuborildi", date: repDates.sms_sent_date },
-                                                            { done: repDates.approved_date, label: "Nomzod rozilikni tasdiqladi", date: repDates.approved_date },
-                                                            { done: repDates.questionnaire_date, label: "Anketa to'ldirildi", date: repDates.questionnaire_date },
-                                                        ].map((step, stepIdx, arr) => (
-                                                            <div key={stepIdx} className={`flex flex-col ${stepIdx < arr.length - 1 ? 'flex-1' : ''}`}>
-                                                                <div className="flex items-center w-full">
-                                                                    <div className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 ${step.done
-                                                                        ? 'bg-[#E6F9F0] dark:bg-[#103020] text-[#00A854] dark:text-[#2ee088]'
-                                                                        : 'bg-gray-100 dark:bg-zinc-800 text-gray-400'
-                                                                        }`}>
-                                                                        {step.done ? <Check className="w-2.5 h-2.5 stroke-[3]" /> : <Minus className="w-2.5 h-2.5" />}
-                                                                    </div>
-                                                                    {stepIdx < arr.length - 1 && (
-                                                                        <div className="flex-1 h-px bg-[#E5E5E5] dark:bg-zinc-700 mx-1.5" />
-                                                                    )}
-                                                                </div>
-                                                                <p className="text-[11px] font-bold text-[#0A0A0A] dark:text-[#fafafa] mt-1.5 pr-2">
-                                                                    {step.label}
-                                                                </p>
-                                                                <p className="text-[10px] text-[#737373] dark:text-[#a3a3a3] mt-0.5">
-                                                                    {step.date ? dayjs(step.date).format("DD.MM.YYYY HH:mm") : ""}
-                                                                </p>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
+                                        <div
+                                            key={i}
+                                            className={`w-[2.5px] rounded-full transition-all duration-150 ${isBarActive
+                                                ? 'bg-[#0474F3]'
+                                                : 'bg-[#CBD5E1] dark:bg-zinc-700 hover:bg-blue-300'
+                                                }`}
+                                            style={{ height: `${height}px` }}
+                                        />
                                     );
                                 })}
                             </div>
+
+                            <span className="text-[12px] font-medium text-[#737373] dark:text-[#a3a3a3] shrink-0">
+                                {isPlaying && audioDuration
+                                    ? `${formatAudioTime(audioCurrentTime)} / ${formatAudioTime(audioDuration)}`
+                                    : (voiceIntro && audioDuration ? voiceDurationDisplay : "0:00")}
+                            </span>
                         </div>
+                    ) : null}
+
+                    {!displayBio && !voiceIntro && (
+                        <p className="text-[12px] text-[#737373] dark:text-[#a3a3a3] italic">
+                            Ma'lumot kiritilmagan
+                        </p>
                     )}
-
-                    {/* Card 3: Hisob ma'lumotlari (from account) */}
-                    <div className="bg-white dark:bg-[#141414] p-4">
-                        <div className="flex items-center gap-2 mb-3">
-                            <HugeIcon icon={IdIcon} className="w-4 h-4 text-[#737373] dark:text-[#a3a3a3]" />
-                            <h3 className="text-[13px] font-bold text-[#525252] dark:text-[#fafafa]">
-                                Hisob ma'lumotlari
-                            </h3>
-                        </div>
-
-                        <div className="space-y-2.5 text-[12px]">
-                            <div className="flex items-center justify-between">
-                                <span className="text-[#737373] dark:text-[#a3a3a3]">Foydalanuvchi ID</span>
-                                <span className="font-bold text-[#0A0A0A] dark:text-[#fafafa]">{displayId}</span>
-                            </div>
-
-                            <div className="flex items-center justify-between">
-                                <span className="text-[#737373] dark:text-[#a3a3a3]">Roli</span>
-                                <span className="font-bold text-[#0A0A0A] dark:text-[#fafafa]">
-                                    {userData?.account?.role?.name || userData?.role_info?.name || userData?.role_name || "Foydalanuvchi"}
-                                </span>
-                            </div>
-
-                            <div className="flex items-center justify-between">
-                                <span className="text-[#737373] dark:text-[#a3a3a3]">Boshqaruv</span>
-                                <span className="font-bold text-[#0A0A0A] dark:text-[#fafafa]">{managementType}</span>
-                            </div>
-
-                            <div className="flex items-center justify-between">
-                                <span className="text-[#737373] dark:text-[#a3a3a3]">Turi</span>
-                                <span className="font-bold text-[#0A0A0A] dark:text-[#fafafa]">{candidateType}</span>
-                            </div>
-
-                            <div className="flex items-center justify-between">
-                                <span className="text-[#737373] dark:text-[#a3a3a3]">Autentifikatsiya</span>
-                                <span className="text-[#0A0A0A] dark:text-[#fafafa] font-medium">{regMethod}</span>
-                            </div>
-
-                            <div className="flex items-center justify-between">
-                                <span className="text-[#737373] dark:text-[#a3a3a3]">Yaratilgan</span>
-                                <span className="text-[#0A0A0A] dark:text-[#fafafa] font-medium">{createdAtFormatted}</span>
-                            </div>
-
-                            {userData?.account?.deactivated_at && (
-                                <div className="flex items-center justify-between">
-                                    <span className="text-[#737373] dark:text-[#a3a3a3]">Deaktivatsiya</span>
-                                    <span className="text-[#0A0A0A] dark:text-[#fafafa] font-medium">
-                                        {dayjs(userData.account.deactivated_at).format("DD.MM.YYYY HH:mm")}
-                                    </span>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-
-                    {/* Card 4: Tarix / Mosliklar tarixi (from match-history API) */}
-                    <div className="bg-white dark:bg-[#141414] p-4">
-                        <div className="flex items-center justify-between mb-4">
-                            <div className="flex items-center gap-2">
-                                <Clock className="w-4 h-4 text-[#737373] dark:text-[#a3a3a3]" />
-                                <h3 className="text-[13px] font-bold text-[#525252] dark:text-[#fafafa]">
-                                    Tarix
-                                </h3>
-                            </div>
-                            {matchHistoryCount !== null && (
-                                <span className="text-[11px] font-medium px-2 py-0.5 rounded bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-400">
-                                    {matchHistoryCount} ta
-                                </span>
-                            )}
-                        </div>
-
-                        {loadingMatch ? (
-                            <div className="py-4 flex justify-center">
-                                <div className="w-5 h-5 border-2 border-[#0474F3] border-t-transparent rounded-full animate-spin" />
-                            </div>
-                        ) : matchHistory.length > 0 ? (
-                            <div className="space-y-3">
-                                {matchHistory.map((item) => {
-                                    const partnerInitials = item.partner_name
-                                        ? item.partner_name.split(" ").filter(Boolean).map(n => n[0]).join("").toUpperCase().slice(0, 2)
-                                        : "P";
-                                    const isPending = item.status === "pending" || item.status === "kutilmoqda";
-                                    const isAccepted = item.status === "accepted" || item.status === "tasdiqlangan" || item.status === "matched";
-
-                                    return (
-                                        <div key={item.id} className="flex items-center justify-between gap-3 text-[12px] p-2 rounded-xl hover:bg-gray-50 dark:hover:bg-zinc-800/50 transition-colors">
-                                            <div className="flex items-center gap-2.5 min-w-0">
-                                                {item.partner_photo ? (
-                                                    <img
-                                                        src={item.partner_photo}
-                                                        alt={item.partner_name}
-                                                        className="w-8 h-8 rounded-full object-cover border border-[#e5e5e5] dark:border-[#262626] shrink-0"
-                                                    />
-                                                ) : (
-                                                    <div className="w-8 h-8 rounded-full bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 font-bold text-[11px] flex items-center justify-center shrink-0">
-                                                        {partnerInitials}
-                                                    </div>
-                                                )}
-                                                <div className="min-w-0">
-                                                    <p className="font-bold text-[#0A0A0A] dark:text-[#fafafa] truncate">
-                                                        {item.partner_name}
-                                                    </p>
-                                                    <p className="text-[10px] text-[#737373] dark:text-[#a3a3a3]">
-                                                        {item.created_at ? dayjs(item.created_at).format("DD.MM.YYYY HH:mm") : ""}
-                                                    </p>
-                                                </div>
-                                            </div>
-
-                                            <span className={`shrink-0 text-[10px] font-semibold px-2 py-0.5 rounded ${isAccepted
-                                                ? 'bg-[#E6F9F0] dark:bg-[#103020] text-[#00A854] dark:text-[#2ee088]'
-                                                : isPending
-                                                    ? 'bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400'
-                                                    : 'bg-gray-100 dark:bg-zinc-800 text-[#737373] dark:text-zinc-400'
-                                                }`}>
-                                                {item.status_label || item.status || "Kutilmoqda"}
-                                            </span>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        ) : (
-                            <div className="py-6 text-center text-[12px] text-[#737373] dark:text-[#a3a3a3]">
-                                Tarixi mavjud emas
-                            </div>
-                        )}
-                    </div>
-
                 </div>
 
             </div>
@@ -1503,9 +1112,13 @@ const UsersDetail = () => {
                             </button>
                             <button
                                 onClick={handleBlockSubmit}
-                                className="px-5 py-2.5 bg-[#7F1D1D] hover:bg-[#b91c1c] text-white rounded-lg text-[13px] font-semibold transition-colors cursor-pointer shadow-xs"
+                                disabled={loadingAction}
+                                className="px-5 py-2.5 bg-[#7F1D1D] hover:bg-[#b91c1c] text-white rounded-lg text-[13px] font-semibold transition-colors cursor-pointer shadow-xs flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
                             >
-                                Profilni bloklash
+                                {loadingAction && (
+                                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                )}
+                                <span>Profilni bloklash</span>
                             </button>
                         </div>
 
