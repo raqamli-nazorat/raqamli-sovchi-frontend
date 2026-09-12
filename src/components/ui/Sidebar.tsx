@@ -48,39 +48,25 @@ const REFERENCE_CHILDREN: MenuChild[] = [
   { label: "Kasblar", path: "/references/professions" },
   { label: "Savol bo'limlari", path: "/references/sections" },
   { label: "Savollar", path: "/references/questions" },
+  { label: "Xabarlar", path: "/references/messages" },
 ];
 
-const MENU_GROUPS: { label: string; items: MenuItem[] }[] = [
+const MENU_ITEMS: MenuItem[] = [
+  { label: "Boshqaruv paneli", path: "/", icon: DashboardSquare01FreeIcons, badge: null, end: true },
+  { label: "Foydalanuvchilar", path: "/users", icon: UserGroupIcon, badge: null, end: false },
+  { label: "Sun'iy intellekt", path: "/ai-chat", icon: AiBrain01FreeIcons, badge: null, end: false },
+  { label: "Shikoyatlar", path: "/appeals", icon: Flag02Icon, badge: null, end: false },
+  { label: "Anketa savollari", path: "/questions", icon: Task01FreeIcons, badge: null, end: false },
+  { label: "Psixologlar", path: "/psychologists", icon: StethoscopeIcon, badge: null, end: false },
   {
-    label: "UMUMIY",
-    items: [
-      { label: "Boshqaruv paneli", path: "/", icon: DashboardSquare01FreeIcons, badge: null, end: true },
-      { label: "Foydalanuvchilar", path: "/users", icon: UserGroupIcon, badge: null, end: false },
-    ],
+    label: "Ma'lumotnomalar",
+    path: "/references",
+    icon: LibraryIcon,
+    badge: null,
+    end: false,
+    children: REFERENCE_CHILDREN,
   },
-  {
-    label: "NAZORAT",
-    items: [
-      { label: "AI moderator", path: "/ai-chat", icon: AiBrain01FreeIcons, badge: null, end: false },
-      { label: "Shikoyatlar", path: "/appeals", icon: Flag02Icon, badge: null, end: false },
-    ],
-  },
-  {
-    label: "KONTENT",
-    items: [
-      { label: "Anketa savollari", path: "/questions", icon: Task01FreeIcons, badge: null, end: false },
-      { label: "Psixologlar", path: "/psychologists", icon: StethoscopeIcon, badge: null, end: false },
-      {
-        label: "Ma'lumotnomalar",
-        path: "/references",
-        icon: LibraryIcon,
-        badge: null,
-        end: false,
-        children: REFERENCE_CHILDREN,
-      },
-      { label: "Sozlamalar", path: "/settings", icon: Settings01FreeIcons, badge: null, end: false },
-    ],
-  },
+  { label: "Sozlamalar", path: "/settings", icon: Settings01FreeIcons, badge: null, end: false },
 ];
 
 const formatBadge = (n: number): string => {
@@ -149,8 +135,8 @@ const Sidebar = ({ collapsed, onToggle }: SidebarProps) => {
     <aside
       className={`
         flex flex-col h-screen shrink-0
-        bg-white dark:bg-[#141414]
-        border-r border-[#e5e5e5] dark:border-[#262626]
+        bg-[#9BC8FB]
+        border-r border-[#86BCF9]/60
         transition-all duration-300 ease-in-out
         ${collapsed ? "w-[72px]" : "w-[248px]"}
       `}
@@ -158,172 +144,162 @@ const Sidebar = ({ collapsed, onToggle }: SidebarProps) => {
       <style>{`
         /* Default color for all paths of active icons is blue */
         .active-icon path {
-          stroke: #0084FF !important;
+          stroke: #0474F3 !important;
         }
       `}</style>
 
       {/* ── Logo ── */}
       <div className="flex items-center justify-between w-full px-4">
-        <div className="flex items-center gap-1.5 py-3.25">
+        <div className="flex items-center gap-2 py-3.5">
           <img src="/Mark.svg" alt="Mark" className="object-contain h-7.5 w-7.5" />
           {!collapsed && (
             <div className="overflow-hidden">
-              <p className="text-[16px] font-extrabold text-gray-900 dark:text-white leading-tight truncate">
-                <span className="font-medium! text-[#737373]!">Raqamli</span> Sovchi
+              <p className="text-[16px] font-extrabold text-[#0A0A0A] leading-tight truncate">
+                <span className="font-normal text-[#1E293B]">Raqamli</span> Sovchi
               </p>
             </div>
           )}
         </div>
         {!collapsed && (
-          <button onClick={onToggle} className="overflow-hidden cursor-pointer">
-            <HugeIcon icon={SidebarLeft01Icon} size={16} strokeWidth={2.5} className="shrink-0 text-[#a3a3a3]" />
+          <button onClick={onToggle} className="overflow-hidden cursor-pointer text-[#1E293B]/70 hover:text-[#0A0A0A] transition-colors">
+            <HugeIcon icon={SidebarLeft01Icon} size={16} strokeWidth={2.5} className="shrink-0" />
           </button>
         )}
       </div>
 
       {/* ── Navigation ── */}
-      <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-5" onClick={() => { collapsed !== false && onToggle() }}>
-        {MENU_GROUPS.map((group) => (
-          <div key={group.label}>
-            {!collapsed && (
-              <p className="text-[10px] font-semibold text-[#A3A3A3] dark:text-[#A3A3A3] tracking-widest px-3 mb-1 uppercase">
-                {group.label}
-              </p>
-            )}
-            {collapsed && <div className="h-px bg-gray-100 dark:bg-gray-800 mx-2 mb-2" />}
-            <ul className="space-y-0.5">
-              {group.items.map((item) => {
-                const isActive = item.end
-                  ? location.pathname === item.path
-                  : location.pathname.startsWith(item.path) && item.path !== "/";
-                const exactRoot = item.path === "/" && location.pathname === "/";
-                const active = isActive || exactRoot;
-                const badge = badgeFor(item);
+      <nav className="flex-1 overflow-y-auto py-2 px-2.5 space-y-1" onClick={() => { collapsed !== false && onToggle() }}>
+        <ul className="space-y-1">
+          {MENU_ITEMS.map((item) => {
+            const isActive = item.end
+              ? location.pathname === item.path
+              : location.pathname.startsWith(item.path) && item.path !== "/";
+            const exactRoot = item.path === "/" && location.pathname === "/";
+            const active = isActive || exactRoot;
+            const badge = badgeFor(item);
 
-                // ── Bolali element (Ma'lumotnomalar) — ochiladigan submenu ──
-                if (item.children) {
-                  const rowClass = `
-                    w-full flex items-center gap-3 rounded-lg px-3 py-2.5
-                    text-[13px] font-semibold group relative cursor-pointer
-                    ${active
-                      ? "bg-[#F5F5F5] dark:bg-[#171717] text-[#0A0A0A] dark:text-[#0A0A0A]"
-                      : "text-[#525252] dark:text-[#525252] hover:bg-[#F5F5F5] dark:hover:bg-[#171717] hover:text-[#0A0A0A] dark:hover:text-[#0A0A0A]"
-                    }
-                    ${collapsed ? "justify-center" : ""}
-                  `;
-
-                  return (
-                    <li key={item.path}>
-                      {collapsed ? (
-                        <NavLink to={item.children[0].path} title={item.label} className={rowClass} onClick={(e) => e.stopPropagation()}>
-                          <HugeiconsIcon
-                            icon={item.icon}
-                            size={18}
-                            strokeWidth={2.3}
-                            className={`shrink-0 ${active ? "active-icon" : "text-[#525252] dark:text-[#525252]"}`}
-                          />
-                        </NavLink>
-                      ) : (
-                        <>
-                          <button onClick={(e) => { e.stopPropagation(); setRefsOpen((v) => !v) }} className={rowClass}>
-                            <HugeiconsIcon
-                              icon={item.icon}
-                              size={18}
-                              strokeWidth={2.3}
-                              className={`shrink-0 ${active ? "active-icon" : "text-[#525252] dark:text-[#525252]"}`}
-                            />
-                            <span className="flex-1 truncate text-left">{item.label}</span>
-                            <HugeiconsIcon
-                              icon={refsOpen ? ArrowUp01Icon : ArrowDown01Icon}
-                              size={14}
-                              strokeWidth={2}
-                              className="shrink-0 text-[#A3A3A3]"
-                            />
-                          </button>
-                          {refsOpen && (
-                            <ul className="mt-0.5 space-y-0.5">
-                              {item.children.map((child) => {
-                                const childActive = location.pathname.startsWith(child.path);
-                                return (
-                                  <li key={child.path}>
-                                    <NavLink
-                                      to={child.path}
-                                      className={`
-                                        flex items-center rounded-lg pl-11 pr-3 py-2
-                                        text-[13px] font-medium
-                                        ${childActive
-                                          ? "bg-[#F5F5F5] dark:bg-[#171717] text-[#0A0A0A] dark:text-white font-semibold"
-                                          : "text-[#737373] dark:text-[#737373] hover:bg-[#F5F5F5] dark:hover:bg-[#171717] hover:text-[#0A0A0A] dark:hover:text-white"
-                                        }
-                                      `}
-                                    >
-                                      <span className="truncate">{child.label}</span>
-                                    </NavLink>
-                                  </li>
-                                );
-                              })}
-                            </ul>
-                          )}
-                        </>
-                      )}
-                    </li>
-                  );
+            // ── Bolali element (Ma'lumotnomalar) — ochiladigan submenu ──
+            if (item.children) {
+              const rowClass = `
+                w-full flex items-center gap-3 rounded-xl px-3 py-2.5
+                text-[13px] font-semibold group relative cursor-pointer transition-colors
+                ${active
+                  ? "bg-white text-[#0A0A0A] shadow-xs"
+                  : "text-[#1E293B] hover:bg-white/40 hover:text-[#0A0A0A]"
                 }
+                ${collapsed ? "justify-center" : ""}
+              `;
 
-                return (
-                  <li key={item.path}>
-                    <NavLink
-                      to={item.path}
-                      end={item.end}
-                      title={collapsed ? item.label : undefined}
-                      className={`
-                        flex items-center gap-3 rounded-lg px-3 py-2.5
-                        text-[13px] font-semibold group relative
-                        ${active
-                          ? "bg-[#F5F5F5] dark:bg-[#171717] text-[#0A0A0A] dark:text-[#0A0A0A]"
-                          : "text-[#525252] dark:text-[#525252] hover:bg-[#F5F5F5] dark:hover:bg-[#171717] hover:text-[#0A0A0A] dark:hover:text-[#0A0A0A]"
-                        }
-                        ${collapsed ? "justify-center" : ""}
-                      `}
-                      onClick={(e) => e.stopPropagation()}
-                    >
+              return (
+                <li key={item.path}>
+                  {collapsed ? (
+                    <NavLink to={item.children[0].path} title={item.label} className={rowClass} onClick={(e) => e.stopPropagation()}>
                       <HugeiconsIcon
                         icon={item.icon}
                         size={18}
                         strokeWidth={2.3}
-                        className={`shrink-0 ${active ? "active-icon active-" + item.path.replace(/[^a-zA-Z0-9]/g, "-") : "text-[#525252] dark:text-[#525252]"}`}
+                        className={`shrink-0 ${active ? "active-icon text-[#0474F3]" : "text-[#1E293B]"}`}
                       />
-                      {!collapsed && (
-                        <>
-                          <span className="flex-1 truncate">{item.label}</span>
-                          {badge !== null && (
-                            <span className={`rounded-xl py-0.5 px-1.5 text-[11px] bg-[#f5f5f5] font-semibold ${active ? "bg-[#0474F3]! dark:bg-[#0474F3]! text-white" : "text-[#737373] dark:text-[#a3a3a3]"} tabular-nums`}>
-                              {formatBadge(badge as number)}
-                            </span>
-                          )}
-                        </>
+                    </NavLink>
+                  ) : (
+                    <>
+                      <button onClick={(e) => { e.stopPropagation(); setRefsOpen((v) => !v) }} className={rowClass}>
+                        <HugeiconsIcon
+                          icon={item.icon}
+                          size={18}
+                          strokeWidth={2.3}
+                          className={`shrink-0 ${active ? "active-icon text-[#0474F3]" : "text-[#1E293B]"}`}
+                        />
+                        <span className="flex-1 truncate text-left">{item.label}</span>
+                        <HugeiconsIcon
+                          icon={refsOpen ? ArrowUp01Icon : ArrowDown01Icon}
+                          size={14}
+                          strokeWidth={2.2}
+                          className="shrink-0 text-[#1E293B]"
+                        />
+                      </button>
+                      {refsOpen && (
+                        <ul className="mt-1 space-y-1">
+                          {item.children.map((child) => {
+                            const childActive = location.pathname.startsWith(child.path);
+                            return (
+                              <li key={child.path}>
+                                <NavLink
+                                  to={child.path}
+                                  className={`
+                                    flex items-center rounded-xl pl-11 pr-3 py-2
+                                    text-[13px] transition-colors
+                                    ${childActive
+                                      ? "bg-white text-[#0A0A0A] font-semibold shadow-xs"
+                                      : "text-[#1E293B] hover:bg-white/40 hover:text-[#0A0A0A] font-medium"
+                                    }
+                                  `}
+                                >
+                                  <span className="truncate">{child.label}</span>
+                                </NavLink>
+                              </li>
+                            );
+                          })}
+                        </ul>
                       )}
-                      {/* Collapsed badge dot */}
-                      {collapsed && badge !== null && (
-                        <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-[#0474F3] rounded-full text-[9px] text-white flex items-center justify-center font-bold">
-                          {(badge as number) > 9 ? "9+" : badge}
+                    </>
+                  )}
+                </li>
+              );
+            }
+
+            return (
+              <li key={item.path}>
+                <NavLink
+                  to={item.path}
+                  end={item.end}
+                  title={collapsed ? item.label : undefined}
+                  className={`
+                    flex items-center gap-3 rounded-xl px-3 py-2.5
+                    text-[13px] font-semibold group relative transition-colors
+                    ${active
+                      ? "bg-white text-[#0A0A0A] shadow-xs"
+                      : "text-[#1E293B] hover:bg-white/40 hover:text-[#0A0A0A]"
+                    }
+                    ${collapsed ? "justify-center" : ""}
+                  `}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <HugeiconsIcon
+                    icon={item.icon}
+                    size={18}
+                    strokeWidth={2.3}
+                    className={`shrink-0 ${active ? "active-icon text-[#0474F3]" : "text-[#1E293B]"}`}
+                  />
+                  {!collapsed && (
+                    <>
+                      <span className="flex-1 truncate">{item.label}</span>
+                      {badge !== null && (
+                        <span className={`rounded-full py-0.5 px-2 text-[11px] font-semibold tabular-nums ${active ? "bg-[#0474F3] text-white" : "bg-white/60 text-[#1E293B]"}`}>
+                          {formatBadge(badge as number)}
                         </span>
                       )}
-                    </NavLink>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-        ))}
+                    </>
+                  )}
+                  {/* Collapsed badge dot */}
+                  {collapsed && badge !== null && (
+                    <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-[#0474F3] rounded-full text-[9px] text-white flex items-center justify-center font-bold">
+                      {(badge as number) > 9 ? "9+" : badge}
+                    </span>
+                  )}
+                </NavLink>
+              </li>
+            );
+          })}
+        </ul>
       </nav>
 
       {/* ── User + toggle ── */}
-      <div className="border-t border-gray-100 dark:border-gray-800 p-3 space-y-1">
+      <div className="border-t border-[#86BCF9]/60 p-3 space-y-1">
         {/* User row */}
         <div
           onClick={() => setShowProfileModal(true)}
-          className={`flex items-center gap-2.5 rounded-xl px-2 py-2 hover:bg-gray-50 dark:hover:bg-gray-800/60 cursor-pointer transition-colors ${collapsed ? "justify-center" : ""}`}
+          className={`flex items-center gap-2.5 rounded-xl px-2 py-2 hover:bg-white/40 cursor-pointer transition-colors ${collapsed ? "justify-center" : ""}`}
         >
           {currentUser?.avatar || currentUser?.photo_url || currentUser?.profile_info?.main_photo ? (
             <img
@@ -332,21 +308,21 @@ const Sidebar = ({ collapsed, onToggle }: SidebarProps) => {
               className="w-8 h-8 rounded-full object-cover shrink-0"
             />
           ) : (
-            <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center shrink-0">
-              <span className="text-[11px] font-bold text-blue-600 dark:text-blue-400">
-                {currentUser?.first_name?.slice(0,1) + currentUser?.last_name?.slice(0,1) || "US"}
+            <div className="w-8 h-8 rounded-full bg-white/70 flex items-center justify-center shrink-0">
+              <span className="text-[11px] font-bold text-[#0474F3]">
+                {currentUser?.first_name?.slice(0, 1) + currentUser?.last_name?.slice(0, 1) || "US"}
               </span>
             </div>
           )}
           {!collapsed && (
             <>
               <div className="flex-1 min-w-0">
-                <p className="text-[12px] font-semibold text-gray-800 dark:text-gray-200 truncate leading-tight">
+                <p className="text-[12px] font-semibold text-[#0A0A0A] truncate leading-tight">
                   {currentUser?.full_name || currentUser?.first_name + " " + currentUser?.last_name}
                 </p>
-                <p className="text-[10px] text-gray-400 truncate">{currentUser?.role?.name}</p>
+                <p className="text-[10px] text-[#334155] truncate">{currentUser?.role?.name}</p>
               </div>
-              <button className="p-1 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+              <button className="p-1 rounded-lg text-[#1E293B]/70 hover:text-[#0A0A0A] hover:bg-white/40 transition-colors">
                 <HugeiconsIcon icon={MoreHorizontalFreeIcons} size={14} strokeWidth={2} />
               </button>
             </>

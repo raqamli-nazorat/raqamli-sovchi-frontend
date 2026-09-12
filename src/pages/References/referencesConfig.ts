@@ -304,6 +304,17 @@ export const REF_CONFIGS: Record<string, RefEntityConfig> = {
     deleteNoun: "kasbini",
   }),
 
+  messages: simpleNameConfig({
+    slug: "messages",
+    singular: "Xabar",
+    plural: "Xabarlar",
+    subtitle: "Xabarlar",
+    searchPlaceholder: "Xabar nomi bo'yicha qidirish...",
+    formTitle: "Yangi xabar",
+    deleteNoteText: "Xabarlardan bu xabar butulay o‘chiriladi va foydalanuvchilarga ko‘rinmaydi.",
+    deleteNoun: "xabarini",
+  }),
+
   sections: {
     slug: "sections",
     singular: "Savol bo'limi",
