@@ -7,15 +7,15 @@ import type { RootState } from "../../store";
 import { useNotificationsRealtime } from "../../hooks/useNotificationsRealtime";
 
 const PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {
-  "/": { title: "Boshqaruv paneli", subtitle: "Umumiy holat va navbatdagi vazifalar" },
+  "/": { title: "Boshqaruv paneli", subtitle: "" },
   "/users": { title: "Foydalanuvchilar", subtitle: "" },
   "/appeals": { title: "Shikoyatlar", subtitle: "" },
-  "/ai-chat": { title: "AI moderator", subtitle: "Suhbatlardagi qoidabuzarlik signallari" },
-  "/settings": { title: "Sozlamalar", subtitle: "Platforma qoidalari va rollar" },
-  "/psychologists": { title: "Psixologlar", subtitle: "Mutaxassislar va suhbatlar" },
-  "/profile-moderation": { title: "Profil moderatsiyasi", subtitle: "Selfi tasdiqlash va rasm tekshiruvi" },
-  "/questions": { title: "Anketa savollari", subtitle: "Platforma savollari" },
-  "/profile": { title: "Mening profilim", subtitle: "Hisob ma'lumotlari va xavfsizlik" },
+  "/ai-chat": { title: "AI moderator", subtitle: "" },
+  "/settings": { title: "Sozlamalar", subtitle: "" },
+  "/psychologists": { title: "Psixologlar", subtitle: "" },
+  "/profile-moderation": { title: "Profil moderatsiyasi", subtitle: "" },
+  "/questions": { title: "Anketa savollari", subtitle: "" },
+  "/profile": { title: "Mening profilim", subtitle: "" },
 };
 
 const getPageInfo = (pathname: string, appeal?: Appeal) => {
@@ -70,15 +70,12 @@ const Navbar = ({ collapsed: _collapsed, onToggle: _onToggle, title: customTitle
   const notificationCount = useSelector((s: RootState) => s.notifications.unreadCount);
 
   return (
-    <header className="h-15 shrink-0 flex items-center justify-between bg-white dark:bg-[#141414] border-b border-[#e5e5e5] dark:border-[#262626] px-6 gap-4">
+    <header className="h-15 shrink-0 flex items-center justify-between bg-[#9BC8FB] border-b border-[#86BCF9]/60 px-6 gap-4">
       {/* Left – Page title */}
       <div className="flex flex-col justify-center min-w-0">
-        <h1 className="text-[16px] font-semibold text-[#0A0A0A] dark:text-[#fafafa] leading-tight truncate">
+        <h1 className="text-[16px] font-semibold text-[#0A0A0A] leading-tight truncate">
           {displayTitle}
         </h1>
-        {displaySubtitle && (
-          <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3] leading-tight truncate">{displaySubtitle}</p>
-        )}
       </div>
 
       {/* Right – Search + Notification */}
@@ -106,21 +103,22 @@ const Navbar = ({ collapsed: _collapsed, onToggle: _onToggle, title: customTitle
               });
             }}
             placeholder="Foydalanuvchi, ID, telefon..."
-            className="h-9 pl-9 pr-4 rounded-lg border border-[#e5e5e5] dark:border-[#262626] text-[13px] text-[#737373] dark:text-[#a3a3a3] placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#0474F3]/20 focus:border-[#0474F3] transition-all w-[260px]"
+            className="h-9.5 pl-9 pr-4 rounded-xl bg-white border border-transparent text-[13px] text-[#0A0A0A] placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#0474F3]/20 transition-all w-[260px] shadow-xs"
           />
         </div>
 
         {/* Notification button */}
         <button
           onClick={() => navigate("/notification")}
-          className="relative flex items-center cursor-pointer gap-2 h-9 px-3 rounded-lg border border-[#e5e5e5] dark:border-[#262626] text-[#404040] dark:text-[#a3a3a3] transition-all hover:border-gray-300 dark:hover:border-zinc-600"
+          className="relative flex items-center cursor-pointer gap-2 h-9.5 px-3.5 rounded-xl bg-white border border-transparent text-[#0A0A0A] transition-all hover:bg-white/90 shadow-xs"
         >
           <HugeiconsIcon
             icon={Notification02Icon}
             size={16}
             strokeWidth={2.5}
+            className="text-[#0A0A0A]"
           />
-          <span className="text-[12px] font-medium">Bildirishnomalar</span>
+          <span className="text-[12px] font-medium text-[#0A0A0A]">Bildirishnomalar</span>
           {notificationCount > 0 && (
             <span className="flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-[#0474F3] text-white text-[10px] font-bold">
               {notificationCount > 99 ? "99+" : notificationCount}

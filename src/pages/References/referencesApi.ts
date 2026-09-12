@@ -1,3 +1,4 @@
+import dayjs from "dayjs";
 import { axiosAPI } from "../../lib/axiosAPI";
 
 export type RefItem = Record<string, any> & { id: string };
@@ -43,6 +44,133 @@ const realApi = (base: string): RefApi => ({
   },
 });
 
+// Xabarlar uchun mock data (keyinchalik backend tayyor bo'lgach realApi("messages/") ga almashtiriladi)
+const INITIAL_MESSAGES: RefItem[] = [
+  {
+    id: "1",
+    name: "Assalomu aleykum",
+    created_at: "2026-03-12T14:02:00",
+    updated_at: "2026-06-18T09:31:00",
+  },
+  {
+    id: "2",
+    name: "Nima",
+    created_at: "2026-03-12T08:25:00",
+    updated_at: "2026-04-02T12:32:00",
+  },
+  {
+    id: "3",
+    name: "Kim",
+    created_at: "2026-04-18T15:28:00",
+    updated_at: "2026-05-30T13:14:00",
+  },
+  {
+    id: "4",
+    name: "Qanaqa",
+    created_at: "2026-05-02T10:27:00",
+    updated_at: "2026-07-11T16:54:00",
+  },
+  {
+    id: "5",
+    name: "Qatta",
+    created_at: "2026-06-21T09:22:00",
+    updated_at: "2026-06-21T12:22:00",
+  },
+];
+
+const STORAGE_KEY = "mock_messages_data";
+
+const getMockMessages = (): RefItem[] => {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed;
+      }
+    }
+  } catch {
+    // ignore
+  }
+  return [...INITIAL_MESSAGES];
+};
+
+const setMockMessages = (items: RefItem[]) => {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+  } catch {
+    // ignore
+  }
+};
+
+const mockMessagesApi: RefApi = {
+  list: async (params) => {
+    let list = getMockMessages();
+    if (params?.search) {
+      const q = String(params.search).toLowerCase().trim();
+      list = list.filter((item) => (item.name || "").toLowerCase().includes(q));
+    }
+    if (params?.start_date) {
+      const start = dayjs(params.start_date).startOf("day").valueOf();
+      list = list.filter((item) => dayjs(item.created_at).valueOf() >= start);
+    }
+    if (params?.end_date) {
+      const end = dayjs(params.end_date).endOf("day").valueOf();
+      list = list.filter((item) => dayjs(item.created_at).valueOf() <= end);
+    }
+    if (params?.updated_at_after) {
+      const start = dayjs(params.updated_at_after).startOf("day").valueOf();
+      list = list.filter((item) => dayjs(item.updated_at).valueOf() >= start);
+    }
+    if (params?.updated_at_before) {
+      const end = dayjs(params.updated_at_before).endOf("day").valueOf();
+      list = list.filter((item) => dayjs(item.updated_at).valueOf() <= end);
+    }
+
+    const res: any = [...list];
+    res.count = list.length;
+    return res;
+  },
+  get: async (id) => {
+    const list = getMockMessages();
+    const item = list.find((i) => String(i.id) === String(id));
+    if (!item) throw new Error("Xabar topilmadi");
+    return item;
+  },
+  create: async (data) => {
+    const list = getMockMessages();
+    const now = dayjs().format("YYYY-MM-DDTHH:mm:ss");
+    const newItem: RefItem = {
+      id: String(Date.now()),
+      name: data.name || "",
+      created_at: now,
+      updated_at: now,
+    };
+    const updated = [newItem, ...list];
+    setMockMessages(updated);
+    return newItem;
+  },
+  update: async (id, data) => {
+    const list = getMockMessages();
+    const now = dayjs().format("YYYY-MM-DDTHH:mm:ss");
+    const idx = list.findIndex((i) => String(i.id) === String(id));
+    if (idx === -1) throw new Error("Xabar topilmadi");
+    const updatedItem = {
+      ...list[idx],
+      ...data,
+      updated_at: now,
+    };
+    list[idx] = updatedItem;
+    setMockMessages(list);
+    return updatedItem;
+  },
+  remove: async (id) => {
+    const list = getMockMessages();
+    const filtered = list.filter((i) => String(i.id) !== String(id));
+    setMockMessages(filtered);
+  },
+};
+
 // Ma'lumotnomalar bo'limi — backend endpointlariga to'liq ulangan.
 // (Manba: /api/schema/ — Raqamli Sovchi API v1)
 export const REF_APIS: Record<string, RefApi> = {
@@ -54,6 +182,8 @@ export const REF_APIS: Record<string, RefApi> = {
   professions: realApi("references/professions/"),
   sections: realApi("accounts/section-types/"),
   questions: realApi("accounts/questions/"),
+  // Hozircha mock data, keyin real API ulanadi (masalan: realApi("messages/"))
+  messages: mockMessagesApi,
 };
 
 export const refApiError = (err: any, fallback: string): string => {
