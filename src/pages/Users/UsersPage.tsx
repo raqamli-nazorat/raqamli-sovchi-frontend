@@ -436,7 +436,7 @@ const UsersPage = () => {
       <div
         ref={tableContainerRef}
         onScroll={handleScroll}
-        className="bg-white dark:bg-[#141414] overflow-auto max-h-[calc(100vh-130px)]"
+        className="bg-white dark:bg-[#141414] overflow-auto max-h-[calc(100vh-135px)]"
       >
         <table className="w-full text-left border-collapse min-w-max">
           {/* Table Header */}
