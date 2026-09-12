@@ -373,7 +373,7 @@ const UsersPage = () => {
   };
 
   return (
-    <div className="p-2 space-y-4">
+    <div className="p-2.5 px-4 space-y-4">
       {/* Top Search & Filter Row */}
       <div className="flex w-full justify-between items-center gap-3">
         {/* Search Bar */}

@@ -188,7 +188,7 @@ const AppealsPage = () => {
   const activeFiltersCount = Object.keys(filters).filter((k) => (filters as any)[k]).length;
 
   return (
-    <div className="p-4 space-y-4">
+    <div className="p-4 py-2.5 space-y-4">
       {/* ── Top Bar: Search & Filter ── */}
       <div className="flex items-center justify-between gap-4 flex-wrap">
         {/* Search input */}

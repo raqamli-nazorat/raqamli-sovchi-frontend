@@ -464,50 +464,51 @@ const AppealDetailPage = () => {
       )}
 
       {/* ── Yuqori statistika paneli (1-rasmga asosan) ── */}
-      <div className="p-4 grid grid-cols-2 md:grid-cols-4 gap-6">
-        <div>
-          <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">Holati</p>
-          <p
-            className={`text-[16px] font-semibold mt-1 ${status === "approved"
-                ? "text-[#059669] dark:text-[#10B981]"
-                : status === "rejected"
-                  ? "text-[#DC2626] dark:text-red-400"
-                  : "text-[#D97706] dark:text-amber-400"
-              }`}
-          >
-            {complaint.status_label || (status === "approved" ? "Tasdiqlandi" : status === "rejected" ? "Bekor qilindi" : "Ko'rib chiqilmoqda")}
-          </p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+        {/* Card 1: Holati */}
+        <div className="bg-[#E5E9FF] dark:bg-[#1c203b] rounded-lg py-3.5 px-4 flex items-center justify-between">
+          <div className="space-y-1">
+            <span className="text-[12px] font-medium text-[#475467] dark:text-[#a3a3a3]">Holati</span>
+            <p className="text-[17px] font-bold text-[#101828] dark:text-[#fafafa]">
+              {complaint.status_label || (status === "approved" ? "Tasdiqlandi" : status === "rejected" ? "Bekor qilindi" : "Ko‘rib chiqilmoqda")}
+            </p>
+          </div>
+          <img src="/applies_i_1.svg" alt="Holati" className="w-12 h-12 object-contain select-none" />
         </div>
 
-        <div>
-          <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">Qoidabuzarlik darajasi</p>
-          <p
-            className={`text-[16px] font-semibold mt-1 ${
-              (analysis.level || "").toLowerCase().includes("past")
-                ? "text-[#059669] dark:text-[#10B981]"
-                : (analysis.level || "").toLowerCase().includes("o'rta") || (analysis.level || "").toLowerCase().includes("orta")
-                ? "text-[#D97706] dark:text-amber-400"
-                : "text-[#991B1B] dark:text-red-400"
-            }`}
-          >
-            {analysis.level || "Past"}
-          </p>
+        {/* Card 2: Qoidabuzarlik darajasi */}
+        <div className="bg-[#FFF8E5] dark:bg-[#2b2512] rounded-lg py-3.5 px-4 flex items-center justify-between">
+          <div className="space-y-1">
+            <span className="text-[12px] font-medium text-[#475467] dark:text-[#a3a3a3]">Qoidabuzarlik darajasi</span>
+            <p className="text-[17px] font-bold text-[#101828] dark:text-[#fafafa]">
+              {analysis.level || "Past"}
+            </p>
+          </div>
+          <img src="/applies_i_2.svg" alt="Qoidabuzarlik darajasi" className="w-12 h-12 object-contain select-none" />
         </div>
 
-        <div>
-          <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">Shikoyatlar soni</p>
-          <p className="text-[16px] font-semibold text-[#0A0A0A] dark:text-white mt-1">
-            {complaint.previous_complaints_count !== undefined && complaint.previous_complaints_count !== null
-              ? `${complaint.previous_complaints_count} ta`
-              : analysis.reports || "0 ta"}
-          </p>
+        {/* Card 3: Shikoyatlar soni */}
+        <div className="bg-[#FFE5E5] dark:bg-[#341818] rounded-lg py-3.5 px-4 flex items-center justify-between">
+          <div className="space-y-1">
+            <span className="text-[12px] font-medium text-[#475467] dark:text-[#a3a3a3]">Shikoyatlar soni</span>
+            <p className="text-[17px] font-bold text-[#101828] dark:text-[#fafafa]">
+              {complaint.previous_complaints_count !== undefined && complaint.previous_complaints_count !== null
+                ? `${complaint.previous_complaints_count} ta`
+                : analysis.reports || "0 ta"}
+            </p>
+          </div>
+          <img src="/applies_i_3.svg" alt="Shikoyatlar soni" className="w-12 h-12 object-contain select-none" />
         </div>
 
-        <div>
-          <p className="text-[11px] text-[#737373] dark:text-[#a3a3a3]">Yaratilgan</p>
-          <p className="text-[16px] font-semibold text-[#0A0A0A] dark:text-white mt-1">
-            {complaint.created_at ? dayjs(complaint.created_at).format("DD.MM.YYYY HH:mm") : "14.07.2026 09:14"}
-          </p>
+        {/* Card 4: Yaratilgan */}
+        <div className="bg-[#E5F9FF] dark:bg-[#0c2438] rounded-lg py-3.5 px-4 flex items-center justify-between">
+          <div className="space-y-1">
+            <span className="text-[12px] font-medium text-[#475467] dark:text-[#a3a3a3]">Yaratilgan</span>
+            <p className="text-[17px] font-bold text-[#101828] dark:text-[#fafafa]">
+              {complaint.created_at ? dayjs(complaint.created_at).format("DD.MM.YYYY HH:mm") : "14.07.2026 09:14"}
+            </p>
+          </div>
+          <img src="/applies_i_4.svg" alt="Yaratilgan" className="w-12 h-12 object-contain select-none" />
         </div>
       </div>
 

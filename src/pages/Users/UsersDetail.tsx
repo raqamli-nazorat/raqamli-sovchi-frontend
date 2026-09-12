@@ -246,6 +246,9 @@ const UsersDetail = () => {
     const [unblockSuccessAlert, setUnblockSuccessAlert] = useState<string | null>(null);
 
     const [selectedPhotoModal, setSelectedPhotoModal] = useState<string | null>(null);
+    const [showQuestionnaireModal, setShowQuestionnaireModal] = useState(false);
+    const [showConsentModal, setShowConsentModal] = useState(false);
+    const [showHistoryModal, setShowHistoryModal] = useState(false);
 
     // 1. Fetch Main User Data
     const fetchUserData = () => {
@@ -544,6 +547,73 @@ const UsersDetail = () => {
         ? `${totalAnswered}/${TOTAL_QUESTIONNAIRE_QUESTIONS} savol`
         : "To'ldirilmagan";
 
+    // Guardian / Representative Details for Rozilik va sanalar Modal
+    const guardianObj = Array.isArray(guardian) ? guardian[0] : guardian;
+    const guardianFullName = guardianObj?.full_name || guardianObj?.name || userData?.representative_info?.full_name || "";
+    const guardianAge = guardianObj?.age ?? (guardianObj?.birth_date ? dayjs().diff(dayjs(guardianObj.birth_date), 'year') : (userData?.representative_info?.age ?? 52));
+    const guardianDisplayId = guardianObj?.display_id || userData?.representative_info?.display_id || (guardianObj?.id ? `USR-${guardianObj.id.slice(0, 5).toUpperCase()}` : "");
+    const guardianRole = guardianObj?.candidate_role || "";
+    const guardianKinship = typeof guardianObj?.kinship === 'object'
+        ? guardianObj?.kinship?.name
+        : (guardianObj?.kinship_name || guardianObj?.kinship || userData?.representative_info?.kinship || "");
+    const guardianPhone = guardianObj?.phone_masked || guardianObj?.phone || guardianObj?.phone_number || userData?.representative_info?.phone || "";
+    const guardianCandidatesCount = guardianObj?.candidates_count !== undefined && guardianObj?.candidates_count !== null
+        ? `${guardianObj.candidates_count} ta`
+        : (userData?.representative_info?.candidates_count ? `${userData.representative_info.candidates_count} ta` : "");
+
+    const guardianInitials = guardianFullName
+        ? guardianFullName.split(" ").filter(Boolean).map((n: string) => n[0]).join("").toUpperCase().slice(0, 2) || "ZM"
+        : "";
+
+    const consentSteps = [
+        {
+            title: "Ariza to'ldirildi",
+            date: (guardianObj?.dates?.application_date || guardianObj?.application_date || guardianObj?.created_at)
+                ? dayjs(guardianObj?.dates?.application_date || guardianObj?.application_date || guardianObj?.created_at).format("DD.MM.YYYY HH:mm")
+                : "",
+        },
+        {
+            title: "Nomzodga SMS yuborildi",
+            date: (guardianObj?.dates?.sms_sent_date || guardianObj?.sms_sent_date)
+                ? dayjs(guardianObj?.dates?.sms_sent_date || guardianObj?.sms_sent_date).format("DD.MM.YYYY HH:mm")
+                : "",
+        },
+        {
+            title: "Nomzod rozilikni tasdiqladi",
+            date: (guardianObj?.dates?.approved_date || guardianObj?.approved_date)
+                ? dayjs(guardianObj?.dates?.approved_date || guardianObj?.approved_date).format("DD.MM.YYYY HH:mm")
+                : "",
+        },
+        {
+            title: "Anketa to'ldirildi",
+            date: (guardianObj?.dates?.questionnaire_date || guardianObj?.questionnaire_date)
+                ? dayjs(guardianObj?.dates?.questionnaire_date || guardianObj?.questionnaire_date).format("DD.MM.YYYY HH:mm")
+                : "",
+        },
+    ];
+
+    // Questionnaire Sections for Anketa Natijasi Modal
+    const questionnaireSectionsData = (questionnaireSections && questionnaireSections.length > 0)
+        ? questionnaireSections.map((s: any) => ({
+            name: s.name,
+            score: typeof s.score === 'number' ? s.score : 2.0,
+            max_score: typeof s.max_score === 'number' ? s.max_score : 4.0,
+        }))
+        : [];
+
+    // History Items for Tarix Modal
+    const historyItemsData = (historyList && historyList.length > 0)
+        ? historyList.map((item: any) => {
+            const dateVal = item.date || item.created_at || item.timestamp;
+            const dateFormatted = dateVal ? dayjs(dateVal).format("DD.MM.YYYY HH:mm") : "";
+            const actor = item.actor || "Avtomatik";
+            return {
+                label: item.label || item.title || item.action || item.event_type || "Harakat",
+                subtitle: dateFormatted ? `${actor}, ${dateFormatted}` : actor,
+            };
+        })
+        : [];
+
     // Header updates
     useEffect(() => {
         setHeaderTitle("Foydalanuvchi kartasi");
@@ -701,7 +771,10 @@ const UsersDetail = () => {
                 </div>
 
                 {/* Card 2: So'rovnoma */}
-                <div className="bg-[#F9FFE5] dark:bg-[#2a270c] rounded-lg py-3.5 px-4 flex items-center justify-between">
+                <div
+                    onClick={() => setShowQuestionnaireModal(true)}
+                    className="bg-[#F9FFE5] dark:bg-[#2a270c] rounded-lg py-3.5 px-4 flex items-center justify-between cursor-pointer transition-all"
+                >
                     <div className="space-y-1">
                         <div className="flex items-center gap-1.5">
                             <span className="text-[12px] font-medium text-[#475467] dark:text-[#a3a3a3]">So'rovnoma</span>
@@ -715,7 +788,14 @@ const UsersDetail = () => {
                 </div>
 
                 {/* Card 3: Boshqaruv */}
-                <div className="bg-[#FBE5FF] dark:bg-[#251033] rounded-lg py-3.5 px-4 flex items-center justify-between ">
+                <div
+                    onClick={hasGuardian ? () => setShowConsentModal(true) : undefined}
+                    className={`bg-[#FBE5FF] dark:bg-[#251033] rounded-lg py-3.5 px-4 flex items-center justify-between ${
+                        hasGuardian
+                            ? "cursor-pointer transition-all"
+                            : "cursor-default"
+                    }`}
+                >
                     <div className="space-y-1">
                         <div className="flex items-center gap-1.5">
                             <span className="text-[12px] font-medium text-[#475467] dark:text-[#a3a3a3]">Boshqaruv</span>
@@ -729,7 +809,10 @@ const UsersDetail = () => {
                 </div>
 
                 {/* Card 4: Oxirgi faollik (unblocked) / Ro'yxatdan o'tgan sana (blocked) */}
-                <div className="bg-[#F5FDFF] dark:bg-[#0c2438] rounded-lg py-3.5 px-4 flex items-center justify-between">
+                <div
+                    onClick={() => setShowHistoryModal(true)}
+                    className="bg-[#F5FDFF] dark:bg-[#0c2438] rounded-lg py-3.5 px-4 flex items-center justify-between cursor-pointer transition-all"
+                >
                     <div className="space-y-1">
                         <div className="flex items-center gap-1.5">
                             <span className="text-[12px] font-medium text-[#475467] dark:text-[#a3a3a3]">{card4Title}</span>
@@ -1188,6 +1271,261 @@ const UsersDetail = () => {
                             </button>
                         </div>
 
+                    </div>
+                </div>
+            )}
+
+            {/* 1. Questionnaire Modal (Anketa natijasi - Image 1) */}
+            {showQuestionnaireModal && (
+                <div
+                    onClick={() => setShowQuestionnaireModal(false)}
+                    className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 animate-in fade-in duration-200"
+                >
+                    <div
+                        onClick={(e) => e.stopPropagation()}
+                        className="w-full max-w-[500px] bg-white dark:bg-[#141414] rounded-2xl border border-[#e5e5e5] dark:border-[#262626] p-6 shadow-[0px_18px_44px_0px_#0000002E] animate-in fade-in zoom-in-95 duration-200"
+                    >
+                        {/* Header */}
+                        <div className="flex items-center justify-between pb-3">
+                            <h3 className="text-[17px] font-bold text-[#0A0A0A] dark:text-[#fafafa]">
+                                Anketa natijasi
+                            </h3>
+                            <button
+                                onClick={() => setShowQuestionnaireModal(false)}
+                                className="text-[#737373] hover:text-[#0A0A0A] dark:text-zinc-400 dark:hover:text-white transition-colors cursor-pointer p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-zinc-800"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        {/* Sub-header row */}
+                        <div className="flex items-center justify-between py-2.5 mb-2 border-b border-[#F2F4F7] dark:border-zinc-800/80">
+                            <div className="flex items-center gap-2">
+                                <HugeIcon icon={Note01Icon} size={18} className="text-[#344054] dark:text-zinc-300" />
+                                <span className="text-[13.5px] font-medium text-[#344054] dark:text-zinc-200">
+                                    Anketa natijasi
+                                </span>
+                            </div>
+                            <span className="text-[12.5px] text-[#737373] dark:text-zinc-400">
+                                {totalAnswered > 0 ? `${totalAnswered}/${TOTAL_QUESTIONNAIRE_QUESTIONS} savol yakunlangan` : "30/30 savol yakunlangan"}
+                            </span>
+                        </div>
+
+                        {/* Sections List */}
+                        <div className="space-y-4 pt-2">
+                            {questionnaireSectionsData.map((sec, idx) => {
+                                const percentage = Math.min(100, Math.max(0, (sec.score / (sec.max_score || 4.0)) * 100));
+                                return (
+                                    <div key={idx} className="space-y-1.5">
+                                        <div className="flex items-center justify-between text-[13px]">
+                                            <span className="font-normal text-[#344054] dark:text-zinc-300">
+                                                {sec.name}
+                                            </span>
+                                            <span className="font-bold text-[#101828] dark:text-[#fafafa]">
+                                                {sec.score.toFixed(1)} / {(sec.max_score || 4.0).toFixed(1)}
+                                            </span>
+                                        </div>
+                                        <div className="w-full bg-[#F2F4F7] dark:bg-zinc-800 h-2 rounded-full overflow-hidden">
+                                            <div
+                                                className="bg-[#0474F3] h-full rounded-full transition-all duration-300"
+                                                style={{ width: `${percentage}%` }}
+                                            />
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        {/* Footer */}
+                        <div className="flex items-center justify-end mt-7 pt-2">
+                            <button
+                                onClick={() => setShowQuestionnaireModal(false)}
+                                className="px-5 py-2.5 bg-white dark:bg-zinc-900 border border-[#e5e5e5] dark:border-[#262626] rounded-xl text-[13px] font-semibold text-[#404040] dark:text-[#e5e5e5] hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer flex items-center gap-1.5 shadow-xs"
+                            >
+                                <X className="w-4 h-4" />
+                                <span>Yopish</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* 2. Consent and Dates Modal (Rozilik va sanalar - Image 2) */}
+            {showConsentModal && (
+                <div
+                    onClick={() => setShowConsentModal(false)}
+                    className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 animate-in fade-in duration-200"
+                >
+                    <div
+                        onClick={(e) => e.stopPropagation()}
+                        className="w-full max-w-[560px] bg-white dark:bg-[#141414] rounded-2xl border border-[#e5e5e5] dark:border-[#262626] p-6 shadow-[0px_18px_44px_0px_#0000002E] animate-in fade-in zoom-in-95 duration-200"
+                    >
+                        {/* Header */}
+                        <div className="flex items-center justify-between pb-3">
+                            <h3 className="text-[17px] font-bold text-[#0A0A0A] dark:text-[#fafafa]">
+                                Rozilik va sanalar
+                            </h3>
+                            <button
+                                onClick={() => setShowConsentModal(false)}
+                                className="text-[#737373] hover:text-[#0A0A0A] dark:text-zinc-400 dark:hover:text-white transition-colors cursor-pointer p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-zinc-800"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        {/* Representative Card */}
+                        <div className="border border-[#E5E5E5] dark:border-zinc-800 rounded-xl p-4 bg-[#FCFCFD] dark:bg-zinc-900/40">
+                            <div className="flex items-center gap-3.5">
+                                {guardianObj?.photo || guardianObj?.main_photo ? (
+                                    <img
+                                        src={guardianObj.photo || guardianObj.main_photo}
+                                        alt={guardianFullName}
+                                        className="w-12 h-12 rounded-full object-cover shrink-0 border border-purple-200 dark:border-purple-900/40"
+                                    />
+                                ) : (
+                                    <div className="w-12 h-12 rounded-full bg-[#F3E8FF] dark:bg-purple-950/60 text-[#7E22CE] dark:text-purple-300 font-bold text-sm flex items-center justify-center shrink-0">
+                                        {guardianInitials}
+                                    </div>
+                                )}
+                                <div>
+                                    <p className="text-[15px] font-bold text-[#101828] dark:text-[#fafafa]">
+                                        {guardianFullName}{guardianAge ? `, ${guardianAge}` : ""}
+                                    </p>
+                                    <div className="flex items-center gap-2 mt-1">
+                                        <span className="text-[11px] font-medium text-[#737373] dark:text-zinc-400 bg-[#F2F4F7] dark:bg-zinc-800 px-2 py-0.5 rounded">
+                                            {guardianDisplayId}
+                                        </span>
+                                        <span className="text-[11px] font-medium text-[#404040] dark:text-zinc-300 bg-[#F2F4F7] dark:bg-zinc-800 px-2.5 py-0.5 rounded-full">
+                                            {guardianRole}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-3 gap-2 mt-4 pt-3 border-t border-[#F2F4F7] dark:border-zinc-800">
+                                <div>
+                                    <p className="text-[11px] text-[#737373] dark:text-zinc-400">Qarindoshligi</p>
+                                    <p className="text-[13.5px] font-bold text-[#101828] dark:text-[#fafafa] mt-0.5">
+                                        {guardianKinship || "—"}
+                                    </p>
+                                </div>
+                                <div>
+                                    <p className="text-[11px] text-[#737373] dark:text-zinc-400">Telefon</p>
+                                    <p className="text-[13.5px] font-bold text-[#101828] dark:text-[#fafafa] mt-0.5">
+                                        {guardianPhone || "—"}
+                                    </p>
+                                </div>
+                                <div>
+                                    <p className="text-[11px] text-[#737373] dark:text-zinc-400">Nomzodlari</p>
+                                    <p className="text-[13.5px] font-bold text-[#101828] dark:text-[#fafafa] mt-0.5">
+                                        {guardianCandidatesCount}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Timeline Header */}
+                        <div className="flex items-center gap-2 mt-5 mb-3">
+                            <Clock className="w-4 h-4 text-[#737373] dark:text-zinc-400" />
+                            <span className="text-[13.5px] font-bold text-[#344054] dark:text-zinc-200">
+                                Rozilik va sanalar
+                            </span>
+                        </div>
+
+                        {/* Timeline Steps (Horizontal stepper matching Image 2) */}
+                        <div className="grid grid-cols-4 gap-2 pt-1">
+                            {consentSteps.map((step, idx) => (
+                                <div key={idx} className="flex flex-col">
+                                    <div className="flex items-center w-full">
+                                        <div className="w-5 h-5 rounded-full bg-[#E8FAF0] dark:bg-emerald-950/60 text-[#08834C] dark:text-emerald-400 flex items-center justify-center shrink-0">
+                                            <Check className="w-3 h-3 stroke-[3]" />
+                                        </div>
+                                        {idx < consentSteps.length - 1 && (
+                                            <div className="h-[1.5px] bg-[#E4E7EC] dark:bg-zinc-800 flex-1 ml-1.5" />
+                                        )}
+                                    </div>
+                                    <p className="text-[12px] font-bold text-[#101828] dark:text-[#fafafa] mt-2 leading-snug">
+                                        {step.title}
+                                    </p>
+                                    <p className="text-[11px] text-[#737373] dark:text-zinc-400 mt-1">
+                                        {step.date}
+                                    </p>
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Footer */}
+                        <div className="flex items-center justify-end mt-7 pt-2">
+                            <button
+                                onClick={() => setShowConsentModal(false)}
+                                className="px-5 py-2.5 bg-white dark:bg-zinc-900 border border-[#e5e5e5] dark:border-[#262626] rounded-xl text-[13px] font-semibold text-[#404040] dark:text-[#e5e5e5] hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer flex items-center gap-1.5 shadow-xs"
+                            >
+                                <X className="w-4 h-4" />
+                                <span>Yopish</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* 3. History Modal (Tarix - Image 3) */}
+            {showHistoryModal && (
+                <div
+                    onClick={() => setShowHistoryModal(false)}
+                    className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 animate-in fade-in duration-200"
+                >
+                    <div
+                        onClick={(e) => e.stopPropagation()}
+                        className="w-full max-w-[480px] bg-white dark:bg-[#141414] rounded-2xl border border-[#e5e5e5] dark:border-[#262626] p-6 shadow-[0px_18px_44px_0px_#0000002E] animate-in fade-in zoom-in-95 duration-200"
+                    >
+                        {/* Header */}
+                        <div className="flex items-center justify-between pb-3">
+                            <h3 className="text-[17px] font-bold text-[#0A0A0A] dark:text-[#fafafa]">
+                                Tarix
+                            </h3>
+                            <button
+                                onClick={() => setShowHistoryModal(false)}
+                                className="text-[#737373] hover:text-[#0A0A0A] dark:text-zinc-400 dark:hover:text-white transition-colors cursor-pointer p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-zinc-800"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        {/* Sub-header row */}
+                        <div className="flex items-center gap-2 mb-4">
+                            <Clock className="w-4 h-4 text-[#737373] dark:text-zinc-400" />
+                            <span className="text-[13.5px] font-bold text-[#344054] dark:text-zinc-200">
+                                Tarix
+                            </span>
+                        </div>
+
+                        {/* History List */}
+                        <div className="space-y-3.5">
+                            {historyItemsData.map((item, idx) => (
+                                <div key={idx} className="flex items-start gap-3">
+                                    <Check className="w-4 h-4 text-[#00A854] dark:text-emerald-400 shrink-0 mt-0.5 stroke-[2.5]" />
+                                    <div className="space-y-0.5">
+                                        <p className="text-[13.5px] font-bold text-[#101828] dark:text-[#fafafa]">
+                                            {item.label}
+                                        </p>
+                                        <p className="text-[12px] text-[#737373] dark:text-zinc-400">
+                                            {item.subtitle}
+                                        </p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Footer */}
+                        <div className="flex items-center justify-end mt-7 pt-2">
+                            <button
+                                onClick={() => setShowHistoryModal(false)}
+                                className="px-5 py-2.5 bg-white dark:bg-zinc-900 border border-[#e5e5e5] dark:border-[#262626] rounded-xl text-[13px] font-semibold text-[#404040] dark:text-[#e5e5e5] hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer flex items-center gap-1.5 shadow-xs"
+                            >
+                                <X className="w-4 h-4" />
+                                <span>Yopish</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
