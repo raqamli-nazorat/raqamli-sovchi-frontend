@@ -35,6 +35,8 @@ import {
     UserBlock01Icon,
     IdIcon,
     Shield01Icon,
+    UserCheck01Icon,
+    DocumentValidationIcon,
 } from '@hugeicons/core-free-icons';
 
 // ── Types ─────────────────────────────────────────────────────────────
@@ -685,11 +687,11 @@ const UsersDetail = () => {
             {/* Top summary stat bar matching Image 1 & 2 & 3 */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
                 {/* Card 1: Holati */}
-                <div className="bg-[#EBFDF5] dark:bg-[#0c2a1a] rounded-2xl py-3.5 px-4 flex items-center justify-between border border-[#D1FADF]/60 dark:border-emerald-900/30 shadow-2xs">
+                <div className="bg-[#E5FFF1] dark:bg-[#0c2a1a] rounded-lg py-3.5 px-4 flex items-center justify-between">
                     <div className="space-y-1">
                         <div className="flex items-center gap-1.5">
                             <span className="text-[12px] font-medium text-[#475467] dark:text-[#a3a3a3]">Holati</span>
-                            <HugeIcon icon={CheckmarkBadge01Icon} size={15} className="text-[#079455] dark:text-[#2ee088]" />
+                            <HugeIcon icon={CheckmarkBadge01Icon} size={15} className="text-[#24BF6C] dark:text-[#2ee088]" />
                         </div>
                         <p className={`text-[17px] font-bold ${isBlocked ? 'text-[#7F1D1D] dark:text-[#ff6b6b]' : 'text-[#101828] dark:text-[#fafafa]'}`}>
                             {isBlocked ? "Bloklangan" : (userData?.status || (isVerified ? "Tasdiqlangan" : "Tekshiruvda"))}
@@ -699,11 +701,11 @@ const UsersDetail = () => {
                 </div>
 
                 {/* Card 2: So'rovnoma */}
-                <div className="bg-[#FEFCE8] dark:bg-[#2a270c] rounded-2xl py-3.5 px-4 flex items-center justify-between border border-[#FEF08A]/60 dark:border-yellow-900/30 shadow-2xs">
+                <div className="bg-[#F9FFE5] dark:bg-[#2a270c] rounded-lg py-3.5 px-4 flex items-center justify-between">
                     <div className="space-y-1">
                         <div className="flex items-center gap-1.5">
                             <span className="text-[12px] font-medium text-[#475467] dark:text-[#a3a3a3]">So'rovnoma</span>
-                            <HugeIcon icon={Note01Icon} size={15} className="text-[#CA8A04] dark:text-yellow-400" />
+                            <HugeIcon icon={DocumentValidationIcon} size={15} className="text-[#CA8A04] dark:text-yellow-400" />
                         </div>
                         <p className="text-[17px] font-bold text-[#101828] dark:text-[#fafafa]">
                             {totalAnswered > 0 ? `${totalAnswered}/${TOTAL_QUESTIONNAIRE_QUESTIONS} savol` : "30/30 savol"}
@@ -713,11 +715,11 @@ const UsersDetail = () => {
                 </div>
 
                 {/* Card 3: Boshqaruv */}
-                <div className="bg-[#FAF5FF] dark:bg-[#251033] rounded-2xl py-3.5 px-4 flex items-center justify-between border border-[#F3E8FF]/60 dark:border-purple-900/30 shadow-2xs">
+                <div className="bg-[#FBE5FF] dark:bg-[#251033] rounded-lg py-3.5 px-4 flex items-center justify-between ">
                     <div className="space-y-1">
                         <div className="flex items-center gap-1.5">
                             <span className="text-[12px] font-medium text-[#475467] dark:text-[#a3a3a3]">Boshqaruv</span>
-                            <HugeIcon icon={UserAccountIcon} size={15} className="text-[#9333EA] dark:text-purple-400" />
+                            <HugeIcon icon={UserCheck01Icon} size={15} strokeWidth={3} className="text-[#9333EA] dark:text-purple-400" />
                         </div>
                         <p className="text-[17px] font-bold text-[#101828] dark:text-[#fafafa]">
                             {managementType}
@@ -727,11 +729,11 @@ const UsersDetail = () => {
                 </div>
 
                 {/* Card 4: Oxirgi faollik (unblocked) / Ro'yxatdan o'tgan sana (blocked) */}
-                <div className="bg-[#F0F9FF] dark:bg-[#0c2438] rounded-2xl py-3.5 px-4 flex items-center justify-between border border-[#BAE6FD]/60 dark:border-sky-900/30 shadow-2xs">
+                <div className="bg-[#F5FDFF] dark:bg-[#0c2438] rounded-lg py-3.5 px-4 flex items-center justify-between">
                     <div className="space-y-1">
                         <div className="flex items-center gap-1.5">
                             <span className="text-[12px] font-medium text-[#475467] dark:text-[#a3a3a3]">{card4Title}</span>
-                            <HugeIcon icon={Globe02Icon} size={15} className="text-[#0284C7] dark:text-sky-400" />
+                            <HugeIcon icon={Globe02Icon} size={15} className="text-[#24A8BF] dark:text-sky-400" />
                         </div>
                         <p className="text-[17px] font-bold text-[#101828] dark:text-[#fafafa]">
                             {card4Value}
@@ -742,7 +744,7 @@ const UsersDetail = () => {
             </div>
 
             {/* Main Profile Card (Header, Shaxsiy ma'lumotlar, Manzil va aloqa, O'zi haqida) */}
-            <div className="bg-white dark:bg-[#141414] rounded-2xl border border-[#E5E5E5] dark:border-zinc-800 p-5 sm:p-6 space-y-6 shadow-xs">
+            <div className="bg-white dark:bg-[#141414] p-5 space-y-">
 
                 {/* Top Profile Header */}
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
